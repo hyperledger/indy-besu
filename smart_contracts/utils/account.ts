@@ -1,12 +1,5 @@
-import { Signer } from 'ethers';
-import { ethers } from 'hardhat';
-import { environment, host, web3 } from '../environment';
-import { createBaseDidDocument } from '../test/utils';
-
-export interface AccountInfo {
-    address: string,
-    privateKey: string,
-}
+import { web3 } from '../environment';
+import { Account as Web3Account } from 'web3-core';
 
 export class Account {
     public address: string
