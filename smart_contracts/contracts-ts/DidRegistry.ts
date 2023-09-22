@@ -1,12 +1,12 @@
-import { Contract } from '../utils/contract'
-import { 
-    DidDocumentStorageStruct, 
-    DidDocumentStruct, 
-    VerificationMethodStruct, 
-    VerificationRelationshipStruct, 
-    ServiceStruct, 
-    SignatureStruct 
+import {
+  DidDocumentStorageStruct,
+  DidDocumentStruct,
+  ServiceStruct,
+  SignatureStruct,
+  VerificationMethodStruct,
+  VerificationRelationshipStruct,
 } from '../typechain-types/did/DidRegistry'
+import { Contract } from '../utils/contract'
 
 export type DidDocumentStorage = DidDocumentStorageStruct
 export type DidDocument = DidDocumentStruct
