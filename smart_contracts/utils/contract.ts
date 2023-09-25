@@ -1,6 +1,6 @@
+import { Signer } from 'ethers';
 import { ethers } from 'hardhat'
-import { host } from '../environment'
-import { Signer } from 'ethers'
+import { host } from '../environment';
 
 export class Contract {
     public address?: string
