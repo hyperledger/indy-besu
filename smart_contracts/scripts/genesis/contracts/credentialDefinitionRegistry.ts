@@ -10,8 +10,8 @@ export interface CredentialDefinitionsConfig extends ContractConfig {
   }
 }
 
-export function credentialDefinitions() {
-  const { name, address, description, data } = config.credentialDefinitions
+export function credentialDefinitionRegistry() {
+  const { name, address, description, data } = config.credentialDefinitionRegistry
   const storage: any = {}
 
   storage[slots['0']] = padLeft(data.didRegistryAddress, 64)
