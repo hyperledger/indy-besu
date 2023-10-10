@@ -1,5 +1,12 @@
-import { web3 } from '../environment';
-import { Account as Web3Account } from 'web3-core';
+import { encodeBase58, Signer } from 'ethers';
+import { ethers } from 'hardhat';
+import { environment, host, web3 } from '../environment';
+import { createBaseDidDocument } from '../test/utils';
+
+export interface AccountInfo {
+    address: string,
+    privateKey: string,
+}
 
 export class Account {
     public address: string
@@ -21,7 +28,11 @@ export class Account {
     }
 
     public get did() {
-        return `did:${environment.did.method}:${environment.network.name}:${this.address.substring(0, 16)}`
+        // TODO: The DID's method-specefic-id is not generated according to the specification.
+        // It needs to be adjusted to match the specification: Base58(Truncate_msb(16(SHA256(publicKey))))
+        const did = `did:${environment.did.method}:${environment.network.name}:${encodeBase58(this.address).substring(0, 22)}`
+        console.log(did)
+        return did
     }
 
     public get didDocument() {

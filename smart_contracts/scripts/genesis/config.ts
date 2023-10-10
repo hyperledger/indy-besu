@@ -51,6 +51,11 @@ export const config: Config = {
       schemaRegistryAddress: contractsAddresses.schemas,
     },
   },
+  didRegex: {
+    name: 'DidRegex',
+    address: '0x0000000000000000000000000000000000001111',
+    description: 'Regex library to validate DID syntax',
+  },
   didValidator: {
     name: 'DidValidator',
     address: contractsAddresses.didValidator,

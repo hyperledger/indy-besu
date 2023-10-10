@@ -9,14 +9,11 @@ describe('DIDContract', function () {
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
   async function deployDidContractFixture() {
-    const validatorLib = new Contract('DidValidator')
-    await validatorLib.deploy()
-
-    return new DidRegistry().deploy({ libraries: [validatorLib] })
+    return deployDidRegistry()
   }
 
   describe('Create DID', function () {
-    it('Should create DID document', async function () {
+    it('Should create and resolve DID document', async function () {
       const didRegistry = await loadFixture(deployDidContractFixture)
 
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
@@ -28,6 +25,14 @@ describe('DIDContract', function () {
       const { document } = await didRegistry.resolveDid(did)
 
       expect(document).to.be.deep.equal(didDocument)
+    })
+
+    it('Should fail if resolving DID does not exist', async function () {
+      const didRegistry = await loadFixture(deployDidContractFixture)
+
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+
+      await expect(didRegistry.resolveDid(did)).to.be.revertedWith('DID not found')
     })
 
     it('Should fail if the DID being created already exists', async function () {
