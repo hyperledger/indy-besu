@@ -1,5 +1,6 @@
 import { padLeft } from 'web3-utils'
 import { config } from '../config'
+import { ContractConfig } from '../contractConfig'
 import { buildSection, slots } from '../helpers'
 
 export interface CredentialDefinitionsConfig extends ContractConfig {
