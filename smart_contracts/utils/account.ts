@@ -1,5 +1,12 @@
-import { web3 } from '../environment';
-import { Account as Web3Account } from 'web3-core';
+import { Signer, encodeBase58 } from 'ethers';
+import { ethers } from 'hardhat';
+import { environment, host, web3 } from '../environment';
+import { createBaseDidDocument } from '../test/utils';
+
+export interface AccountInfo {
+    address: string,
+    privateKey: string,
+}
 
 export class Account {
     public address: string
@@ -21,19 +28,9 @@ export class Account {
     }
 
     public get did() {
-        return `did:${environment.did.method}:${environment.network.name}:${this.methodSpeceficId}`
-    }
-
-    public get methodSpeceficId() {
-        const parts = [
-            this.address.substring(2, 10),
-            this.address.substring(10, 14),
-            this.address.substring(14, 18),
-            this.address.substring(18, 22),
-            this.address.substring(22, 34),
-        ]
-
-        return parts.join('-')
+        const did = `did:${environment.did.method}:${environment.network.name}:${encodeBase58(this.address.substring(0, 34))}`
+        console.log(did)
+        return did
     }
 
     public get didDocument() {
