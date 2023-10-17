@@ -7,6 +7,7 @@ import {
   SchemasConfig,
   ValidatorsConfig,
 } from './contracts'
+import { UpgradeControlConfig } from './contracts/upgradeControl'
 
 export const compiledContractsFolder = 'compiled-contracts'
 export const inFile = 'config.json'
@@ -19,6 +20,7 @@ export interface Config {
   didRegistry: DidsConfig
   roleControl: RolesConfig
   schemaRegistry: SchemasConfig
+  upgradeControl: UpgradeControlConfig
   validatorControl: ValidatorsConfig
 }
 
@@ -30,6 +32,7 @@ const contractsAddresses = {
   roles: '0x0000000000000000000000000000000000006666',
   validators: '0x0000000000000000000000000000000000007777',
   accountControl: '0x0000000000000000000000000000000000008888',
+  upgradeControl: '0x0000000000000000000000000000000000009999',
 }
 
 export const config: Config = {
@@ -111,6 +114,14 @@ export const config: Config = {
     data: {
       schemas: [],
       didRegistryAddress: contractsAddresses.didRegistry,
+    },
+  },
+  upgradeControl: {
+    name: 'UpgradeControl',
+    address: contractsAddresses.upgradeControl,
+    description: 'Smart contract to manage proxy contract upgrades',
+    data: {
+      roleControlContractAddress: contractsAddresses.roles,
     },
   },
   validatorControl: {
