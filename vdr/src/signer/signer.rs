@@ -79,7 +79,6 @@ impl Signer for BasicSigner {
     }
 }
 
-#[cfg(test)]
 pub mod test {
     use super::*;
 

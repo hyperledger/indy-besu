@@ -2,9 +2,11 @@ use crate::{
     ledger::{BesuLedger, IndyLedger, Ledgers},
     wallet::{BesuWallet, IndyWallet},
 };
-use indy2_vdr::{
-    migration::{IndyCredentialDefinitionFormat, IndySchemaFormat},
-    CredentialDefinitionId, SchemaId,
+use indy2_vdr::cl::types::{
+    credential_definition_id::CredentialDefinitionId,
+    credential_definition::migration::IndyCredentialDefinitionFormat,
+    schema_id::SchemaId,
+    schema::migration::IndySchemaFormat,
 };
 use serde_json::json;
 use vdrtoolsrs::future::Future;
@@ -103,8 +105,8 @@ impl Holder {
                 (schema, cred_def)
             }
             Ledgers::Besu => {
-                let schema_id = SchemaId::from_indy_format(schema_id);
-                let cred_def_id = CredentialDefinitionId::from_indy_format(cred_def_id);
+                let schema_id = SchemaId::from_legacy_form(schema_id);
+                let cred_def_id = CredentialDefinitionId::from_indy_form(cred_def_id);
                 let schema = self.besu_ledger.get_schema(&schema_id).await;
                 let cred_def = self.besu_ledger.get_cred_def(&cred_def_id).await;
                 let schema: IndySchemaFormat = schema.into();

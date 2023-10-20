@@ -7,17 +7,14 @@ pub struct IndyWallet {
 }
 
 impl IndyWallet {
-    pub const KEY: &'static str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY";
-    pub const KEY_DERIVATION: &'static str = "RAW";
-
     pub fn new(name: &str) -> IndyWallet {
         let config = json!({
             "id": format!("{}_wallet", name)
         })
         .to_string();
         let credentials = json!({
-            "key": Self::KEY,
-            "key_derivation_method": Self::KEY_DERIVATION
+            "key": "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY",
+            "key_derivation_method":"RAW"
         })
         .to_string();
         vdrtoolsrs::wallet::create_wallet(&config, &credentials)

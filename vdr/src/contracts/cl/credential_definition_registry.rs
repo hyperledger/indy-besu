@@ -92,8 +92,8 @@ pub mod test {
             },
             did::did_doc::test::ISSUER_ID,
         },
-        signer::signer::test::ACCOUNT,
-        DID,
+        did::DID,
+        signer::test::ACCOUNT,
     };
 
     mod build_create_credential_definition_transaction {

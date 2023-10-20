@@ -2,9 +2,14 @@ use crate::{
     ledger::{BesuLedger, IndyLedger, Ledgers},
     wallet::{BesuWallet, IndyWallet},
 };
-use indy2_vdr::{DidDocument, DidDocumentBuilder, VerificationKey, VerificationKeyType, DID};
+use indy2_vdr::{
+    did::{VerificationKey, VerificationKeyType},
+    DidDocument, Service, ServiceEndpoint, StringOrVector, VerificationMethod,
+    VerificationMethodOrReference,
+};
 use serde_json::json;
 use std::time::Duration;
+use indy2_vdr::did::DID;
 use vdrtoolsrs::future::Future;
 
 pub struct Issuer {
@@ -169,28 +174,45 @@ impl Issuer {
 
     pub fn build_did_doc(did: &str, edkey: &str, secpkey: &str, endpoint: &str) -> DidDocument {
         let id = DID::build("testnet", did);
-        DidDocumentBuilder::new()
-            .set_id(&id)
-            .add_verification_method(
-                VerificationKeyType::Ed25519VerificationKey2018,
-                &id,
-                VerificationKey::Multibase {
-                    public_key_multibase: edkey.to_string(),
+        let kid_ed = format!("{}#KEY-1", id.value());
+        let kid_secp = format!("{}#KEY-2", id.value());
+        DidDocument {
+            context: StringOrVector::Vector(vec!["https://www.w3.org/ns/did/v1".to_string()]),
+            id: id.clone(),
+            controller: StringOrVector::Vector(vec![]),
+            verification_method: vec![
+                VerificationMethod {
+                    id: kid_ed.clone(),
+                    type_: VerificationKeyType::Ed25519VerificationKey2018,
+                    controller: id.value().to_string(),
+                    verification_key: VerificationKey::Multibase {
+                        public_key_multibase: edkey.to_string(),
+                    },
                 },
-            )
-            .add_verification_method(
-                VerificationKeyType::EcdsaSecp256k1VerificationKey2019,
-                &id,
-                VerificationKey::Multibase {
-                    public_key_multibase: secpkey.to_string(),
+                VerificationMethod {
+                    id: kid_secp.clone(),
+                    type_: VerificationKeyType::EcdsaSecp256k1VerificationKey2019,
+                    controller: id.value().to_string(),
+                    verification_key: VerificationKey::Multibase {
+                        public_key_multibase: secpkey.to_string(),
+                    },
                 },
-            )
-            .add_authentication_reference(0)
-            .unwrap()
-            .add_authentication_reference(1)
-            .unwrap()
-            .add_service("DIDCommService", endpoint)
-            .build()
+            ],
+            authentication: vec![
+                VerificationMethodOrReference::String(kid_ed.clone()),
+                VerificationMethodOrReference::String(kid_secp.clone()),
+            ],
+            assertion_method: vec![],
+            capability_invocation: vec![],
+            capability_delegation: vec![],
+            key_agreement: vec![],
+            service: vec![Service {
+                id: "#inline".to_string(),
+                type_: "DIDCommService".to_string(),
+                service_endpoint: ServiceEndpoint::String(endpoint.to_string()),
+            }],
+            also_known_as: Some(vec![]),
+        }
     }
 
     pub fn use_indy_ledger(&mut self) {

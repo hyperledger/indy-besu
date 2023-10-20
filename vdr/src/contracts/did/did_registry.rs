@@ -4,6 +4,7 @@ use crate::{
         TransactionType,
     },
     contracts::did::did_doc::{DidDocument, DidDocumentWithMeta},
+    did::DID,
     error::VdrResult,
     DID,
 };
@@ -101,8 +102,8 @@ pub mod test {
     use crate::{
         client::test::{client, CHAIN_ID, DID_REGISTRY_ADDRESS},
         contracts::did::did_doc::test::{did_doc, ISSUER_ID},
-        signer::signer::test::ACCOUNT,
-        DID,
+        did::DID,
+        signer::test::ACCOUNT,
     };
 
     pub const _CRED_DEF_ID: &str = "did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/CLAIM_DEF/did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0/ff4EE9EUHRbb";
@@ -119,12 +120,9 @@ pub mod test {
     mod build_create_did_transaction {
         use super::*;
         use crate::{
-            contracts::{
-                Service, ServiceEndpoint, StringOrVector, VerificationMethod,
-                VerificationMethodOrReference,
-            },
-            VerificationKey::Multibase,
-            VerificationKeyType,
+            did::{VerificationKey::Multibase, VerificationKeyType},
+            Service, ServiceEndpoint, StringOrVector, VerificationMethod,
+            VerificationMethodOrReference,
         };
 
         #[test]

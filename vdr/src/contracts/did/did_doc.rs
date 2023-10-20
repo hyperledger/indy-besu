@@ -1,6 +1,7 @@
 use crate::{
     client::{ContractOutput, ContractParam},
     error::{VdrError, VdrResult},
+    DID_METHOD,
 };
 
 use crate::client::DID_METHOD;
@@ -8,6 +9,13 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 pub const CONTEXT: &'static str = "https://www.w3.org/ns/did/v1";
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DidDocumentWithMeta {
+    pub document: DidDocument,
+    pub metadata: DidMetadata,
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct DID(String);
@@ -20,25 +28,12 @@ impl DID {
     }
 
     pub fn build(network: &str, id: &str) -> DID {
-        DID(format!(
-            "{}:{}:{}:{}",
-            Self::DID_PREFIX,
-            DID_METHOD,
-            network,
-            id
-        ))
+        DID(format!("{}:{}:{}:{}", DID_PREFIX, DID_METHOD, network, id))
     }
 
     pub fn value(&self) -> &str {
         &self.0
     }
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DidDocumentWithMeta {
-    pub document: DidDocument,
-    pub metadata: DidMetadata,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]

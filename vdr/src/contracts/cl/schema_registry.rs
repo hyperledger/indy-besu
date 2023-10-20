@@ -76,8 +76,8 @@ pub mod test {
             cl::types::schema::test::{schema, SCHEMA_NAME},
             did::did_doc::test::ISSUER_ID,
         },
-        signer::signer::test::ACCOUNT,
-        DID,
+        did::DID,
+        signer::test::ACCOUNT,
     };
 
     #[cfg(feature = "ledger_test")]
@@ -181,7 +181,7 @@ pub mod test {
 
     mod parse_resolve_schema_result {
         use super::*;
-        use crate::DID;
+        use crate::did::DID;
 
         #[test]
         fn parse_resolve_schema_result_test() {

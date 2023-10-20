@@ -72,18 +72,17 @@ fn indy_vdr_build_attrib_transaction(
 
 > Issue: We cannot build the whole DID Document at ATTRIB step. So we need to allow partial update on DidRegistry.updateDid method.
 
-## Step by step Indy based applications migration flow
+## Step by step flow
 
-Consider that the following parties involved into the flow: Trustee, Issuer, Holder, and Verifier.
+Consider the following parties involved into the flow: Trustee, Issuer, Holder, Verifier
 
 ### Before migration
 
-Past: All parties use Indy Ledger and run flow as usual.
+All parties use Indy Ledger and run flow as usual.
 
 1. Issuer setup (DID Document, Schema, Credential Definition):
     1. Trustee publish Issuer's DID
     2. Issuer publish Service Endpoint to Indy Ledger
-        > According to [indy did method](https://hyperledger.github.io/indy-did-method/) NYM and ATTRIB data construct DID Document 
     3. Issuer create and publish Credential Schema to Indy Ledger
     4. Issuer create and publish Credential Definition to Indy Ledger
 2. Credential issuance
@@ -107,37 +106,32 @@ Past: All parties use Indy Ledger and run flow as usual.
 Issuer run migration tool manually (on the machine containing Indy Wallet storing Credential Definitions) to move data to Besu Ledger.
 
 > Migration tool should be able to work with both ledgers (Indy and Besu)?
-> Probably, we even do not need a separate tool. Indy2-VDR can provide a feature module with helper. Applications will need to use `indy_vdr` and `indy2_vdr`.
 
-1. DID ownership moving to Besu Ledger:
-    1. Issuer create Ed25518 key (with seed) in the Besu wallet
-    2. Issuer create a new Secp256k1 keypair in Besu wallet
-    3. Issuer publish generated Secp256k1 key to Indy ledger using ATTRIB transaction 
-       * Besu Ethereum style key associated with the previous Issuer DID in Indy Ledger. 
-       * Transaction is signed with Ed25518 key.
+1. DID ownership proving:
+    1. Issuer create a new Secp256k1 keypair in Besu wallet
+    2. Issuer publish generated Secp256k1 key to Indy ledger using ATTRIB transaction (now key associated with the Issuer DID)
+    3. Issuer store ed25519 key into Besu wallet
 2. Issuer build DID Document which will include:
-    * DID - fully qualified form: `did:besu:network:<did_value>` of DID which was published as NYM transaction to Indy Ledger
-    * Two Verification Methods must be included:
-        * `Ed25519VerificationKey2018` key published as NYM transaction to Indy Ledger
-           * Key must be represented in multibase
-        * `EcdsaSecp256k1VerificationKey2019` key published as ATTRIB transaction to Indy Ledger
-           * Key must be represented in multibase
-           * This key will be used to sign transactions sending to Besu ledger
-    * Two corresponding authentication methods must be included.
-    * Service including endpoint which was published as ATTRIB transaction to Indy Ledger
+    * DID - fully qualified form: `did:besu:network:<did_value>` of DID published as NYM transaction to Indy Ledger
+    * Two Verification Methods:
+        * `Ed25519VerificationKey2018` key published as NYM transaction to Indy Ledger (multibase key form must be used)
+        * `EcdsaSecp256k1VerificationKey2019` key published as ATTRIB transaction to Indy Ledger (multibase key form must be used)
+            * This key will be used to sign transactions sending to Besu ledger
+    * Two corresponding authentication methods
+    * Service including endpoint published as ATTRIB transaction to Indy Ledger
 3. Issuer publish DID Document to Besu ledger:
-    * Transaction is signed using Secp256k1 key `EcdsaSecp256k1VerificationKey2019`. 
-       * This key is also included into Did Document associated with DID.
-       * Transaction level signature validated by the ledger that proves key ownership.
-    * `Ed25519VerificationKey2018` - Besu ledger will not require signature for proving ownership this key.
-      * key just stored as part of DID Document and is not validated
-      * potentially, we can add verification through the passing an additional signature 
-4. Issuer converts Indy styled Schema into new style (anoncreds cpec) and publish it to Besu ledger.
-   * Migration tool will provide a helper method to convert Schema.
+4. Issuer converts Indy styled Schema into new style (anoncreds cpec) and publish it to Besu ledger:
 5. Issuer converts Indy styled Credential Definition into new style (anoncreds cpec) and publish it to Besu Ledger
-    * Migration tool will provide a helper method to convert Credential Definition.
     * Credential Definition ID must include schema seq for achieving backward-compatibility
-    * Same time `schemaId` field must contain actual id of schema published to Besu Ledger
+    * same time `schemaId` field must contain actual id of schema published to Besu Ledger
+
+##### Key ownership proving
+
+* EcdsaSecp256k1VerificationKey2019 - Write transactions sending to Besu ledger will be signed using this key.
+    * key included into Did Document associated with DID.
+    * Transaction level signature proves key ownership.
+* Ed25519VerificationKey2018 - Besu ledger will not require signature for proving of this ownership.
+    * key just stored as part of DID Document and is not validated
 
 ### After Migration
 
@@ -158,4 +152,3 @@ Holder and Verifier just can switch to use Besu Ledger for resolving DID Documen
         1. Holder resolve Schema from Besu Ledger (VDR converts indy schema id representation into Besu form)
         2. Holder resolve Credential Definition from Besu Ledger (VDR converts indy cred definition id representation into Besu form)
         3. Verify proof
-2. Credential Issuance goes as before but another ledger is used as a verifiable data registry.

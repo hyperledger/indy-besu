@@ -1,4 +1,4 @@
-use crate::DID;
+use crate::did::DID;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -15,7 +15,7 @@ impl SchemaId {
         SchemaId::new(&format!(
             "{}/{}/{}/{}",
             issuer_id.value(),
-            Self::ID_PATH,
+            ID_PATH,
             name,
             version
         ))
