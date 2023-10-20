@@ -4,9 +4,28 @@ mod error;
 mod signer;
 mod utils;
 
-pub use client::*;
-pub use contracts::*;
-pub use signer::*;
+#[cfg(feature = "migration")]
+pub mod migration;
+
+pub use client::{Client, ContractConfig, LedgerClient, PingStatus, Status};
+pub use contracts::{
+    cl::{
+        credential_definition_registry::CredentialDefinitionRegistry,
+        schema_registry::SchemaRegistry,
+        types::{
+            credential_definition::CredentialDefinition,
+            credential_definition_id::CredentialDefinitionId, schema::Schema, schema_id::SchemaId,
+        },
+    },
+    did::{
+        did_registry::DidRegistry,
+        types::{
+            did_doc::{DidDocument, VerificationKey, VerificationKeyType, DID},
+            did_doc_builder::DidDocumentBuilder,
+        },
+    },
+};
+pub use signer::{BasicSigner, Signer};
 
 #[cfg(feature = "ledger_test")]
 #[cfg(test)]
