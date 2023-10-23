@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-
-import { UpgradeControlInterface } from "../upgrade/UpgradeControlInterface.sol";
-
+import { DidAlreadyExist, DidHasBeenDeactivated, DidNotFound } from "./DidErrors.sol";
 import { DidRegistryInterface } from "./DidRegistryInterface.sol";
 import { DidDocument, DidDocumentStorage } from "./DidTypes.sol";
 import { DidValidator } from "./DidValidator.sol";
@@ -25,24 +21,24 @@ contract DidRegistry is DidRegistryInterface, UUPSUpgradeable, Initializable {
     /**
      * Checks that DID already exists
      */
-    modifier _didExist(string memory did) {
-        require(dids[did].metadata.created != 0, "DID not found");
+    modifier didExist(string memory did) {
+        if (dids[did].metadata.created == 0) revert DidNotFound(did);
         _;
     }
 
     /**
      * Checks that the DID has not yet been added
      */
-    modifier _didNotExist(string memory did) {
-        require(dids[did].metadata.created == 0, "DID has already exist");
+    modifier didNotExist(string memory did) {
+        if (dids[did].metadata.created != 0) revert DidAlreadyExist(did);
         _;
     }
 
     /**
      * Сhecks that the DID has not been deactivated
      */
-    modifier _didIsActive(string memory did) {
-        require(!dids[did].metadata.deactivated, "DID has been deactivated");
+    modifier didIsActive(string memory did) {
+        if (dids[did].metadata.deactivated) revert DidHasBeenDeactivated(did);
         _;
     }
 
