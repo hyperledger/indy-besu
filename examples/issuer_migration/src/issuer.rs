@@ -173,21 +173,14 @@ impl Issuer {
     }
 
     pub fn build_did_doc(did: &str, edkey: &str, secpkey: &str, endpoint: &str) -> DidDocument {
-        let id = DID::build("testnet", did);
-        let kid_ed = format!("{}#KEY-1", id.value());
-        let kid_secp = format!("{}#KEY-2", id.value());
-        DidDocument {
-            context: StringOrVector::Vector(vec!["https://www.w3.org/ns/did/v1".to_string()]),
-            id: id.clone(),
-            controller: StringOrVector::Vector(vec![]),
-            verification_method: vec![
-                VerificationMethod {
-                    id: kid_ed.clone(),
-                    type_: VerificationKeyType::Ed25519VerificationKey2018,
-                    controller: id.value().to_string(),
-                    verification_key: VerificationKey::Multibase {
-                        public_key_multibase: edkey.to_string(),
-                    },
+        let id = DID::build("indy", "testnet", did);
+        DidDocumentBuilder::new()
+            .set_id(&id)
+            .add_verification_method(
+                VerificationKeyType::Ed25519VerificationKey2018,
+                &id,
+                VerificationKey::Multibase {
+                    public_key_multibase: edkey.to_string(),
                 },
                 VerificationMethod {
                     id: kid_secp.clone(),
