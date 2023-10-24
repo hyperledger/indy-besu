@@ -4,7 +4,9 @@ pragma solidity ^0.8.20;
 import { DidNotFound } from "../did/DidErrors.sol";
 import { DidRegistryInterface } from "../did/DidRegistry.sol";
 import { DidDocumentStorage } from "../did/DidTypes.sol";
+import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 import { Errors } from "../utils/Errors.sol";
+
 import { CredentialDefinition, CredentialDefinitionWithMetadata } from "./CredentialDefinitionTypes.sol";
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
 import { CredentialDefinitionValidator } from "./CredentialDefinitionValidator.sol";
@@ -20,7 +22,7 @@ import { StrSlice, toSlice } from "@dk1a/solidity-stringutils/src/StrSlice.sol";
 using CredentialDefinitionValidator for CredentialDefinition;
 using { toSlice } for string;
 
-contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, UUPSUpgradeable, Initializable {
+contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, ControlledUpgradeable {
 
     /**
      * @dev Reference to the contract that manages DIDs
@@ -31,11 +33,6 @@ contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, 
      * @dev Reference to the contract that manages anoncreds schemas
      */
     SchemaRegistryInterface private _schemaRegistry;
-
-    /**
-     * @dev Reference to the contract that manages contract upgrades
-     */
-    UpgradeControlInterface private _upgradeControl;
 
     /**
      * Mapping Credential Definition ID to its Credential Definition Details and Metadata.
@@ -85,12 +82,7 @@ contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, 
     constructor(address didRegistryAddress, address schemaRegistryAddress) {
         _didRegistry = DidRegistryInterface(didRegistryAddress);
         _schemaRegistry = SchemaRegistryInterface(schemaRegistryAddress);
-        _upgradeControl = UpgradeControlInterface(upgradeControlAddress);
-    }
-
-    /// @inheritdoc UUPSUpgradeable
-    function _authorizeUpgrade(address newImplementation) internal view override {
-      _upgradeControl.ensureSufficientApprovals(address(this), newImplementation);
+        _initializeUpgradeControl(upgradeControlAddress);
     }
 
     /// @inheritdoc CredentialDefinitionRegistryInterface
