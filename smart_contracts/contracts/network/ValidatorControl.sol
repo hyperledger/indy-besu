@@ -80,7 +80,13 @@ contract ValidatorControl is ValidatorSmartContractInterface, UUPSUpgradeable, I
             validatorInfos[validator.validator] = ValidatorInfo(validator.account, uint8(i));
         }
 
-        roleControl = RoleControlInterface(roleControlContractAddress);
+        _roleControl = RoleControlInterface(roleControlContractAddress);
+        _upgradeControl = UpgradeControlInterface(upgradeControlAddress);
+    }
+
+    /// @inheritdoc UUPSUpgradeable
+    function _authorizeUpgrade(address newImplementation) internal view override {
+        _upgradeControl.ensureSufficientApprovals(address(this), newImplementation);
     }
 
     /**
