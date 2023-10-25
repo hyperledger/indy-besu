@@ -2,10 +2,13 @@
 pragma solidity ^0.8.20;
 
 import { Unauthorized} from "../auth/AuthErrors.sol";
-import { RoleControlInterface } from "../auth/RoleControlInterface.sol";
+import { RoleControlInterface } from "../auth/RoleControl.sol";
+import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
+
 import { ValidatorSmartContractInterface } from "./ValidatorSmartContractInterface.sol";
 
-contract ValidatorControl is ValidatorSmartContractInterface {
+contract ValidatorControl is ValidatorSmartContractInterface, ControlledUpgradeable {
+
     /**
      * @dev Type describing initial validator details
      */
@@ -28,6 +31,11 @@ contract ValidatorControl is ValidatorSmartContractInterface {
     uint constant MAX_VALIDATORS = 256;
 
     /**
+     * @dev Reference to the contract managing auth permissions
+     */
+    RoleControlInterface private _roleControl;
+
+    /**
      * @dev List of active validators
      */
     address[] private validators;
@@ -45,8 +53,8 @@ contract ValidatorControl is ValidatorSmartContractInterface {
     /**
      * @dev Modifier that checks that an the sender account has Steward role assigned.
      */
-    modifier senderIsSteward() {
-        if (!roleControl.hasRole(RoleControlInterface.ROLES.STEWARD, msg.sender)) revert Unauthorized(msg.sender);
+    modifier _senderIsSteward() {
+        if (!_roleControl.hasRole(RoleControlInterface.ROLES.STEWARD, msg.sender)) revert Unauthorized(msg.sender);
         _;
     }
 
@@ -69,7 +77,8 @@ contract ValidatorControl is ValidatorSmartContractInterface {
             validatorInfos[validator.validator] = ValidatorInfo(validator.account, uint8(i));
         }
 
-        roleControl = RoleControlInterface(roleControlContractAddress);
+        _roleControl = RoleControlInterface(roleControlContractAddress);
+        _initializeUpgradeControl(upgradeControlAddress);
     }
 
     /**

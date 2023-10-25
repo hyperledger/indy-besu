@@ -10,7 +10,7 @@ const { expect } = chai
 
 describe('UpgradableControl', function () {
   async function deployUpgradableContractFixture() {
-    const roleControl = await new RoleControl().deploy()
+    const roleControl = await new RoleControl().deployProxy({ params: [ZERO_ADDRESS] })
 
     const testAccounts = await getTestAccounts(roleControl)
 
