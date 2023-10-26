@@ -7,6 +7,7 @@ import {
   didValidator,
   roleControl,
   schemaRegistry,
+  upgradeControl,
   validatorControl,
 } from './contracts'
 
@@ -15,6 +16,8 @@ function main() {
     ...accountControl(),
     ...roleControl(),
     ...validatorControl(),
+    ...upgradeControl(),
+    ...didRegex(),
     ...didValidator(),
     ...didRegistry(),
     ...schemaRegistry(),
