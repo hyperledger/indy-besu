@@ -7,6 +7,7 @@ import {
   SchemasConfig,
   ValidatorsConfig,
 } from './contracts'
+import { UpgradeControlConfig } from './contracts/upgradeControl'
 
 export const compiledContractsFolder = 'compiled-contracts'
 export const inFile = 'config.json'
@@ -19,6 +20,7 @@ export interface Config {
   didRegistry: DidsConfig
   roleControl: RolesConfig
   schemaRegistry: SchemasConfig
+  upgradeControl: UpgradeControlConfig
   validatorControl: ValidatorsConfig
 }
 
@@ -30,6 +32,7 @@ const contractsAddresses = {
   roles: '0x0000000000000000000000000000000000006666',
   validators: '0x0000000000000000000000000000000000007777',
   accountControl: '0x0000000000000000000000000000000000008888',
+  upgradeControl: '0x0000000000000000000000000000000000009999',
 }
 
 export const config: Config = {
@@ -39,6 +42,7 @@ export const config: Config = {
     description: 'Account permissioning smart contract',
     data: {
       roleControlContractAddress: contractsAddresses.roles,
+      upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
   credentialDefinitionRegistry: {
@@ -49,6 +53,7 @@ export const config: Config = {
       credentialDefinitions: [],
       didRegistryAddress: contractsAddresses.didRegistry,
       schemaRegistryAddress: contractsAddresses.schemas,
+      upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
   didRegex: {
@@ -68,6 +73,7 @@ export const config: Config = {
     libraries: { 'contracts/did/DidValidator.sol:DidValidator': contractsAddresses.didValidator },
     data: {
       dids: [],
+      upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
   roleControl: {
@@ -102,6 +108,7 @@ export const config: Config = {
         '2': '1',
         '3': '1',
       },
+      upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
   schemaRegistry: {
@@ -111,6 +118,15 @@ export const config: Config = {
     data: {
       schemas: [],
       didRegistryAddress: contractsAddresses.didRegistry,
+      upgradeControlAddress: contractsAddresses.upgradeControl,
+    },
+  },
+  upgradeControl: {
+    name: 'UpgradeControl',
+    address: contractsAddresses.upgradeControl,
+    description: 'Smart contract to manage proxy contract upgrades',
+    data: {
+      roleControlContractAddress: contractsAddresses.roles,
     },
   },
   validatorControl: {
@@ -137,6 +153,7 @@ export const config: Config = {
         },
       ],
       roleControlContractAddress: contractsAddresses.roles,
+      upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
 }
