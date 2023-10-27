@@ -120,8 +120,8 @@ pub mod test {
             cl::types::schema::test::{schema, SCHEMA_NAME},
             did::did_doc::test::ISSUER_ID,
         },
-        did::DID,
-        signer::test::ACCOUNT,
+        signer::basic_signer::test::ACCOUNT,
+        DID,
     };
 
     #[cfg(feature = "ledger_test")]

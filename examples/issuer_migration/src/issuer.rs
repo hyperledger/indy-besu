@@ -2,11 +2,7 @@ use crate::{
     ledger::{BesuLedger, IndyLedger, Ledgers},
     wallet::{BesuWallet, IndyWallet},
 };
-use indy2_vdr::{
-    did::{VerificationKey, VerificationKeyType},
-    DidDocument, Service, ServiceEndpoint, StringOrVector, VerificationMethod,
-    VerificationMethodOrReference,
-};
+use indy2_vdr::{CredentialDefinition, CredentialDefinitionRegistry, DidDocument, DidDocumentBuilder, DidRegistry, Schema, SchemaRegistry, VerificationKey, VerificationKeyType, DID, Address};
 use serde_json::json;
 use std::time::Duration;
 use indy2_vdr::did::DID;
@@ -17,7 +13,7 @@ pub struct Issuer {
     pub indy_ledger: IndyLedger,
     pub besu_ledger: BesuLedger,
     pub did: String,
-    pub account: String,
+    pub account: Address,
     pub edkey: String,
     pub secpkey: String,
     pub service: String,
