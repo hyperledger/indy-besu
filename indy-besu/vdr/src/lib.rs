@@ -244,7 +244,7 @@ mod tests {
     mod role {
         use super::*;
 
-        async fn build_and_submit_assign_role_transaction(
+        pub(crate) async fn build_and_submit_assign_role_transaction(
             client: &LedgerClient,
             assignee_account: &Address,
             role_to_assign: &Role,
@@ -382,6 +382,7 @@ mod tests {
 
     mod validator {
         use crate::contracts::network::ValidatorAddresses;
+        use crate::signer::basic_signer::test::basic_signer;
 
         use super::*;
 
@@ -433,12 +434,12 @@ mod tests {
             client.get_receipt(&block_hash).await.unwrap()
         }
 
-        #[ignore] // FIXME: Validator test must create new account and assign Validator role to him
         #[async_std::test]
         async fn demo_build_and_submit_transaction_test() -> VdrResult<()> {
             let signer = basic_signer();
             let (new_validator_address, _) = signer.create_account(None).unwrap();
             let client = client(Some(signer));
+            role::build_and_submit_assign_role_transaction(&client, &ACCOUNT, &Role::Steward).await;
 
             let receipt =
                 build_and_submit_add_validator_transaction(&client, &new_validator_address).await;
@@ -460,12 +461,12 @@ mod tests {
             Ok(())
         }
 
-        #[ignore] // FIXME: Validator test must create new account and assign Validator role to him
         #[async_std::test]
         async fn demo_single_step_transaction_execution_test() -> VdrResult<()> {
             let signer = basic_signer();
             let (new_validator_address, _) = signer.create_account(None).unwrap();
             let client = client(Some(signer));
+            role::build_and_submit_assign_role_transaction(&client, &ACCOUNT, &Role::Steward).await;
 
             ValidatorControl::add_validator(&client, &ACCOUNT, &new_validator_address)
                 .await
