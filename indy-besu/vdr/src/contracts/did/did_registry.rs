@@ -312,6 +312,7 @@ pub mod test {
         client::test::{client, CHAIN_ID, DID_REGISTRY_ADDRESS},
         contracts::did::types::did_doc::test::{did_doc, ISSUER_ID},
         signer::basic_signer::test::TRUSTEE_ACC,
+        utils::init_env_logger,
         DID,
     };
 
@@ -336,6 +337,7 @@ pub mod test {
 
         #[test]
         fn build_create_did_transaction_test() {
+            init_env_logger();
             let client = client(None);
             let transaction = DidRegistry::build_create_did_transaction(
                 &client,
@@ -439,6 +441,7 @@ pub mod test {
 
         #[test]
         fn build_create_did_transaction_with_two_keys_and_service_test() {
+            init_env_logger();
             let client = client(None);
 
             let did = DidDocument {
@@ -652,6 +655,7 @@ pub mod test {
 
         #[test]
         fn build_resolve_did_transaction_test() {
+            init_env_logger();
             let client = client(None);
             let transaction =
                 DidRegistry::build_resolve_did_transaction(&client, &DID::new(ISSUER_ID)).unwrap();
@@ -679,6 +683,7 @@ pub mod test {
 
         #[test]
         fn parse_resolve_did_result_with_metadata_test() {
+            init_env_logger();
             let client = client(None);
             let issuer_did = "did:indy2:testnet:Q6Wvnm4v6ENzRC2mkUPkYR";
 
