@@ -1,9 +1,9 @@
 import {
   AccountControlConfig,
   CredentialDefinitionsConfig,
-  DidsConfig,
-  DidValidatorConfig,
   EthereumDidRegistryConfig,
+  IndyDidRegistryConfig,
+  IndyDidValidatorConfig,
   RolesConfig,
   SchemasConfig,
   UniversalDidResolverConfig,
@@ -18,9 +18,8 @@ export const outFile = 'ContractsGenesis.json'
 export interface Config {
   accountControl: AccountControlConfig
   credentialDefinitionRegistry: CredentialDefinitionsConfig
-  didValidator: DidValidatorConfig
-  didRegistry: DidsConfig
-  didRegex: DidRegexConfig
+  indyDidValidator: IndyDidValidatorConfig
+  indyDidRegistry: IndyDidRegistryConfig
   ethereumDidRegistry: EthereumDidRegistryConfig
   roleControl: RolesConfig
   schemaRegistry: SchemasConfig
@@ -63,18 +62,13 @@ export const config: Config = {
       upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
-  didRegex: {
-    name: 'DidRegex',
-    address: '0x0000000000000000000000000000000000001111',
-    description: 'Regex library to validate DID syntax',
-  },
-  didValidator: {
-    name: 'DidValidator',
+  indyDidValidator: {
+    name: 'IndyDidValidator',
     address: contractsAddresses.didValidator,
     description: 'Library to validate DID',
   },
-  didRegistry: {
-    name: 'DidRegistry',
+  indyDidRegistry: {
+    name: 'IndyDidRegistry',
     address: contractsAddresses.didRegistry,
     description: 'Smart contract to manage DIDs',
     libraries: { 'contracts/did/DidValidator.sol:DidValidator': contractsAddresses.didValidator },
@@ -84,7 +78,7 @@ export const config: Config = {
     },
   },
   ethereumDidRegistry: {
-    name: 'UpgradableEthereumDidRegistry',
+    name: 'EthereumExtDidRegistry',
     address: contractsAddresses.ethereumDIDRegistry,
     description: 'Ethereum registry for ERC-1056 ethr did methods',
   },
