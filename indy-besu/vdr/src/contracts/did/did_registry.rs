@@ -11,17 +11,17 @@ use crate::{
     DID,
 };
 
-/// DidRegistry contract methods
-pub struct DidRegistry;
+/// IndyDidRegistry contract methods
+pub struct IndyDidRegistry;
 
-impl DidRegistry {
-    const CONTRACT_NAME: &'static str = "DidRegistry";
+impl IndyDidRegistry {
+    const CONTRACT_NAME: &'static str = "IndyDidRegistry";
     const METHOD_CREATE_DID: &'static str = "createDid";
     const METHOD_UPDATE_DID: &'static str = "updateDid";
     const METHOD_DEACTIVATE_DID: &'static str = "deactivateDid";
     const METHOD_RESOLVE_DID: &'static str = "resolveDid";
 
-    /// Build transaction to execute DidRegistry.createDid contract method to create a new DID
+    /// Build transaction to execute IndyDidRegistry.createDid contract method to create a new DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -59,7 +59,7 @@ impl DidRegistry {
         transaction
     }
 
-    /// Build transaction to execute DidRegistry.updateDid contract method to update DID document for an existing DID
+    /// Build transaction to execute IndyDidRegistry.updateDid contract method to update DID document for an existing DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -97,7 +97,7 @@ impl DidRegistry {
         transaction
     }
 
-    /// Build transaction to execute DidRegistry.deactivateDid contract method to deactivate an existing DID
+    /// Build transaction to execute IndyDidRegistry.deactivateDid contract method to deactivate an existing DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -135,7 +135,7 @@ impl DidRegistry {
         transaction
     }
 
-    /// Build transaction to execute DidRegistry.resolveDid contract method to receive a DID Document associated with the DID
+    /// Build transaction to execute IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -169,7 +169,7 @@ impl DidRegistry {
         transaction
     }
 
-    /// Parse the result of execution DidRegistry.resolveDid contract method to receive a DID Document associated with the DID
+    /// Parse the result of execution IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -199,7 +199,7 @@ impl DidRegistry {
         result
     }
 
-    /// Single step function executing DidRegistry.createDid smart contract method to create a new DID
+    /// Single step function executing IndyDidRegistry.createDid smart contract method to create a new DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -232,7 +232,7 @@ impl DidRegistry {
         receipt
     }
 
-    /// Single step function executing DidRegistry.updateDid smart contract method to update DID Document for an existing DID
+    /// Single step function executing IndyDidRegistry.updateDid smart contract method to update DID Document for an existing DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -265,7 +265,7 @@ impl DidRegistry {
         receipt
     }
 
-    /// Single step function executing DidRegistry.deactivateDid smart contract method to deactivate as existing DID
+    /// Single step function executing IndyDidRegistry.deactivateDid smart contract method to deactivate as existing DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -298,7 +298,7 @@ impl DidRegistry {
         receipt
     }
 
-    /// Single step function executing DidRegistry.resolveDid smart contract method to resolve DID Document for an existing DID
+    /// Single step function executing IndyDidRegistry.resolveDid smart contract method to resolve DID Document for an existing DID
     ///
     /// # Params
     /// - `client` client connected to the network where contract will be executed
@@ -344,7 +344,7 @@ pub mod test {
     #[cfg(feature = "ledger_test")]
     pub async fn create_did(client: &LedgerClient) -> DidDocument {
         let did_doc = did_doc(None);
-        let _receipt = DidRegistry::create_did(&client, &TRUSTEE_ACC, &did_doc)
+        let _receipt = IndyDidRegistry::create_did(&client, &TRUSTEE_ACC, &did_doc)
             .await
             .unwrap();
         did_doc
@@ -362,7 +362,7 @@ pub mod test {
         fn build_create_did_transaction_test() {
             init_env_logger();
             let client = client(None);
-            let transaction = DidRegistry::build_create_did_transaction(
+            let transaction = IndyDidRegistry::build_create_did_transaction(
                 &client,
                 &TRUSTEE_ACC,
                 &did_doc(Some(ISSUER_ID)),
@@ -507,7 +507,7 @@ pub mod test {
                 also_known_as: Some(vec![]),
             };
             let transaction =
-                DidRegistry::build_create_did_transaction(&client, &TRUSTEE_ACC, &did).unwrap();
+                IndyDidRegistry::build_create_did_transaction(&client, &TRUSTEE_ACC, &did).unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
@@ -681,7 +681,7 @@ pub mod test {
             init_env_logger();
             let client = client(None);
             let transaction =
-                DidRegistry::build_resolve_did_transaction(&client, &DID::new(ISSUER_ID)).unwrap();
+                IndyDidRegistry::build_resolve_did_transaction(&client, &DID::new(ISSUER_ID)).unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
@@ -796,7 +796,7 @@ pub mod test {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ];
-            let parsed_did_doc = DidRegistry::parse_resolve_did_result(&client, &data).unwrap();
+            let parsed_did_doc = IndyDidRegistry::parse_resolve_did_result(&client, &data).unwrap();
             assert_eq!(did_doc(Some(issuer_did)), parsed_did_doc);
         }
     }
