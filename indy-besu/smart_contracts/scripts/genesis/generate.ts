@@ -3,10 +3,12 @@ import { outFile } from './config'
 import {
   accountControl,
   credentialDefinitionRegistry,
-  didRegistry,
-  didValidator,
+  ethereumDidRegistry,
+  indyDidRegistry,
+  indyDidValidator,
   roleControl,
   schemaRegistry,
+  universalDidResolver,
   upgradeControl,
   validatorControl,
 } from './contracts'
@@ -17,9 +19,10 @@ function main() {
     ...roleControl(),
     ...validatorControl(),
     ...upgradeControl(),
-    ...didRegex(),
-    ...didValidator(),
-    ...didRegistry(),
+    ...indyDidValidator(),
+    ...indyDidRegistry(),
+    ...ethereumDidRegistry(),
+    ...universalDidResolver(),
     ...schemaRegistry(),
     ...credentialDefinitionRegistry(),
   }
