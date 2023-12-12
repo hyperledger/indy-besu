@@ -1,13 +1,12 @@
 use log::{debug, info};
 
 use crate::{
-    client::{
-        Address, ContractParam, LedgerClient, Transaction, TransactionBuilder, TransactionParser,
-        TransactionType,
-    },
-    contracts::did::did_doc::{DidDocument, DidDocumentWithMeta},
-    did::DID,
+    client::LedgerClient,
+    contracts::did::types::did_doc::{DidDocument, DidDocumentWithMeta},
     error::VdrResult,
+    types::{
+        Address, ContractParam, Transaction, TransactionBuilder, TransactionParser, TransactionType,
+    },
     DID,
 };
 
@@ -30,7 +29,7 @@ impl IndyDidRegistry {
     ///
     /// # Returns
     /// Write transaction to sign and submit
-    pub fn build_create_did_transaction(
+    pub async fn build_create_did_transaction(
         client: &LedgerClient,
         from: &Address,
         did_doc: &DidDocument,
@@ -48,7 +47,8 @@ impl IndyDidRegistry {
             .add_param(did_doc.clone().into())
             .set_type(TransactionType::Write)
             .set_from(from)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -68,7 +68,7 @@ impl IndyDidRegistry {
     ///
     /// # Returns
     /// Write transaction to sign and submit
-    pub fn build_update_did_transaction(
+    pub async fn build_update_did_transaction(
         client: &LedgerClient,
         from: &Address,
         did_doc: &DidDocument,
@@ -86,7 +86,8 @@ impl IndyDidRegistry {
             .add_param(did_doc.clone().into())
             .set_type(TransactionType::Write)
             .set_from(from)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -106,7 +107,7 @@ impl IndyDidRegistry {
     ///
     /// # Returns
     /// Write transaction to sign and submit
-    pub fn build_deactivate_did_transaction(
+    pub async fn build_deactivate_did_transaction(
         client: &LedgerClient,
         from: &Address,
         did: &DID,
@@ -124,7 +125,8 @@ impl IndyDidRegistry {
             .add_param(ContractParam::String(did.value().to_string()))
             .set_type(TransactionType::Write)
             .set_from(from)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -143,7 +145,7 @@ impl IndyDidRegistry {
     ///
     /// # Returns
     /// Read transaction to submit
-    pub fn build_resolve_did_transaction(
+    pub async fn build_resolve_did_transaction(
         client: &LedgerClient,
         did: &DID,
     ) -> VdrResult<Transaction> {
@@ -158,7 +160,8 @@ impl IndyDidRegistry {
             .set_method(Self::METHOD_RESOLVE_DID)
             .add_param(ContractParam::String(did.value().to_string()))
             .set_type(TransactionType::Read)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -198,143 +201,14 @@ impl IndyDidRegistry {
 
         result
     }
-
-    /// Single step function executing IndyDidRegistry.createDid smart contract method to create a new DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
-    ///
-    /// # Returns
-    /// receipt of executed transaction
-    pub async fn create_did(
-        client: &LedgerClient,
-        from: &Address,
-        did_doc: &DidDocument,
-    ) -> VdrResult<String> {
-        debug!(
-            "{} process has started. Sender: {}, DidDocument: {:?}",
-            Self::METHOD_CREATE_DID,
-            from.value(),
-            did_doc
-        );
-
-        let transaction = Self::build_create_did_transaction(client, from, did_doc)?;
-        let receipt = client.sign_and_submit(&transaction).await;
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_CREATE_DID,
-            receipt
-        );
-
-        receipt
-    }
-
-    /// Single step function executing IndyDidRegistry.updateDid smart contract method to update DID Document for an existing DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
-    ///
-    /// # Returns
-    /// receipt of executed transaction
-    pub async fn update_did(
-        client: &LedgerClient,
-        from: &Address,
-        did_doc: &DidDocument,
-    ) -> VdrResult<String> {
-        debug!(
-            "{} process has started. Sender: {}, DidDocument: {:?}",
-            Self::METHOD_UPDATE_DID,
-            from.value(),
-            did_doc
-        );
-
-        let transaction = Self::build_update_did_transaction(client, from, did_doc)?;
-        let receipt = client.sign_and_submit(&transaction).await;
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_UPDATE_DID,
-            receipt
-        );
-
-        receipt
-    }
-
-    /// Single step function executing IndyDidRegistry.deactivateDid smart contract method to deactivate as existing DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `did` DID to deactivate
-    ///
-    /// # Returns
-    /// receipt of executed transaction
-    pub async fn deactivate_did(
-        client: &LedgerClient,
-        from: &Address,
-        did: &DID,
-    ) -> VdrResult<String> {
-        debug!(
-            "{} process has started. Sender: {}, DID: {:?}",
-            Self::METHOD_DEACTIVATE_DID,
-            from.value(),
-            did
-        );
-
-        let transaction = Self::build_deactivate_did_transaction(client, from, did)?;
-        let receipt = client.sign_and_submit(&transaction).await;
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_DEACTIVATE_DID,
-            receipt
-        );
-
-        receipt
-    }
-
-    /// Single step function executing IndyDidRegistry.resolveDid smart contract method to resolve DID Document for an existing DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `did` target DID to receive DID Document
-    ///
-    /// # Returns
-    /// resolved DID Document
-    pub async fn resolve_did(client: &LedgerClient, did: &DID) -> VdrResult<DidDocument> {
-        debug!(
-            "{} process has started. DID: {:?}",
-            Self::METHOD_RESOLVE_DID,
-            did
-        );
-
-        let transaction = Self::build_resolve_did_transaction(client, did)?;
-        let result = client.submit_transaction(&transaction).await?;
-        let parsed_result = Self::parse_resolve_did_result(client, &result);
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_RESOLVE_DID,
-            parsed_result
-        );
-
-        parsed_result
-    }
 }
 
 #[cfg(test)]
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{client, CHAIN_ID, DID_REGISTRY_ADDRESS},
+        client::test::{mock_client, CHAIN_ID, DEFAULT_NONCE, DID_REGISTRY_ADDRESS, TRUSTEE_ACC},
         contracts::did::types::did_doc::test::{did_doc, ISSUER_ID},
-        signer::basic_signer::test::TRUSTEE_ACC,
         utils::init_env_logger,
         DID,
     };
@@ -342,36 +216,49 @@ pub mod test {
     pub const _CRED_DEF_ID: &str = "did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/CLAIM_DEF/did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0/ff4EE9EUHRbb";
 
     #[cfg(feature = "ledger_test")]
-    pub async fn create_did(client: &LedgerClient) -> DidDocument {
+    pub async fn create_did(client: &LedgerClient, signer: &crate::BasicSigner) -> DidDocument {
         let did_doc = did_doc(None);
-        let _receipt = IndyDidRegistry::create_did(&client, &TRUSTEE_ACC, &did_doc)
-            .await
-            .unwrap();
+        let mut transaction =
+            IndyDidRegistry::build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc)
+                .await
+                .unwrap();
+
+        let sign_bytes = transaction.get_signing_bytes().unwrap();
+        let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
+        transaction.set_signature(signature);
+
+        client.submit_transaction(&transaction).await.unwrap();
         did_doc
     }
 
     mod build_create_did_transaction {
         use super::*;
         use crate::{
-            did::{VerificationKey::Multibase, VerificationKeyType},
-            Service, ServiceEndpoint, StringOrVector, VerificationMethod,
-            VerificationMethodOrReference,
+            client::test::mock_client,
+            contracts::{
+                Service, ServiceEndpoint, StringOrVector, VerificationMethod,
+                VerificationMethodOrReference,
+            },
+            VerificationKey::Multibase,
+            VerificationKeyType,
         };
 
-        #[test]
-        fn build_create_did_transaction_test() {
+        #[async_std::test]
+        async fn build_create_did_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction = IndyDidRegistry::build_create_did_transaction(
                 &client,
                 &TRUSTEE_ACC,
                 &did_doc(Some(ISSUER_ID)),
             )
+            .await
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: DID_REGISTRY_ADDRESS.to_string(),
+                nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: vec![
                     134, 153, 87, 165, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -462,10 +349,10 @@ pub mod test {
             assert_eq!(expected_transaction, transaction);
         }
 
-        #[test]
-        fn build_create_did_transaction_with_two_keys_and_service_test() {
+        #[async_std::test]
+        async fn build_create_did_transaction_with_two_keys_and_service_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
 
             let did = DidDocument {
                 context: StringOrVector::Vector(vec!["https://www.w3.org/ns/did/v1".to_string()]),
@@ -507,11 +394,14 @@ pub mod test {
                 also_known_as: Some(vec![]),
             };
             let transaction =
-                IndyDidRegistry::build_create_did_transaction(&client, &TRUSTEE_ACC, &did).unwrap();
+                IndyDidRegistry::build_create_did_transaction(&client, &TRUSTEE_ACC, &did)
+                    .await
+                    .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: DID_REGISTRY_ADDRESS.to_string(),
+                nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: vec![
                     134, 153, 87, 165, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -676,17 +566,19 @@ pub mod test {
     mod build_resolve_did_transaction {
         use super::*;
 
-        #[test]
-        fn build_resolve_did_transaction_test() {
+        #[async_std::test]
+        async fn build_resolve_did_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction =
                 IndyDidRegistry::build_resolve_did_transaction(&client, &DID::new(ISSUER_ID))
+                    .await
                     .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
                 to: DID_REGISTRY_ADDRESS.to_string(),
+                nonce: None,
                 chain_id: CHAIN_ID,
                 data: vec![
                     54, 51, 133, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -708,7 +600,7 @@ pub mod test {
         #[test]
         fn parse_resolve_did_result_with_metadata_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let issuer_did = "did:indy2:testnet:Q6Wvnm4v6ENzRC2mkUPkYR";
 
             let data = vec![

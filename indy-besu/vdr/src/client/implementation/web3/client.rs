@@ -1,30 +1,29 @@
 use crate::{
-    client::{constants::GAS, implementation::web3::signer::Web3Signer, Client, Transaction},
+    client::{constants::GAS, Client},
     error::{VdrError, VdrResult},
-    signer::Signer,
+    types::{PingStatus, Transaction, TransactionType},
 };
 
-use crate::client::{PingStatus, TransactionType};
+use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction};
 use log::{trace, warn};
 use serde_json::json;
 use std::{str::FromStr, time::Duration};
 use web3::{
     api::Eth,
     transports::Http,
-    types::{Address, Bytes, CallRequest, TransactionParameters, H256, U256},
+    types::{Address, Bytes, CallRequest, H256, U256},
     Web3,
 };
 
 pub struct Web3Client {
     client: Web3<Http>,
-    signer: Option<Box<dyn Signer>>,
 }
 
 const POLL_INTERVAL: u64 = 200;
 const NUMBER_TX_CONFIRMATIONS: usize = 1; // FIXME: what number of confirmation events should we wait? 2n+1?
 
 impl Web3Client {
-    pub fn new(node_address: &str, signer: Option<Box<dyn Signer>>) -> VdrResult<Web3Client> {
+    pub fn new(node_address: &str) -> VdrResult<Web3Client> {
         trace!(
             "Started creating new Web3Client. Node address: {}",
             node_address
@@ -32,10 +31,7 @@ impl Web3Client {
 
         let transport = Http::new(node_address).map_err(|_| VdrError::ClientNodeUnreachable)?;
         let web3 = Web3::new(transport);
-        let web3_client = Web3Client {
-            client: web3,
-            signer,
-        };
+        let web3_client = Web3Client { client: web3 };
 
         trace!("Created new Web3Client. Node address: {}", node_address);
 
@@ -49,76 +45,22 @@ impl Web3Client {
 
 #[async_trait::async_trait]
 impl Client for Web3Client {
-    async fn sign_transaction(&self, transaction: &Transaction) -> VdrResult<Transaction> {
-        trace!(
-            "Sign transaction process has started. Transaction: {:?}",
-            transaction
-        );
-
-        let signer = self
-            .signer
-            .as_ref()
-            .ok_or_else(|| {
-                let vdr_error = VdrError::ClientInvalidState("Signer is not set".to_string());
-
-                warn!(
-                    "Error: {} during signing transaction: {:?}",
-                    vdr_error, transaction
-                );
-
-                vdr_error
-            })?
-            .as_ref();
-        let account = transaction.from.clone().ok_or_else(|| {
-            let vdr_error =
-                VdrError::ClientInvalidTransaction("Missing sender address".to_string());
-
-            warn!(
-                "Error: {} during signing transaction: {:?}",
-                vdr_error, transaction
-            );
-
-            vdr_error
+    async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
+        let account_address = Address::from_str(address.value()).map_err(|_| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Invalid transaction sender address {}",
+                address.value()
+            ))
         })?;
 
-        let signer = Web3Signer::new(account, signer);
-
-        let to = Address::from_str(&transaction.to).map_err(|_| {
-            let vdr_error = VdrError::ClientInvalidTransaction(format!(
-                "Invalid transaction target address {}",
-                transaction.to
-            ));
-
-            warn!(
-                "Error: {} during signing transaction: {:?}",
-                vdr_error, transaction
-            );
-
-            vdr_error
-        })?;
-        let web3_transaction = TransactionParameters {
-            to: Some(to),
-            data: Bytes::from(transaction.clone().data),
-            chain_id: Some(transaction.chain_id),
-            gas: U256([GAS, 0, 0, 0]),
-            gas_price: Some(U256([0, 0, 0, 0])),
-            ..Default::default()
-        };
-
-        let signed_transaction = self
+        let nonce = self
             .client
-            .accounts()
-            .sign_transaction(web3_transaction, signer)
-            .await?
-            .raw_transaction
-            .0;
+            .eth()
+            .transaction_count(account_address, None)
+            .await
+            .unwrap();
 
-        trace!("Signed transaction: {:?}", transaction);
-
-        Ok(Transaction {
-            signed: Some(signed_transaction),
-            ..transaction.clone()
-        })
+        Ok(nonce.0)
     }
 
     async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
@@ -138,21 +80,37 @@ impl Client for Web3Client {
 
             return Err(vdr_error);
         }
-        let signed_transaction = transaction.signed.as_ref().ok_or_else(|| {
-            let vdr_error = VdrError::ClientInvalidTransaction("Missing signature".to_string());
 
-            warn!(
-                "Error: {} during submitting transaction: {:?}",
-                vdr_error, transaction
-            );
-
-            vdr_error
+        let to = Address::from_str(&transaction.to).map_err(|_| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Invalid transaction target address {}",
+                transaction.to
+            ))
         })?;
+
+        let signature = transaction
+            .signed
+            .as_ref()
+            .ok_or_else(|| VdrError::ClientInvalidTransaction("Missing signature".to_string()))?;
+
+        let nonce = transaction.nonce.ok_or_else(|| {
+            VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
+        })?;
+
+        let eth_transaction = LegacyTransaction {
+            nonce: U256(nonce),
+            gas_price: U256([0, 0, 0, 0]),
+            gas_limit: U256([GAS, 0, 0, 0]),
+            action: TransactionAction::Call(to),
+            value: Default::default(),
+            input: transaction.data.clone(),
+            signature: signature.clone(),
+        };
 
         let receipt = self
             .client
             .send_raw_transaction_with_confirmation(
-                Bytes::from(signed_transaction.clone()),
+                Bytes::from(eth_transaction.encode()),
                 Duration::from_millis(POLL_INTERVAL),
                 NUMBER_TX_CONFIRMATIONS,
             )

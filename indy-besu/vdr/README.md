@@ -35,7 +35,7 @@ To use vdr, add this to your `Cargo.toml`:
 
 ```
 [dependencies]
-didcomm = { path = "../path/to/crate" }
+indy2_vdr = { path = "../path/to/crate" }
 ```
 
 ## Code formatting
@@ -50,6 +50,19 @@ cargo +nightly fmt
 
 - `migration` (Optional) - module providing helper methods to convert old indy styled objects (schema id, schema, credential definition id, credential definition).
 - `ledger_test` (Optional) - enable ledger integration tests (requires running network).
+- `basic_signer` (Optional) - helper module for EcDSA signing.
+
+## Test
+
+- Basic: ledger agnostic
+  ```
+  cargo test
+  ```
+
+- Integrations: requires ledger to be running
+  ```
+  RUST_TEST_THREADS=1 cargo test --features "ledger_test"
+  ```
 
 # Logging
 

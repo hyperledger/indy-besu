@@ -5,10 +5,11 @@ use log::{info, trace, warn};
 use crate::{
     client::{
         implementation::web3::{client::Web3Client, contract::Web3Contract},
-        Client, Contract, ContractConfig, ContractSpec, PingStatus, Transaction, TransactionType,
+        Client, Contract,
     },
     error::{VdrError, VdrResult},
-    signer::Signer,
+    types::{ContractConfig, ContractSpec, PingStatus, Transaction, TransactionType},
+    Address,
 };
 
 pub struct LedgerClient {
@@ -24,7 +25,6 @@ impl LedgerClient {
     ///  - chain_id chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
     ///  - param node_address: string - RPC node endpoint
     ///  - param contract_specs: Vec<ContractSpec> - specifications for contracts  deployed on the network
-    ///  - param signer: Option<Signer> - transactions signer. Need to be provided for usage of single-step functions.
     ///
     /// # Returns
     ///  client to use for building and sending transactions
@@ -32,11 +32,6 @@ impl LedgerClient {
         chain_id: u64,
         node_address: &str,
         contract_configs: &[ContractConfig],
-        // TODO: It is simplier to just pass signer only into corresponding `sign_transaction` function.
-        //  But we also have single step functions like `create_did` where we will have to pass call back as well
-        //  Transaction methods already depends on the client, so it make sence to accept signer on client create
-        //   Same time we can be rework it to accept callback instead of interface -> simplier from FFI perspective
-        signer: Option<Box<dyn Signer>>,
     ) -> VdrResult<LedgerClient> {
         trace!(
             "Started creating new LedgerClient. Chain id: {}, node address: {}",
@@ -44,7 +39,7 @@ impl LedgerClient {
             node_address
         );
 
-        let client = Web3Client::new(node_address, signer)?;
+        let client = Web3Client::new(node_address)?;
         let contracts = Self::init_contracts(&client, contract_configs)?;
 
         let ledger_client = LedgerClient {
@@ -67,17 +62,6 @@ impl LedgerClient {
     ///  ping status
     pub async fn ping(&self) -> VdrResult<PingStatus> {
         self.client.ping().await
-    }
-
-    /// Sign transaction
-    ///
-    /// # Params
-    ///  transaction - prepared write transaction to sign
-    ///
-    /// # Returns
-    ///  signed transaction to submit
-    pub async fn sign_transaction(&self, transaction: &Transaction) -> VdrResult<Transaction> {
-        self.client.sign_transaction(transaction).await
     }
 
     /// Submit prepared transaction to the ledger
@@ -107,10 +91,8 @@ impl LedgerClient {
         self.client.get_receipt(hash).await
     }
 
-    pub(crate) async fn sign_and_submit(&self, transaction: &Transaction) -> VdrResult<String> {
-        let signed_transaction = self.sign_transaction(transaction).await?;
-        let block_hash = self.submit_transaction(&signed_transaction).await?;
-        self.get_receipt(&block_hash).await
+    pub(crate) async fn get_transaction_count(&self, address: &Address) -> VdrResult<[u64; 4]> {
+        self.client.get_transaction_count(address).await
     }
 
     pub(crate) fn contract(&self, name: &str) -> VdrResult<&dyn Contract> {
@@ -148,7 +130,7 @@ impl LedgerClient {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::signer::{basic_signer::test::basic_signer, BasicSigner};
+    use once_cell::sync::Lazy;
     use std::{env, fs};
 
     pub const CHAIN_ID: u64 = 1337;
@@ -165,6 +147,9 @@ pub mod test {
     pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
     pub const ROLE_CONTROL_ADDRESS: &str = "0x0000000000000000000000000000000000006666";
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
+
+    pub static TRUSTEE_ACC: Lazy<Address> =
+        Lazy::new(|| Address::new("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
 
     fn build_contract_path(contract_path: &str) -> String {
         let mut cur_dir = env::current_dir().unwrap();
@@ -198,9 +183,41 @@ pub mod test {
         ]
     }
 
-    pub fn client(signer: Option<BasicSigner>) -> LedgerClient {
-        let signer = signer.unwrap_or_else(basic_signer);
-        LedgerClient::new(CHAIN_ID, NODE_ADDRESS, &contracts(), Some(Box::new(signer))).unwrap()
+    pub fn client() -> LedgerClient {
+        LedgerClient::new(CHAIN_ID, NODE_ADDRESS, &contracts()).unwrap()
+    }
+
+    pub const DEFAULT_NONCE: [u64; 4] = [0, 0, 0, 0];
+
+    pub struct MockClient {}
+
+    #[async_trait::async_trait]
+    impl Client for MockClient {
+        async fn get_transaction_count(&self, _address: &Address) -> VdrResult<[u64; 4]> {
+            Ok([0, 0, 0, 0])
+        }
+
+        async fn submit_transaction(&self, _transaction: &Transaction) -> VdrResult<Vec<u8>> {
+            todo!()
+        }
+
+        async fn call_transaction(&self, _transaction: &Transaction) -> VdrResult<Vec<u8>> {
+            todo!()
+        }
+
+        async fn get_receipt(&self, _hash: &[u8]) -> VdrResult<String> {
+            todo!()
+        }
+
+        async fn ping(&self) -> VdrResult<PingStatus> {
+            todo!()
+        }
+    }
+
+    pub fn mock_client() -> LedgerClient {
+        let mut client = LedgerClient::new(CHAIN_ID, NODE_ADDRESS, &contracts()).unwrap();
+        client.client = Box::new(MockClient {});
+        client
     }
 
     mod create {
@@ -208,31 +225,25 @@ pub mod test {
 
         #[test]
         fn create_client_test() {
-            client(None);
+            client();
         }
     }
 
     #[cfg(feature = "ledger_test")]
     mod ping {
         use super::*;
-        use crate::client::Status;
+        use crate::types::Status;
 
         #[async_std::test]
         async fn client_ping_test() {
-            let client = client(None);
+            let client = client();
             assert_eq!(PingStatus::ok(), client.ping().await.unwrap())
         }
 
         #[async_std::test]
         async fn client_ping_wrong_node_test() {
             let wrong_node_address = "http://127.0.0.1:1111";
-            let client = LedgerClient::new(
-                CHAIN_ID,
-                wrong_node_address,
-                &contracts(),
-                Some(Box::new(basic_signer())),
-            )
-            .unwrap();
+            let client = LedgerClient::new(CHAIN_ID, wrong_node_address, &contracts()).unwrap();
             match client.ping().await.unwrap().status {
                 Status::Err(_) => {}
                 Status::Ok => assert!(false, "Ping status expected to be `Err`."),
