@@ -1,6 +1,6 @@
 use crate::{
-    client::{ContractOutput, ContractParam},
     error::VdrError,
+    types::{ContractOutput, ContractParam},
 };
 
 use crate::{contracts::cl::types::schema_id::SchemaId, DID};

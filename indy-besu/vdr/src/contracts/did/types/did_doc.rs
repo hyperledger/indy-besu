@@ -1,6 +1,6 @@
 use crate::{
-    client::{ContractOutput, ContractParam},
     error::{VdrError, VdrResult},
+    types::{ContractOutput, ContractParam},
     Address,
 };
 

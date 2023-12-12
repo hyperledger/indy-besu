@@ -1,9 +1,9 @@
 use crate::error::{VdrError, VdrResult};
 
 use crate::Address;
+use ethabi::Token;
 use log::{trace, warn};
 use serde::{Deserialize, Serialize};
-use web3::ethabi::Token;
 
 /// Contract configuration
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize)]

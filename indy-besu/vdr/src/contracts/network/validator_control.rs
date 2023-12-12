@@ -1,8 +1,8 @@
 use log::{debug, info};
 
 use crate::{
-    client::{Transaction, TransactionBuilder, TransactionParser, TransactionType},
     error::VdrResult,
+    types::{Transaction, TransactionBuilder, TransactionParser, TransactionType},
     Address, LedgerClient,
 };
 
@@ -26,7 +26,7 @@ impl ValidatorControl {
     ///
     /// # Returns
     /// Write transaction to sign and submit
-    pub fn build_add_validator_transaction(
+    pub async fn build_add_validator_transaction(
         client: &LedgerClient,
         from: &Address,
         validator_address: &Address,
@@ -44,7 +44,8 @@ impl ValidatorControl {
             .add_param(validator_address.clone().try_into()?)
             .set_type(TransactionType::Write)
             .set_from(from)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -64,7 +65,7 @@ impl ValidatorControl {
     ///
     /// # Returns
     /// Write transaction to sign and submit
-    pub fn build_remove_validator_transaction(
+    pub async fn build_remove_validator_transaction(
         client: &LedgerClient,
         from: &Address,
         validator_address: &Address,
@@ -82,7 +83,8 @@ impl ValidatorControl {
             .add_param(validator_address.clone().try_into()?)
             .set_type(TransactionType::Write)
             .set_from(from)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -100,14 +102,15 @@ impl ValidatorControl {
     ///
     /// # Returns
     /// Read transaction to submit
-    pub fn build_get_validators_transaction(client: &LedgerClient) -> VdrResult<Transaction> {
+    pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResult<Transaction> {
         debug!("{} txn build has started", Self::METHOD_GET_VALIDATORS,);
 
         let transaction = TransactionBuilder::new()
             .set_contract(Self::CONTRACT_NAME)
             .set_method(Self::METHOD_GET_VALIDATORS)
             .set_type(TransactionType::Read)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -149,104 +152,15 @@ impl ValidatorControl {
 
         result
     }
-
-    /// Single step function executing ValidatorControl.addValidator contract method to add a new Validator
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `validator_address` validator address to be added
-    ///
-    /// # Returns
-    /// Receipt of executed transaction
-    pub async fn add_validator(
-        client: &LedgerClient,
-        from: &Address,
-        validator_address: &Address,
-    ) -> VdrResult<String> {
-        debug!(
-            "{} process has started. Sender: {}, validator address: {:?}",
-            Self::METHOD_ADD_VALIDATOR,
-            from.value(),
-            validator_address
-        );
-
-        let transaction = Self::build_add_validator_transaction(client, from, validator_address)?;
-        let receipt = client.sign_and_submit(&transaction).await;
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_ADD_VALIDATOR,
-            receipt
-        );
-
-        receipt
-    }
-
-    /// Single step function executing ValidatorControl.removeValidator contract method to remove an existing Validator
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `validator_address` validator address to be added
-    ///
-    /// # Returns
-    /// Receipt of executed transaction
-    pub async fn remove_validator(
-        client: &LedgerClient,
-        from: &Address,
-        validator_address: &Address,
-    ) -> VdrResult<String> {
-        debug!(
-            "{} process has started. Sender: {}, validator address: {:?}",
-            Self::METHOD_REMOVE_VALIDATOR,
-            from.value(),
-            validator_address
-        );
-
-        let transaction =
-            Self::build_remove_validator_transaction(client, from, validator_address)?;
-        let receipt = client.sign_and_submit(&transaction).await;
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_REMOVE_VALIDATOR,
-            receipt
-        );
-
-        receipt
-    }
-
-    /// Single step function executing ValidatorControl.getValidators contract method to get existing validators
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    ///
-    /// # Returns
-    /// Existing validator addresses
-    pub async fn get_validators(client: &LedgerClient) -> VdrResult<ValidatorAddresses> {
-        debug!("{} process has started", Self::METHOD_GET_VALIDATORS,);
-
-        let transaction = Self::build_get_validators_transaction(client)?;
-        let result = client.submit_transaction(&transaction).await?;
-        let parsed_result = Self::parse_get_validators_result(client, &result);
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_REMOVE_VALIDATOR,
-            parsed_result
-        );
-
-        parsed_result
-    }
 }
 
 #[cfg(test)]
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{client, CHAIN_ID, VALIDATOR_CONTROL_ADDRESS},
-        signer::basic_signer::test::TRUSTEE_ACC,
+        client::test::{
+            mock_client, CHAIN_ID, DEFAULT_NONCE, TRUSTEE_ACC, VALIDATOR_CONTROL_ADDRESS,
+        },
         utils::init_env_logger,
     };
     use once_cell::sync::Lazy;
@@ -257,15 +171,16 @@ pub mod test {
     mod build_add_validator_transaction {
         use super::*;
 
-        #[test]
-        fn build_add_validator_transaction_test() {
+        #[async_std::test]
+        async fn build_add_validator_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction = ValidatorControl::build_add_validator_transaction(
                 &client,
                 &TRUSTEE_ACC,
                 &VALIDATOR_ADDRESS,
             )
+            .await
             .unwrap();
             let expected_data = [
                 77, 35, 140, 142, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 147, 145, 124, 173, 186, 206,
@@ -276,6 +191,7 @@ pub mod test {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
                 signed: None,
@@ -288,15 +204,16 @@ pub mod test {
     mod build_remove_validator_transaction {
         use super::*;
 
-        #[test]
-        fn build_remove_validator_transaction_test() {
+        #[async_std::test]
+        async fn build_remove_validator_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction = ValidatorControl::build_remove_validator_transaction(
                 &client,
                 &TRUSTEE_ACC,
                 &VALIDATOR_ADDRESS,
             )
+            .await
             .unwrap();
             let expected_data = [
                 64, 161, 65, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 147, 145, 124, 173, 186, 206,
@@ -307,6 +224,7 @@ pub mod test {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
                 signed: None,
@@ -319,17 +237,20 @@ pub mod test {
     mod build_get_validators_transaction {
         use super::*;
 
-        #[test]
-        fn build_get_validators_transaction_test() {
+        #[async_std::test]
+        async fn build_get_validators_transaction_test() {
             init_env_logger();
-            let client = client(None);
-            let transaction = ValidatorControl::build_get_validators_transaction(&client).unwrap();
+            let client = mock_client();
+            let transaction = ValidatorControl::build_get_validators_transaction(&client)
+                .await
+                .unwrap();
             let encoded_method = [183, 171, 77, 181];
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
                 to: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                nonce: None,
                 chain_id: CHAIN_ID,
                 data: encoded_method.into(),
                 signed: None,
@@ -346,7 +267,7 @@ pub mod test {
 
         #[test]
         fn parse_get_validators_result_test() {
-            let client = client(None);
+            let client = mock_client();
             let validator_list_bytes = [
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
