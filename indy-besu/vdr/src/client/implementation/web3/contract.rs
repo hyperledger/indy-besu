@@ -1,6 +1,7 @@
 use crate::{
-    client::{implementation::web3::client::Web3Client, Contract, ContractOutput, ContractSpec},
+    client::{implementation::web3::client::Web3Client, Contract},
     error::{VdrError, VdrResult},
+    types::{ContractOutput, ContractSpec},
 };
 
 use log::{trace, warn};

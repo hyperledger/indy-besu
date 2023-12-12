@@ -1,10 +1,12 @@
-use crate::client::{ContractOutput, ContractParam};
+use crate::{
+    error::VdrError,
+    types::{ContractOutput, ContractParam},
+};
+
+use ethereum_types::Address as Address_;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
-
-use crate::error::VdrError;
-use web3::ethabi::ethereum_types::Address as Address_;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Address(String);

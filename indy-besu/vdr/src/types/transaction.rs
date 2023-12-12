@@ -1,8 +1,13 @@
+use ethereum::{LegacyTransactionMessage, TransactionAction, TransactionSignature};
+use ethereum_types::{H160, H256, U256};
 use log::{trace, warn};
+use serde_derive::{Deserialize, Serialize};
+use std::str::FromStr;
 
 use crate::{
-    client::{Address, ContractOutput, ContractParam},
+    client::GAS,
     error::{VdrError, VdrResult},
+    types::{Address, ContractOutput, ContractParam},
     LedgerClient,
 };
 
@@ -30,18 +35,52 @@ pub struct Transaction {
     pub from: Option<Address>,
     /// transaction recipient address
     pub to: String,
+    /// nonce - count of transaction sent by account
+    pub nonce: Option<[u64; 4]>,
     /// chain id of the ledger
     pub chain_id: u64,
     /// transaction payload
     pub data: Vec<u8>,
     /// signed raw transaction
-    pub signed: Option<Vec<u8>>,
+    pub signed: Option<TransactionSignature>,
 }
 
 impl Transaction {
+    pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
+        let nonce = self.nonce.ok_or_else(|| {
+            VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
+        })?;
+        let to = H160::from_str(&self.to).map_err(|_| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Invalid transaction target address {}",
+                self.to
+            ))
+        })?;
+
+        let eth_transaction = LegacyTransactionMessage {
+            nonce: U256(nonce),
+            gas_price: U256([0, 0, 0, 0]),
+            gas_limit: U256([GAS, 0, 0, 0]),
+            action: TransactionAction::Call(to),
+            value: Default::default(),
+            input: self.data.clone(),
+            chain_id: Some(self.chain_id),
+        };
+
+        let hash = eth_transaction.hash();
+        Ok(hash.as_bytes().to_vec())
+    }
+
     /// set signature for the transaction
-    pub fn set_signature(&mut self, signature: &[u8]) {
-        self.signed = Some(signature.to_owned())
+    pub fn set_signature(&mut self, signature_data: SignatureData) {
+        let v = signature_data.recovery_id + 35 + self.chain_id * 2;
+        let signature = TransactionSignature::new(
+            v,
+            H256::from_slice(&signature_data.signature[..32]),
+            H256::from_slice(&signature_data.signature[32..]),
+        );
+
+        self.signed = signature
     }
 }
 
@@ -50,6 +89,7 @@ pub struct TransactionBuilder {
     contract: String,
     method: String,
     from: Option<Address>,
+    nonce: Option<[u64; 4]>,
     params: Vec<ContractParam>,
     type_: TransactionType,
 }
@@ -111,9 +151,22 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn build(self, client: &LedgerClient) -> VdrResult<Transaction> {
+    pub async fn build(self, client: &LedgerClient) -> VdrResult<Transaction> {
         let contract = client.contract(&self.contract)?;
         let data = contract.encode_input(&self.method, &self.params)?;
+        let nonce = match self.type_ {
+            TransactionType::Write => {
+                let from = self.from.as_ref().ok_or_else(|| {
+                    VdrError::ClientInvalidTransaction(
+                        "Transaction `sender` is not set".to_string(),
+                    )
+                })?;
+
+                let nonce = client.get_transaction_count(from).await?;
+                Some(nonce)
+            }
+            TransactionType::Read => None,
+        };
 
         let transaction = Transaction {
             type_: self.type_,
@@ -121,6 +174,7 @@ impl TransactionBuilder {
             to: contract.address(),
             chain_id: client.chain_id(),
             data,
+            nonce,
             signed: None,
         };
 
@@ -190,4 +244,12 @@ impl TransactionParser {
 
         T::try_from(output)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SignatureData {
+    /// recovery ID using for public key recovery
+    pub recovery_id: u64,
+    /// ECDSA signature
+    pub signature: Vec<u8>,
 }
