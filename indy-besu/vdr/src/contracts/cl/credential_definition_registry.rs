@@ -1,15 +1,15 @@
 use log::{debug, info};
 
 use crate::{
-    client::{
-        Address, ContractParam, LedgerClient, Transaction, TransactionBuilder, TransactionParser,
-        TransactionType,
-    },
+    client::LedgerClient,
     contracts::cl::types::{
         credential_definition::{CredentialDefinition, CredentialDefinitionWithMeta},
         credential_definition_id::CredentialDefinitionId,
     },
     error::VdrResult,
+    types::{
+        Address, ContractParam, Transaction, TransactionBuilder, TransactionParser, TransactionType,
+    },
 };
 
 /// CredentialDefinitionRegistry contract methods
@@ -30,7 +30,7 @@ impl CredentialDefinitionRegistry {
     ///
     /// # Returns
     /// Write transaction to sign and submit
-    pub fn build_create_credential_definition_transaction(
+    pub async fn build_create_credential_definition_transaction(
         client: &LedgerClient,
         from: &Address,
         credential_definition: &CredentialDefinition,
@@ -48,7 +48,8 @@ impl CredentialDefinitionRegistry {
             .add_param(credential_definition.clone().into())
             .set_type(TransactionType::Write)
             .set_from(from)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -68,7 +69,7 @@ impl CredentialDefinitionRegistry {
     ///
     /// # Returns
     /// Read transaction to submit
-    pub fn build_resolve_credential_definition_transaction(
+    pub async fn build_resolve_credential_definition_transaction(
         client: &LedgerClient,
         id: &CredentialDefinitionId,
     ) -> VdrResult<Transaction> {
@@ -83,7 +84,8 @@ impl CredentialDefinitionRegistry {
             .set_method(Self::METHOD_RESOLVE_CREDENTIAL_DEFINITION)
             .add_param(ContractParam::String(id.value().into()))
             .set_type(TransactionType::Read)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -129,84 +131,15 @@ impl CredentialDefinitionRegistry {
 
         result
     }
-
-    /// Single step function executing CredentialDefinitionRegistry.createCredentialDefinition smart contract
-    /// method to create a new Credential Definition
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `credential_definition` Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition
-    ///
-    /// # Returns
-    /// receipt of executed transaction
-    pub async fn create_credential_definition(
-        client: &LedgerClient,
-        from: &Address,
-        credential_definition: &CredentialDefinition,
-    ) -> VdrResult<String> {
-        debug!(
-            "{} process has started. Sender: {}, CredentialDefenition: {:?}",
-            Self::METHOD_CREATE_CREDENTIAL_DEFINITION,
-            from.value(),
-            credential_definition
-        );
-
-        let transaction = Self::build_create_credential_definition_transaction(
-            client,
-            from,
-            credential_definition,
-        )?;
-        let receipt = client.sign_and_submit(&transaction).await;
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_CREATE_CREDENTIAL_DEFINITION,
-            receipt
-        );
-
-        receipt
-    }
-
-    /// Single step function executing CredentialDefinitionRegistry.resolveCredentialDefinition smart contract
-    /// method to resolve Credential Definition for an existing id
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `id` id of Credential Definition to resolve
-    ///
-    /// # Returns
-    /// resolved Credential Definition
-    pub async fn resolve_credential_definition(
-        client: &LedgerClient,
-        id: &CredentialDefinitionId,
-    ) -> VdrResult<CredentialDefinition> {
-        debug!(
-            "{} process has started. CredentialDefenitionId: {:?}",
-            Self::METHOD_RESOLVE_CREDENTIAL_DEFINITION,
-            id
-        );
-
-        let transaction = Self::build_resolve_credential_definition_transaction(client, id)?;
-        let result = client.submit_transaction(&transaction).await?;
-        let parsed_result = Self::parse_resolve_credential_definition_result(client, &result);
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_RESOLVE_CREDENTIAL_DEFINITION,
-            parsed_result
-        );
-
-        parsed_result
-    }
 }
 
 #[cfg(test)]
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{client, CHAIN_ID, CRED_DEF_REGISTRY_ADDRESS},
+        client::test::{
+            mock_client, CHAIN_ID, CRED_DEF_REGISTRY_ADDRESS, DEFAULT_NONCE, TRUSTEE_ACC,
+        },
         contracts::{
             cl::types::{
                 credential_definition::test::{credential_definition, CREDENTIAL_DEFINITION_TAG},
@@ -215,7 +148,6 @@ pub mod test {
             },
             did::did_doc::test::ISSUER_ID,
         },
-        signer::basic_signer::test::TRUSTEE_ACC,
         utils::init_env_logger,
         DID,
     };
@@ -223,10 +155,10 @@ pub mod test {
     mod build_create_credential_definition_transaction {
         use super::*;
 
-        #[test]
-        fn build_create_credential_definition_transaction_test() {
+        #[async_std::test]
+        async fn build_create_credential_definition_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction =
                 CredentialDefinitionRegistry::build_create_credential_definition_transaction(
                     &client,
@@ -237,11 +169,13 @@ pub mod test {
                         Some(CREDENTIAL_DEFINITION_TAG),
                     ),
                 )
+                .await
                 .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: CRED_DEF_REGISTRY_ADDRESS.to_string(),
+                nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: vec![
                     156, 53, 148, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -295,10 +229,10 @@ pub mod test {
     mod build_resolve_credential_definition_transaction {
         use super::*;
 
-        #[test]
-        fn build_resolve_credential_definition_transaction_test() {
+        #[async_std::test]
+        async fn build_resolve_credential_definition_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction =
                 CredentialDefinitionRegistry::build_resolve_credential_definition_transaction(
                     &client,
@@ -309,11 +243,13 @@ pub mod test {
                     )
                     .id,
                 )
+                .await
                 .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
                 to: CRED_DEF_REGISTRY_ADDRESS.to_string(),
+                nonce: None,
                 chain_id: CHAIN_ID,
                 data: vec![
                     97, 112, 196, 138, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -341,7 +277,7 @@ pub mod test {
         #[test]
         fn parse_resolve_credential_definition_result_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let data = vec![
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -395,7 +331,7 @@ pub mod test {
                 credential_definition(
                     &DID::new(ISSUER_ID),
                     &SchemaId::new(SCHEMA_ID),
-                    Some(CREDENTIAL_DEFINITION_TAG)
+                    Some(CREDENTIAL_DEFINITION_TAG),
                 ),
                 parsed_cred_def
             );

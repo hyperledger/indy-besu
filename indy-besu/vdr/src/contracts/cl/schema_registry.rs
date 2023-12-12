@@ -1,15 +1,15 @@
 use log::{debug, info};
 
 use crate::{
-    client::{
-        Address, ContractParam, LedgerClient, Transaction, TransactionBuilder, TransactionParser,
-        TransactionType,
-    },
+    client::LedgerClient,
     contracts::cl::types::{
         schema::{Schema, SchemaWithMeta},
         schema_id::SchemaId,
     },
     error::VdrResult,
+    types::{
+        Address, ContractParam, Transaction, TransactionBuilder, TransactionParser, TransactionType,
+    },
 };
 
 /// SchemaRegistry contract methods
@@ -29,7 +29,7 @@ impl SchemaRegistry {
     ///
     /// # Returns
     /// Write transaction to sign and submit
-    pub fn build_create_schema_transaction(
+    pub async fn build_create_schema_transaction(
         client: &LedgerClient,
         from: &Address,
         schema: &Schema,
@@ -47,7 +47,8 @@ impl SchemaRegistry {
             .add_param(schema.clone().into())
             .set_type(TransactionType::Write)
             .set_from(from)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -66,7 +67,7 @@ impl SchemaRegistry {
     ///
     /// # Returns
     /// Read transaction to submit
-    pub fn build_resolve_schema_transaction(
+    pub async fn build_resolve_schema_transaction(
         client: &LedgerClient,
         id: &SchemaId,
     ) -> VdrResult<Transaction> {
@@ -81,7 +82,8 @@ impl SchemaRegistry {
             .set_method(Self::METHOD_RESOLVE_SCHEMA)
             .add_param(ContractParam::String(id.value().into()))
             .set_type(TransactionType::Read)
-            .build(client);
+            .build(client)
+            .await;
 
         info!(
             "{} txn build has finished. Result: {:?}",
@@ -121,110 +123,62 @@ impl SchemaRegistry {
 
         result
     }
-
-    /// Single step function executing SchemaRegistry.createSchema smart contract method to create a new Schema
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
-    ///
-    /// # Returns
-    /// receipt of executed transaction
-    pub async fn create_schema(
-        client: &LedgerClient,
-        from: &Address,
-        schema: &Schema,
-    ) -> VdrResult<String> {
-        debug!(
-            "{} process has started. Sender: {}, Schema: {:?}",
-            Self::METHOD_CREATE_SCHEMA,
-            from.value(),
-            schema
-        );
-
-        let transaction = Self::build_create_schema_transaction(client, from, schema)?;
-        let receipt = client.sign_and_submit(&transaction).await;
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_CREATE_SCHEMA,
-            receipt
-        );
-
-        receipt
-    }
-
-    /// Single step function executing SchemaRegistry.resolveSchema smart contract method to resolve Schema for an existing id
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `id` id of Schema to resolve
-    ///
-    /// # Returns
-    /// resolved Schema
-    pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<Schema> {
-        debug!(
-            "{} process has started. SchemaId: {:?}",
-            Self::METHOD_RESOLVE_SCHEMA,
-            id
-        );
-
-        let transaction = Self::build_resolve_schema_transaction(client, id)?;
-        let result = client.submit_transaction(&transaction).await?;
-        let parsed_result = Self::parse_resolve_schema_result(client, &result);
-
-        info!(
-            "{} process has finished. Result: {:?}",
-            Self::METHOD_RESOLVE_SCHEMA,
-            parsed_result
-        );
-
-        parsed_result
-    }
 }
 
 #[cfg(test)]
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{client, CHAIN_ID, SCHEMA_REGISTRY_ADDRESS},
+        client::test::{
+            mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
+        },
         contracts::{
             cl::types::schema::test::{schema, SCHEMA_NAME},
             did::did_doc::test::ISSUER_ID,
         },
-        signer::basic_signer::test::TRUSTEE_ACC,
         utils::init_env_logger,
         DID,
     };
 
     #[cfg(feature = "ledger_test")]
-    pub async fn create_schema(client: &LedgerClient, issuer_id: &DID) -> Schema {
+    pub async fn create_schema(
+        client: &LedgerClient,
+        issuer_id: &DID,
+        signer: &crate::BasicSigner,
+    ) -> Schema {
         let schema = schema(issuer_id, None);
-        let _receipt = SchemaRegistry::create_schema(&client, &TRUSTEE_ACC, &schema)
-            .await
-            .unwrap();
+        let mut transaction =
+            SchemaRegistry::build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
+                .await
+                .unwrap();
+
+        let sign_bytes = transaction.get_signing_bytes().unwrap();
+        let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
+        transaction.set_signature(signature);
+
+        client.submit_transaction(&transaction).await.unwrap();
         schema
     }
 
     mod build_create_schema_transaction {
         use super::*;
 
-        #[test]
-        fn build_create_schema_transaction_test() {
+        #[async_std::test]
+        async fn build_create_schema_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction = SchemaRegistry::build_create_schema_transaction(
                 &client,
                 &TRUSTEE_ACC,
                 &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)),
             )
+            .await
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: SCHEMA_REGISTRY_ADDRESS.to_string(),
+                nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: vec![
                     108, 92, 68, 108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -270,19 +224,21 @@ pub mod test {
     mod build_resolve_schema_transaction {
         use super::*;
 
-        #[test]
-        fn build_resolve_schema_transaction_test() {
+        #[async_std::test]
+        async fn build_resolve_schema_transaction_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let transaction = SchemaRegistry::build_resolve_schema_transaction(
                 &client,
                 &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)).id,
             )
+            .await
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
                 to: SCHEMA_REGISTRY_ADDRESS.to_string(),
+                nonce: None,
                 chain_id: CHAIN_ID,
                 data: vec![
                     189, 127, 197, 235, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -307,7 +263,7 @@ pub mod test {
         #[test]
         fn parse_resolve_schema_result_test() {
             init_env_logger();
-            let client = client(None);
+            let client = mock_client();
             let data = vec![
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

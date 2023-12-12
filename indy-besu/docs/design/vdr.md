@@ -26,8 +26,7 @@ In the same, time Indy community follows to idea of splitting complex library in
 /// #Params
 ///  param: chain_id: u64 - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
 ///  param: node_address: string - RPC node endpoint
-///  param: contract_specs: Vec<ContractSpec> - specifications for contracts  deployed on the networl
-///  param: signer: Option<Signer> - transactions signer. Need to be provided for usage of single-step functions. 
+///  param: contract_specs: Vec<ContractSpec> - specifications for contracts  deployed on the network
 ///
 /// #Returns
 ///  client - client to use for building and sending transactions
@@ -35,7 +34,6 @@ fn indy_vdr_create_client(
     chain_id: u64,
     node_address: String,
     contract_configs: Vec<ContractConfig>,
-    signer: Option<Signer>
 ) -> LedgerClient {
     unimpltemented!()
 }
@@ -43,18 +41,6 @@ fn indy_vdr_create_client(
 struct ContractConfig {
     address: String, // address of deployed contract
     spec_path: String, // path to JSON file containing compiled contract's ABI specification
-}
-
-trait Signer {
-    /// Sign message with the key associated with account
-    ///
-    /// # Params
-    /// - `message` message to sign
-    /// - `account` account to use for message signing
-    ///
-    /// # Returns
-    /// recovery ID (for public key recovery) and ECDSA signature
-    fn sign(&self, message: &[u8], account: &str) -> VdrResult<(i32, Vec<u8>)>;
 }
 
 trait Client {

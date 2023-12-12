@@ -86,6 +86,7 @@ impl From<web3::ethabi::Error> for VdrError {
     }
 }
 
+#[cfg(feature = "basic_signer")]
 impl From<secp256k1::Error> for VdrError {
     fn from(value: secp256k1::Error) -> Self {
         let vdr_error = match value {
