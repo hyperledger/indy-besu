@@ -1,9 +1,13 @@
+export namespace Errors {
+  export const ConflictingFields = 'ConflictingFields'
+  export const FieldRequired = 'FieldRequired'
+}
+
 export namespace AuthErrors {
   export const Unauthorized = 'Unauthorized'
 }
 
 export namespace ClErrors {
-  export const FieldRequired = 'FieldRequired'
   export const IssuerNotFound = 'IssuerNotFound'
   export const IssuerHasBeenDeactivated = 'IssuerHasBeenDeactivated'
   export const InvalidIssuerId = 'InvalidIssuerId'
@@ -24,7 +28,6 @@ export namespace ClErrors {
 export namespace DidError {
   export const AuthenticationKeyRequired = 'AuthenticationKeyRequired'
   export const AuthenticationKeyNotFound = 'AuthenticationKeyNotFound'
-  export const ConflictingFields = 'ConflictingFields'
   export const DidNotFound = 'DidNotFound'
   export const DidAlreadyExist = 'DidAlreadyExist'
   export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'

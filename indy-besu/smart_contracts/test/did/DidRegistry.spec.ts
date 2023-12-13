@@ -3,7 +3,7 @@ import { VerificationMethod } from '../../contracts-ts/types/Did'
 import { createBaseDidDocument } from '../../utils/entity-factories'
 import { deployIndyDidRegistry, TestableIndyDidRegistry } from '../utils/contract-helpers'
 import { IndyDidValidator } from '../utils/contract-helpers'
-import { DidError } from '../utils/errors'
+import { DidError, Errors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('DIDContract', function () {
@@ -119,11 +119,74 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      didDocument.authentication[0].verificationMethod = didDocument.verificationMethod[0]
+      didDocument.assertionMethod = [
+        {
+          id: `${did}#KEY-2`,
+          verificationMethod: {
+            id: `${did}#KEY-2`,
+            verificationMethodType: 'Ed25519VerificationKey2018',
+            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
+            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
+            publicKeyJwk: '',
+          },
+        },
+      ]
 
       await expect(didRegistry.createDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
         .withArgs('VerificationRelationship.id, VerificationRelationship.method')
+    })
+
+    it("Should fail if the DID document's verification reference format is incorrect", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      didDocument.assertionMethod = [
+        {
+          id: `${did}#KEY-2`,
+          verificationMethod: {
+            id: '',
+            verificationMethodType: 'Ed25519VerificationKey2018',
+            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
+            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
+            publicKeyJwk: '',
+          },
+        },
+      ]
+
+      await expect(didRegistry.createDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
+        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
+    })
+
+    const failIfMissingRequiredField = (field: string) =>
+      async function () {
+        const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+        const didDocument = createBaseDidDocument(did)
+
+        didDocument.verificationMethod[0][field] = ''
+
+        await expect(didRegistry.createDid(didDocument))
+          .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
+          .withArgs(`VerificationMethod.${field}`)
+      }
+
+    ;['id', 'controller', 'verificationMethodType'].forEach((field: string) =>
+      it(
+        `Should fail if the DID document's verification method is missing '${field}' field`,
+        failIfMissingRequiredField(field),
+      ),
+    )
+
+    it("Should fail if the DID document's verification method is missing public key fields", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      didDocument.verificationMethod[0].publicKeyMultibase = ''
+
+      await expect(didRegistry.createDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
+        .withArgs('VerificationMethod.publicKeyJwk or VerificationMethod.publicKeyMultibase')
     })
 
     it("Should fail if the DID document's verification method has both jwk and multibase keys", async function () {
@@ -134,7 +197,7 @@ describe('DIDContract', function () {
         '{"kty":"EC","d":"zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"...}'
 
       await expect(didRegistry.createDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
         .withArgs('VerificationMethod.publicKeyJwk, VerificationMethod.publicKeyMultibase')
     })
   })
@@ -243,8 +306,90 @@ describe('DIDContract', function () {
       didDocument.authentication[0].verificationMethod = didDocument.verificationMethod[0]
 
       await expect(didRegistry.updateDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
         .withArgs('VerificationRelationship.id, VerificationRelationship.method')
+    })
+
+    it("Should fail if the DID document's verification reference has both id and method fields", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      await didRegistry.createDid(didDocument)
+
+      didDocument.assertionMethod = [
+        {
+          id: `${did}#KEY-2`,
+          verificationMethod: {
+            id: `${did}#KEY-2`,
+            verificationMethodType: 'Ed25519VerificationKey2018',
+            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
+            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
+            publicKeyJwk: '',
+          },
+        },
+      ]
+
+      await expect(didRegistry.updateDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
+        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
+    })
+
+    it("Should fail if the DID document's verification reference format is incorrect", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      await didRegistry.createDid(didDocument)
+
+      didDocument.assertionMethod = [
+        {
+          id: `${did}#KEY-2`,
+          verificationMethod: {
+            id: '',
+            verificationMethodType: 'Ed25519VerificationKey2018',
+            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
+            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
+            publicKeyJwk: '',
+          },
+        },
+      ]
+
+      await expect(didRegistry.updateDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
+        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
+    })
+
+    const failIfMissingRequiredField = (field: string) =>
+      async function () {
+        const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+        const didDocument = createBaseDidDocument(did)
+
+        await didRegistry.createDid(didDocument)
+
+        didDocument.verificationMethod[0][field] = ''
+
+        await expect(didRegistry.updateDid(didDocument))
+          .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
+          .withArgs(`VerificationMethod.${field}`)
+      }
+
+    ;['id', 'controller', 'verificationMethodType'].forEach((field: string) =>
+      it(
+        `Should fail if the DID document's verification method is missing '${field}' field`,
+        failIfMissingRequiredField(field),
+      ),
+    )
+
+    it("Should fail if the DID document's verification method is missing public key fields", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      await didRegistry.createDid(didDocument)
+
+      didDocument.verificationMethod[0].publicKeyMultibase = ''
+
+      await expect(didRegistry.updateDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
+        .withArgs('VerificationMethod.publicKeyJwk or VerificationMethod.publicKeyMultibase')
     })
 
     it("Should fail if the DID document's verification method has both jwk and multibase keys", async function () {
@@ -257,7 +402,7 @@ describe('DIDContract', function () {
         '{"kty":"EC","d":"zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"...}'
 
       await expect(didRegistry.updateDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
         .withArgs('VerificationMethod.publicKeyJwk, VerificationMethod.publicKeyMultibase')
     })
   })

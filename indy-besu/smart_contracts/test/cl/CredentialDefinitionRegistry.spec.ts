@@ -8,7 +8,7 @@ import {
   TestableCredentialDefinitionRegistry,
   TestableSchemaRegistry,
 } from '../utils/contract-helpers'
-import { ClErrors } from '../utils/errors'
+import { ClErrors, Errors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('CredentialDefinitionRegistry', function () {
@@ -118,7 +118,7 @@ describe('CredentialDefinitionRegistry', function () {
       const credDef = createCredentialDefinitionObject({ issuerId, schemaId, tag: '' })
 
       await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.FieldRequired)
+        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, Errors.FieldRequired)
         .withArgs('tag')
     })
 
@@ -126,7 +126,7 @@ describe('CredentialDefinitionRegistry', function () {
       const credDef = createCredentialDefinitionObject({ issuerId, schemaId, value: '' })
 
       await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.FieldRequired)
+        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, Errors.FieldRequired)
         .withArgs('value')
     })
 

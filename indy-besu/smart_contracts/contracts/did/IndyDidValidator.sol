@@ -59,11 +59,18 @@ library IndyDidValidator {
     }
 
     function _validateVerificationRelationshipFormat(VerificationRelationship memory relationship) private pure {
-        if (!relationship.verificationMethod.id.isEmpty()) {
-            if (!relationship.id.isEmpty()) {
-                revert ConflictingFields("VerificationRelationship.id, VerificationRelationship.method");
-            }
+        bool isIdEmpty = relationship.id.isEmpty();
+        bool isVerificationMethodEmpty = _isEmpty(relationship.verificationMethod);
 
+        if (isIdEmpty && isVerificationMethodEmpty) {
+            revert FieldRequired("VerificationRelationship.id or VerificationRelationship.method");
+        }
+
+        if (!isIdEmpty && !isVerificationMethodEmpty) {
+            revert ConflictingFields("VerificationRelationship.id, VerificationRelationship.method");
+        }
+
+        if (isIdEmpty && !isVerificationMethodEmpty) {
             _validateVerificationMethodFormat(relationship.verificationMethod);
         }
     }
@@ -80,11 +87,11 @@ library IndyDidValidator {
         }
 
         if (verificationMethod.verificationMethodType.isEmpty()) {
-            revert FieldRequired("VerificationMethod.type");
+            revert FieldRequired("VerificationMethod.verificationMethodType");
         }
 
         if (verificationMethod.controller.isEmpty()) {
-            revert FieldRequired("VerificationMethod.contrroller");
+            revert FieldRequired("VerificationMethod.controller");
         }
 
         bool isPublicKeyJwkEmpty = verificationMethod.publicKeyJwk.isEmpty();
@@ -107,5 +114,14 @@ library IndyDidValidator {
         }
 
         return false;
+    }
+
+    function _isEmpty(VerificationMethod memory method) private pure returns (bool) {
+        return
+            method.id.isEmpty() &&
+            method.verificationMethodType.isEmpty() &&
+            method.controller.isEmpty() &&
+            method.publicKeyJwk.isEmpty() &&
+            method.publicKeyMultibase.isEmpty();
     }
 }
