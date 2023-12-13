@@ -114,6 +114,29 @@ describe('DIDContract', function () {
         .revertedWithCustomError(didValidator.baseInstance, DidError.AuthenticationKeyNotFound)
         .withArgs(didDocument.authentication[0].id)
     })
+
+    it("Should fail if the DID document's verification reference has both id and method fields", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      didDocument.authentication[0].verificationMethod = didDocument.verificationMethod[0]
+
+      await expect(didRegistry.createDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
+    })
+
+    it("Should fail if the DID document's verification method has both jwk and multibase keys", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      didDocument.verificationMethod[0].publicKeyJwk =
+        '{"kty":"EC","d":"zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"...}'
+
+      await expect(didRegistry.createDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .withArgs('VerificationMethod.publicKeyJwk, VerificationMethod.publicKeyMultibase')
+    })
   })
 
   describe('Update DID', function () {
@@ -209,6 +232,33 @@ describe('DIDContract', function () {
       await expect(didRegistry.updateDid(didDocument))
         .revertedWithCustomError(didValidator.baseInstance, DidError.AuthenticationKeyNotFound)
         .withArgs(didDocument.authentication[0].id)
+    })
+
+    it("Should fail if the DID document's verification reference has both id and method fields", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      await didRegistry.createDid(didDocument)
+
+      didDocument.authentication[0].verificationMethod = didDocument.verificationMethod[0]
+
+      await expect(didRegistry.updateDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
+    })
+
+    it("Should fail if the DID document's verification method has both jwk and multibase keys", async function () {
+      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
+      const didDocument = createBaseDidDocument(did)
+
+      await didRegistry.createDid(didDocument)
+
+      didDocument.verificationMethod[0].publicKeyJwk =
+        '{"kty":"EC","d":"zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"...}'
+
+      await expect(didRegistry.updateDid(didDocument))
+        .to.revertedWithCustomError(didValidator.baseInstance, DidError.ConflictingFields)
+        .withArgs('VerificationMethod.publicKeyJwk, VerificationMethod.publicKeyMultibase')
     })
   })
 

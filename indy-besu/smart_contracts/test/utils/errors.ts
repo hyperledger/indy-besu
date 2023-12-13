@@ -24,6 +24,7 @@ export namespace ClErrors {
 export namespace DidError {
   export const AuthenticationKeyRequired = 'AuthenticationKeyRequired'
   export const AuthenticationKeyNotFound = 'AuthenticationKeyNotFound'
+  export const ConflictingFields = 'ConflictingFields'
   export const DidNotFound = 'DidNotFound'
   export const DidAlreadyExist = 'DidAlreadyExist'
   export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'
