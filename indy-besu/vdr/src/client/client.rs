@@ -118,9 +118,19 @@ impl LedgerClient {
     ) -> VdrResult<HashMap<String, Box<dyn Contract>>> {
         let mut contracts: HashMap<String, Box<dyn Contract>> = HashMap::new();
         for contract_config in contract_configs {
-            let contract_spec = ContractSpec::from_file(&contract_config.spec_path)?;
-            let contract = Web3Contract::new(client, &contract_config.address, &contract_spec)?;
-            contracts.insert(contract_spec.name.clone(), Box::new(contract));
+            let spec = match (contract_config.spec_path.as_ref(), contract_config.spec.as_ref()) {
+                (Some(spec_path) , None) => ContractSpec::from_file(spec_path)?,
+                (None , Some(spec)) => spec.clone(),
+                (Some(_), Some(_)) => {
+                    return Err(VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))
+                }
+                (None, None) => {
+                    return Err(VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))
+                }
+            };
+
+            let contract = Web3Contract::new(client, &contract_config.address, &spec)?;
+            contracts.insert(spec.name.clone(), Box::new(contract));
         }
 
         Ok(contracts)
@@ -132,6 +142,7 @@ pub mod test {
     use super::*;
     use once_cell::sync::Lazy;
     use std::{env, fs};
+    use async_trait::async_trait;
 
     pub const CHAIN_ID: u64 = 1337;
     pub const NODE_ADDRESS: &str = "http://127.0.0.1:8545";
@@ -166,19 +177,28 @@ pub mod test {
         vec![
             ContractConfig {
                 address: DID_REGISTRY_ADDRESS.to_string(),
-                spec_path: build_contract_path(DID_REGISTRY_SPEC_PATH),
+                spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
+                spec: None,
             },
             ContractConfig {
                 address: SCHEMA_REGISTRY_ADDRESS.to_string(),
-                spec_path: build_contract_path(SCHEMA_REGISTRY_SPEC_PATH),
+                spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),
+                spec: None,
             },
             ContractConfig {
                 address: CRED_DEF_REGISTRY_ADDRESS.to_string(),
-                spec_path: build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH),
+                spec_path: Some(build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH)),
+                spec: None,
+            },
+            ContractConfig {
+                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
+                spec: None,
             },
             ContractConfig {
                 address: ROLE_CONTROL_ADDRESS.to_string(),
-                spec_path: build_contract_path(ROLE_CONTROL_PATH),
+                spec_path: Some(build_contract_path(ROLE_CONTROL_PATH)),
+                spec: None,
             },
         ]
     }
@@ -191,7 +211,7 @@ pub mod test {
 
     pub struct MockClient {}
 
-    #[async_trait::async_trait]
+    #[async_trait(?Send)]
     impl Client for MockClient {
         async fn get_transaction_count(&self, _address: &Address) -> VdrResult<[u64; 4]> {
             Ok([0, 0, 0, 0])
