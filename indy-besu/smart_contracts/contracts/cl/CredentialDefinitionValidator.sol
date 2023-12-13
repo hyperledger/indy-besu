@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import { FieldRequired } from "../utils/Errors.sol";
 import { StringUtils } from "../utils/StringUtils.sol";
-import { FieldRequired, InvalidCredentialDefinitionId, UnsupportedCredentialDefinitionType } from "./ClErrors.sol";
+import { InvalidCredentialDefinitionId, UnsupportedCredentialDefinitionType } from "./ClErrors.sol";
 import { CredentialDefinition } from "./CredentialDefinitionTypes.sol";
 
 using StringUtils for string;

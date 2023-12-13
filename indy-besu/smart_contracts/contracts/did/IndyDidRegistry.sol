@@ -53,8 +53,8 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
 
     /// @inheritdoc IndyDidRegistryInterface
     function createDid(DidDocument calldata document) public _didNotExist(document.id) {
-        IndyDidValidator.validateDid(document.id);
-        IndyDidValidator.validateVerificationKey(document);
+        IndyDidValidator.validateDidDocumentFormat(document);
+        IndyDidValidator.validateAuthenticationKeys(document);
 
         _dids[document.id].document = document;
         _dids[document.id].metadata.creator = msg.sender;
@@ -68,7 +68,8 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
     function updateDid(
         DidDocument calldata document
     ) public _didExist(document.id) _didIsActive(document.id) _senderIsCreator(document.id) {
-        IndyDidValidator.validateVerificationKey(document);
+        IndyDidValidator.validateDidDocumentFormat(document);
+        IndyDidValidator.validateAuthenticationKeys(document);
 
         _dids[document.id].document = document;
         _dids[document.id].metadata.updated = block.timestamp;
