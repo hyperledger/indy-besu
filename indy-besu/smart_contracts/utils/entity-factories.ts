@@ -1,4 +1,10 @@
-import { CredentialDefinition, DidDocument, Schema, VerificationMethod, VerificationRelationship } from '../contracts-ts'
+import {
+  CredentialDefinition,
+  DidDocument,
+  Schema,
+  VerificationMethod,
+  VerificationRelationship,
+} from '../contracts-ts'
 
 export function createBaseDidDocument(did: string): DidDocument {
   const verificationMethod: VerificationMethod = {
