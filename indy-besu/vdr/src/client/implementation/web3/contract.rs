@@ -6,7 +6,15 @@ use crate::{
 
 use log::{trace, warn};
 use std::str::FromStr;
+
+#[cfg(not(feature = "wasm"))]
 use web3::{
+    contract::Contract as Web3ContractImpl,
+    ethabi::{Address, Function, Token},
+    transports::Http,
+};
+#[cfg(feature = "wasm")]
+use web3_wasm::{
     contract::Contract as Web3ContractImpl,
     ethabi::{Address, Function, Token},
     transports::Http,
