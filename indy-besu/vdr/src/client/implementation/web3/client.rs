@@ -4,7 +4,7 @@ use crate::{
     types::{PingStatus, Transaction, TransactionType},
 };
 
-use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction};
+use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction, TransactionSignature};
 use log::{trace, warn};
 use serde_json::json;
 use std::{str::FromStr, time::Duration};
@@ -47,10 +47,12 @@ impl Web3Client {
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
         let account_address = Address::from_str(address.value()).map_err(|_| {
-            VdrError::ClientInvalidTransaction(format!(
-                "Invalid transaction sender address {}",
-                address.value()
-            ))
+            VdrError::ClientInvalidTransaction {
+                msg: format!(
+                    "Invalid transaction sender address {}",
+                    address.value()
+                )
+            }
         })?;
 
         let nonce = self
@@ -71,7 +73,9 @@ impl Client for Web3Client {
 
         if transaction.type_ != TransactionType::Write {
             let vdr_error =
-                VdrError::ClientInvalidTransaction("Write transaction expected".to_string());
+                VdrError::ClientInvalidTransaction {
+                    msg: "Write transaction expected".to_string()
+                };
 
             warn!(
                 "Error: {} during submitting transaction: {:?}",
@@ -82,20 +86,40 @@ impl Client for Web3Client {
         }
 
         let to = Address::from_str(&transaction.to).map_err(|_| {
-            VdrError::ClientInvalidTransaction(format!(
-                "Invalid transaction target address {}",
-                transaction.to
-            ))
+            VdrError::ClientInvalidTransaction {
+                msg: format!(
+                    "Invalid transaction target address {}",
+                    transaction.to
+                )
+            }
         })?;
 
         let signature = transaction
-            .signed
+            .signature
             .as_ref()
-            .ok_or_else(|| VdrError::ClientInvalidTransaction("Missing signature".to_string()))?;
+            .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                msg: "Missing signature".to_string()
+            })?;
 
-        let nonce = transaction.nonce.ok_or_else(|| {
-            VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
+        let nonce = transaction.nonce.clone().ok_or_else(|| {
+            VdrError::ClientInvalidTransaction {
+                msg: "Transaction `nonce` is not set".to_string()
+            }
         })?;
+
+        let signature = TransactionSignature::new(
+            signature.v,
+            H256::from_slice(&signature.r),
+            H256::from_slice(&signature.s),
+        ).ok_or_else(|| {
+            VdrError::ClientInvalidTransaction {
+                msg: "Transaction `nonce` is not set".to_string()
+            }
+        })?;
+        let nonce: [u64; 4] = nonce.try_into()
+            .map_err(|_| VdrError::CommonInvalidData {
+                msg: "Invalid nonce provided".to_string()
+            })?;
 
         let eth_transaction = LegacyTransaction {
             nonce: U256(nonce),
@@ -104,7 +128,7 @@ impl Client for Web3Client {
             action: TransactionAction::Call(to),
             value: Default::default(),
             input: transaction.data.clone(),
-            signature: signature.clone(),
+            signature,
         };
 
         let receipt = self
@@ -129,7 +153,9 @@ impl Client for Web3Client {
 
         if transaction.type_ != TransactionType::Read {
             let vdr_error =
-                VdrError::ClientInvalidTransaction("Read transaction expected".to_string());
+                VdrError::ClientInvalidTransaction {
+                    msg: "Read transaction expected".to_string()
+                };
 
             warn!(
                 "Error: {} during calling transaction: {:?}",
@@ -139,10 +165,12 @@ impl Client for Web3Client {
             return Err(vdr_error);
         }
         let address = Address::from_str(&transaction.to).map_err(|_| {
-            let vdr_error = VdrError::ClientInvalidTransaction(format!(
-                "Invalid transaction target address {}",
-                transaction.to
-            ));
+            let vdr_error = VdrError::ClientInvalidTransaction {
+                msg: format!(
+                    "Invalid transaction target address {}",
+                    transaction.to
+                )
+            };
 
             warn!(
                 "Error: {} during calling transaction: {:?}",
@@ -170,7 +198,9 @@ impl Client for Web3Client {
             .await?
             .ok_or_else(|| {
                 let vdr_error =
-                    VdrError::ClientInvalidResponse("Missing transaction receipt".to_string());
+                    VdrError::ClientInvalidResponse {
+                        msg: "Missing transaction receipt".to_string()
+                    };
 
                 warn!("Error: {} getting receipt", vdr_error,);
 

@@ -2,6 +2,7 @@ mod client;
 mod constants;
 mod implementation;
 
+use async_trait::async_trait;
 use crate::{
     error::VdrResult,
     types::{Address, ContractOutput, ContractParam, PingStatus, Transaction},
@@ -10,8 +11,8 @@ use crate::{
 pub use client::*;
 pub use constants::*;
 
-#[async_trait::async_trait]
-pub trait Client {
+#[async_trait]
+pub trait Client: Sync + Send {
     /// Retrieve count of transaction for the given account
     ///
     /// # Params
@@ -21,10 +22,10 @@ pub trait Client {
     /// number of transactions
     async fn get_transaction_count(&self, address: &Address) -> VdrResult<[u64; 4]>;
 
-    /// Submit signed write transaction to the ledger
+    /// Submit transaction to the ledger
     ///
     /// # Params
-    /// - `transaction` prepared and signed transaction to submit
+    /// - `transaction` transaction to submit
     ///
     /// # Returns
     /// hash of a block in which transaction included
@@ -55,7 +56,7 @@ pub trait Client {
     async fn ping(&self) -> VdrResult<PingStatus>;
 }
 
-pub trait Contract {
+pub trait Contract: Sync + Send {
     /// Get the address of deployed contract
     ///
     /// # Returns

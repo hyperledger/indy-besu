@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, uniffi::Enum)]
 pub enum Role {
     Empty = 0,
     Trustee = 1,
@@ -80,9 +80,9 @@ impl TryFrom<RoleIndex> for Role {
             1 => Ok(Role::Trustee),
             2 => Ok(Role::Endorser),
             3 => Ok(Role::Steward),
-            _ => Err(VdrError::ContractInvalidResponseData(
-                "Invalid role provided".to_string(),
-            )),
+            _ => Err(VdrError::ContractInvalidResponseData {
+                msg:  "Invalid role provided".to_string()
+            }),
         };
 
         trace!(

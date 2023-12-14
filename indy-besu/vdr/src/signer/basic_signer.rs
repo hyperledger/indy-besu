@@ -9,7 +9,7 @@ use std::str::FromStr;
 use web3::signing::keccak256;
 
 pub struct KeyPair {
-    public_key: PublicKey,
+    pub public_key: PublicKey,
     private_key: SecretKey,
 }
 
@@ -35,7 +35,7 @@ impl BasicSigner {
 
     fn key_for_account(&self, account: &str) -> VdrResult<&KeyPair> {
         self.keys.get(account).ok_or_else(|| {
-            let vdr_error = VdrError::SignerMissingKey(account.to_string());
+            let vdr_error = VdrError::SignerMissingKey { msg: account.to_string() };
 
             warn!(
                 "Error: {:?} during getting keys for account: {}",

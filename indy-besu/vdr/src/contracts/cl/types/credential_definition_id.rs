@@ -2,14 +2,18 @@ use crate::DID;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct CredentialDefinitionId(String);
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+pub struct CredentialDefinitionId {
+    value: String,
+}
 
 impl CredentialDefinitionId {
     const ID_PATH: &'static str = "anoncreds/v0/CLAIM_DEF";
 
     pub fn new(id: &str) -> CredentialDefinitionId {
-        let cred_def_id = CredentialDefinitionId(id.to_string());
+        let cred_def_id = CredentialDefinitionId {
+            value: id.to_string()
+        };
 
         trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
 
@@ -17,7 +21,7 @@ impl CredentialDefinitionId {
     }
 
     pub fn build(issuer_id: &DID, schema_id: &str, tag: &str) -> CredentialDefinitionId {
-        let cred_def_id = CredentialDefinitionId(format!(
+        let cred_def_id = CredentialDefinitionId::new(&format!(
             "{}/{}/{}/{}",
             issuer_id.value(),
             ID_PATH,
@@ -31,6 +35,6 @@ impl CredentialDefinitionId {
     }
 
     pub fn value(&self) -> &str {
-        &self.0
+        &self.value
     }
 }

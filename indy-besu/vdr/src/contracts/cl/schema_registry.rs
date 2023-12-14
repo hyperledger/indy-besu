@@ -12,133 +12,126 @@ use crate::{
     },
 };
 
-/// SchemaRegistry contract methods
-pub struct SchemaRegistry;
+const CONTRACT_NAME: &'static str = "SchemaRegistry";
+const METHOD_CREATE_SCHEMA: &'static str = "createSchema";
+const METHOD_RESOLVE_SCHEMA: &'static str = "resolveSchema";
 
-impl SchemaRegistry {
-    const CONTRACT_NAME: &'static str = "SchemaRegistry";
-    const METHOD_CREATE_SCHEMA: &'static str = "createSchema";
-    const METHOD_RESOLVE_SCHEMA: &'static str = "resolveSchema";
-
-    /// Build transaction to execute SchemaRegistry.createSchema contract method to create a new Schema
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
-    ///
-    /// # Returns
-    /// Write transaction to sign and submit
-    pub async fn build_create_schema_transaction(
-        client: &LedgerClient,
-        from: &Address,
-        schema: &Schema,
-    ) -> VdrResult<Transaction> {
-        debug!(
+/// Build transaction to execute SchemaRegistry.createSchema contract method to create a new Schema
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `from` transaction sender account address
+/// - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
+///
+/// # Returns
+/// Write transaction to sign and submit
+#[uniffi::export]
+pub async fn build_create_schema_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    schema: &Schema,
+) -> VdrResult<Transaction> {
+    debug!(
             "{} txn build has started. Sender: {}, schema: {:?}",
-            Self::METHOD_CREATE_SCHEMA,
+            METHOD_CREATE_SCHEMA,
             from.value(),
             schema
         );
 
-        let transaction = TransactionBuilder::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_CREATE_SCHEMA)
-            .add_param(schema.clone().into())
-            .set_type(TransactionType::Write)
-            .set_from(from)
-            .build(client)
-            .await;
+    let transaction = TransactionBuilder::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_CREATE_SCHEMA)
+        .add_param(schema.clone().into())
+        .set_type(TransactionType::Write)
+        .set_from(from)
+        .build(client)
+        .await;
 
-        info!(
+    info!(
             "{} txn build has finished. Result: {:?}",
-            Self::METHOD_CREATE_SCHEMA,
+            METHOD_CREATE_SCHEMA,
             transaction
         );
 
-        transaction
-    }
+    transaction
+}
 
-    /// Build transaction to execute SchemaRegistry.resolveSchema contract method to retrieve an existing Schema by the given id
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `id` id of Schema to resolve
-    ///
-    /// # Returns
-    /// Read transaction to submit
-    pub async fn build_resolve_schema_transaction(
-        client: &LedgerClient,
-        id: &SchemaId,
-    ) -> VdrResult<Transaction> {
-        debug!(
+/// Build transaction to execute SchemaRegistry.resolveSchema contract method to retrieve an existing Schema by the given id
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `id` id of Schema to resolve
+///
+/// # Returns
+/// Read transaction to submit
+#[uniffi::export]
+pub async fn build_resolve_schema_transaction(
+    client: &LedgerClient,
+    id: &SchemaId,
+) -> VdrResult<Transaction> {
+    debug!(
             "{} txn build has started. Schema ID: {:?}",
-            Self::METHOD_RESOLVE_SCHEMA,
+            METHOD_RESOLVE_SCHEMA,
             id
         );
 
-        let transaction = TransactionBuilder::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_RESOLVE_SCHEMA)
-            .add_param(ContractParam::String(id.value().into()))
-            .set_type(TransactionType::Read)
-            .build(client)
-            .await;
+    let transaction = TransactionBuilder::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_RESOLVE_SCHEMA)
+        .add_param(ContractParam::String(id.value().into()))
+        .set_type(TransactionType::Read)
+        .build(client)
+        .await;
 
-        info!(
+    info!(
             "{} txn build has finished. Result: {:?}",
-            Self::METHOD_RESOLVE_SCHEMA,
+            METHOD_RESOLVE_SCHEMA,
             transaction
         );
 
-        transaction
-    }
+    transaction
+}
 
-    /// Parse the result of execution SchemaRegistry.resolveSchema contract method to receive a Schema associated with the id
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `bytes` result bytes returned from the ledger
-    ///
-    /// # Returns
-    /// parsed Schema
-    pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Schema> {
-        debug!(
+/// Parse the result of execution SchemaRegistry.resolveSchema contract method to receive a Schema associated with the id
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `bytes` result bytes returned from the ledger
+///
+/// # Returns
+/// parsed Schema
+#[uniffi::export]
+pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<Schema> {
+    debug!(
             "{} result parse has started. Bytes to parse: {:?}",
-            Self::METHOD_RESOLVE_SCHEMA,
+            METHOD_RESOLVE_SCHEMA,
             bytes
         );
 
-        let result = TransactionParser::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_RESOLVE_SCHEMA)
-            .parse::<SchemaWithMeta>(client, bytes)
-            .map(|schema_with_meta| schema_with_meta.schema);
+    let result = TransactionParser::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_RESOLVE_SCHEMA)
+        .parse::<SchemaWithMeta>(client, &bytes)
+        .map(|schema_with_meta| schema_with_meta.schema);
 
-        info!(
+    info!(
             "{} result parse has finished. Result: {:?}",
-            Self::METHOD_RESOLVE_SCHEMA,
+            METHOD_RESOLVE_SCHEMA,
             result
         );
 
-        result
-    }
+    result
 }
 
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{
-        client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
-        },
-        contracts::{
-            cl::types::schema::test::{schema, SCHEMA_NAME},
-            did::did_doc::test::ISSUER_ID,
-        },
-        utils::init_env_logger,
-        DID,
-    };
+    use crate::{client::test::{
+        mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
+    }, contracts::{
+        cl::types::schema::test::{schema, SCHEMA_NAME},
+        did::types::did_doc::test::ISSUER_ID,
+    }, utils::init_env_logger, DID};
 
     #[cfg(feature = "ledger_test")]
     pub async fn create_schema(
@@ -148,7 +141,7 @@ pub mod test {
     ) -> Schema {
         let schema = schema(issuer_id, None);
         let mut transaction =
-            SchemaRegistry::build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
+            build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
                 .await
                 .unwrap();
 
@@ -167,18 +160,18 @@ pub mod test {
         async fn build_create_schema_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = SchemaRegistry::build_create_schema_transaction(
+            let transaction = build_create_schema_transaction(
                 &client,
                 &TRUSTEE_ACC,
                 &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)),
             )
-            .await
-            .unwrap();
+                .await
+                .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: SCHEMA_REGISTRY_ADDRESS.to_string(),
-                nonce: Some(DEFAULT_NONCE),
+                nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
                     108, 92, 68, 108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -215,7 +208,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 9, 76, 97, 115, 116, 32, 78, 97, 109, 101, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signed: None,
+                signature: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -228,12 +221,12 @@ pub mod test {
         async fn build_resolve_schema_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = SchemaRegistry::build_resolve_schema_transaction(
+            let transaction = build_resolve_schema_transaction(
                 &client,
                 &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)).id,
             )
-            .await
-            .unwrap();
+                .await
+                .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
@@ -250,7 +243,7 @@ pub mod test {
                     72, 69, 77, 65, 47, 70, 49, 68, 67, 108, 97, 70, 69, 122, 105, 51, 116, 47, 49,
                     46, 48, 46, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signed: None,
+                signature: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -301,7 +294,7 @@ pub mod test {
                 0, 0, 0, 0, 0, 0, 0,
             ];
             let parsed_schema =
-                SchemaRegistry::parse_resolve_schema_result(&client, &data).unwrap();
+                parse_resolve_schema_result(&client, data).unwrap();
             assert_eq!(
                 schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)),
                 parsed_schema
