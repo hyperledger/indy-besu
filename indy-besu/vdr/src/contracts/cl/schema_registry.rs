@@ -215,7 +215,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 9, 76, 97, 115, 116, 32, 78, 97, 109, 101, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signed: None,
+                signature: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -250,7 +250,7 @@ pub mod test {
                     72, 69, 77, 65, 47, 70, 49, 68, 67, 108, 97, 70, 69, 122, 105, 51, 116, 47, 49,
                     46, 48, 46, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signed: None,
+                signature: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
