@@ -21,10 +21,10 @@ pub trait Client {
     /// number of transactions
     async fn get_transaction_count(&self, address: &Address) -> VdrResult<[u64; 4]>;
 
-    /// Submit signed write transaction to the ledger
+    /// Submit transaction to the ledger
     ///
     /// # Params
-    /// - `transaction` prepared and signed transaction to submit
+    /// - `transaction` prepared transaction to submit
     ///
     /// # Returns
     /// hash of a block in which transaction included
