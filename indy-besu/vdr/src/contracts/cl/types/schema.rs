@@ -7,14 +7,14 @@ use crate::{contracts::cl::types::schema_id::SchemaId, DID};
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaWithMeta {
     pub schema: Schema,
     pub metadata: SchemaMetadata,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
 pub struct Schema {
     pub id: SchemaId,
     #[serde(rename = "issuerId")]
@@ -25,9 +25,9 @@ pub struct Schema {
     pub attr_names: Vec<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
 pub struct SchemaMetadata {
-    pub created: u128,
+    pub created: u64,
 }
 
 impl From<Schema> for ContractParam {
@@ -95,7 +95,7 @@ impl TryFrom<ContractOutput> for SchemaMetadata {
         );
 
         let created = value.get_u128(0)?;
-        let schema_metadata = SchemaMetadata { created };
+        let schema_metadata = SchemaMetadata { created: created as u64 };
 
         trace!(
             "SchemaMetadata convert from ContractOutput: {:?} has finished. Result: {:?}",

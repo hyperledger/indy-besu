@@ -10,197 +10,197 @@ use crate::{
     DID,
 };
 
-/// IndyDidRegistry contract methods
-pub struct IndyDidRegistry;
+const CONTRACT_NAME: &'static str = "IndyDidRegistry";
+const METHOD_CREATE_DID: &'static str = "createDid";
+const METHOD_UPDATE_DID: &'static str = "updateDid";
+const METHOD_DEACTIVATE_DID: &'static str = "deactivateDid";
+const METHOD_RESOLVE_DID: &'static str = "resolveDid";
 
-impl IndyDidRegistry {
-    const CONTRACT_NAME: &'static str = "IndyDidRegistry";
-    const METHOD_CREATE_DID: &'static str = "createDid";
-    const METHOD_UPDATE_DID: &'static str = "updateDid";
-    const METHOD_DEACTIVATE_DID: &'static str = "deactivateDid";
-    const METHOD_RESOLVE_DID: &'static str = "resolveDid";
-
-    /// Build transaction to execute IndyDidRegistry.createDid contract method to create a new DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
-    ///
-    /// # Returns
-    /// Write transaction to sign and submit
-    pub async fn build_create_did_transaction(
-        client: &LedgerClient,
-        from: &Address,
-        did_doc: &DidDocument,
-    ) -> VdrResult<Transaction> {
-        debug!(
+/// Build transaction to execute IndyDidRegistry.createDid contract method to create a new DID
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `from` transaction sender account address
+/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
+///
+/// # Returns
+/// Write transaction to sign and submit
+#[uniffi::export]
+pub async fn build_create_did_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did_doc: &DidDocument,
+) -> VdrResult<Transaction> {
+    debug!(
             "{} txn build has started. Sender: {}, DidDocument: {:?}",
-            Self::METHOD_CREATE_DID,
+            METHOD_CREATE_DID,
             from.value(),
             did_doc
         );
 
-        let transaction = TransactionBuilder::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_CREATE_DID)
-            .add_param(did_doc.clone().into())
-            .set_type(TransactionType::Write)
-            .set_from(from)
-            .build(client)
-            .await;
+    let transaction = TransactionBuilder::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_CREATE_DID)
+        .add_param(did_doc.clone().into())
+        .set_type(TransactionType::Write)
+        .set_from(from)
+        .build(client)
+        .await;
 
-        info!(
+    info!(
             "{} txn build has finished. Result: {:?}",
-            Self::METHOD_CREATE_DID,
+            METHOD_CREATE_DID,
             transaction
         );
 
-        transaction
-    }
+    transaction
+}
 
-    /// Build transaction to execute IndyDidRegistry.updateDid contract method to update DID document for an existing DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `did_doc` new DID Document matching to the specification: https://www.w3.org/TR/did-core/
-    ///
-    /// # Returns
-    /// Write transaction to sign and submit
-    pub async fn build_update_did_transaction(
-        client: &LedgerClient,
-        from: &Address,
-        did_doc: &DidDocument,
-    ) -> VdrResult<Transaction> {
-        debug!(
+/// Build transaction to execute IndyDidRegistry.updateDid contract method to update DID document for an existing DID
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `from` transaction sender account address
+/// - `did_doc` new DID Document matching to the specification: https://www.w3.org/TR/did-core/
+///
+/// # Returns
+/// Write transaction to sign and submit
+#[uniffi::export]
+pub async fn build_update_did_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did_doc: &DidDocument,
+) -> VdrResult<Transaction> {
+    debug!(
             "{} txn build has started. Sender: {}, DidDocument: {:?}",
-            Self::METHOD_UPDATE_DID,
+            METHOD_UPDATE_DID,
             from.value(),
             did_doc
         );
 
-        let transaction = TransactionBuilder::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_UPDATE_DID)
-            .add_param(did_doc.clone().into())
-            .set_type(TransactionType::Write)
-            .set_from(from)
-            .build(client)
-            .await;
+    let transaction = TransactionBuilder::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_UPDATE_DID)
+        .add_param(did_doc.clone().into())
+        .set_type(TransactionType::Write)
+        .set_from(from)
+        .build(client)
+        .await;
 
-        info!(
+    info!(
             "{} txn build has finished. Result: {:?}",
-            Self::METHOD_UPDATE_DID,
+            METHOD_UPDATE_DID,
             transaction
         );
 
-        transaction
-    }
+    transaction
+}
 
-    /// Build transaction to execute IndyDidRegistry.deactivateDid contract method to deactivate an existing DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `from` transaction sender account address
-    /// - `did` DID to deactivate
-    ///
-    /// # Returns
-    /// Write transaction to sign and submit
-    pub async fn build_deactivate_did_transaction(
-        client: &LedgerClient,
-        from: &Address,
-        did: &DID,
-    ) -> VdrResult<Transaction> {
-        debug!(
+/// Build transaction to execute IndyDidRegistry.deactivateDid contract method to deactivate an existing DID
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `from` transaction sender account address
+/// - `did` DID to deactivate
+///
+/// # Returns
+/// Write transaction to sign and submit
+#[uniffi::export]
+pub async fn build_deactivate_did_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+) -> VdrResult<Transaction> {
+    debug!(
             "{} txn build has started. Sender: {}, Did: {:?}",
-            Self::METHOD_DEACTIVATE_DID,
+            METHOD_DEACTIVATE_DID,
             from.value(),
             did
         );
 
-        let transaction = TransactionBuilder::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_DEACTIVATE_DID)
-            .add_param(ContractParam::String(did.value().to_string()))
-            .set_type(TransactionType::Write)
-            .set_from(from)
-            .build(client)
-            .await;
+    let transaction = TransactionBuilder::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_DEACTIVATE_DID)
+        .add_param(ContractParam::String(did.value().to_string()))
+        .set_type(TransactionType::Write)
+        .set_from(from)
+        .build(client)
+        .await;
 
-        info!(
+    info!(
             "{} txn build has finished. Result: {:?}",
-            Self::METHOD_DEACTIVATE_DID,
+            METHOD_DEACTIVATE_DID,
             transaction
         );
 
-        transaction
-    }
+    transaction
+}
 
-    /// Build transaction to execute IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `did` target DID to receive DID Document
-    ///
-    /// # Returns
-    /// Read transaction to submit
-    pub async fn build_resolve_did_transaction(
-        client: &LedgerClient,
-        did: &DID,
-    ) -> VdrResult<Transaction> {
-        debug!(
+/// Build transaction to execute IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `did` target DID to receive DID Document
+///
+/// # Returns
+/// Read transaction to submit
+#[uniffi::export]
+pub async fn build_resolve_did_transaction(
+    client: &LedgerClient,
+    did: &DID,
+) -> VdrResult<Transaction> {
+    debug!(
             "{} txn build has started. Did: {:?}",
-            Self::METHOD_RESOLVE_DID,
+            METHOD_RESOLVE_DID,
             did
         );
 
-        let transaction = TransactionBuilder::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_RESOLVE_DID)
-            .add_param(ContractParam::String(did.value().to_string()))
-            .set_type(TransactionType::Read)
-            .build(client)
-            .await;
+    let transaction = TransactionBuilder::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_RESOLVE_DID)
+        .add_param(ContractParam::String(did.value().to_string()))
+        .set_type(TransactionType::Read)
+        .build(client)
+        .await;
 
-        info!(
+    info!(
             "{} txn build has finished. Result: {:?}",
-            Self::METHOD_RESOLVE_DID,
+            METHOD_RESOLVE_DID,
             transaction
         );
 
-        transaction
-    }
+    transaction
+}
 
-    /// Parse the result of execution IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
-    ///
-    /// # Params
-    /// - `client` client connected to the network where contract will be executed
-    /// - `bytes` result bytes returned from the ledger
-    ///
-    /// # Returns
-    /// parsed DID Document
-    pub fn parse_resolve_did_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<DidDocument> {
-        debug!(
+/// Parse the result of execution IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
+///
+/// # Params
+/// - `client` client connected to the network where contract will be executed
+/// - `bytes` result bytes returned from the ledger
+///
+/// # Returns
+/// parsed DID Document
+#[uniffi::export]
+pub fn parse_resolve_did_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<DidDocument> {
+    debug!(
             "{} result parse has started. Bytes to parse: {:?}",
-            Self::METHOD_RESOLVE_DID,
+            METHOD_RESOLVE_DID,
             bytes
         );
 
-        let result = TransactionParser::new()
-            .set_contract(Self::CONTRACT_NAME)
-            .set_method(Self::METHOD_RESOLVE_DID)
-            .parse::<DidDocumentWithMeta>(client, bytes)
-            .map(|did_with_meta| did_with_meta.document);
+    let result = TransactionParser::new()
+        .set_contract(CONTRACT_NAME)
+        .set_method(METHOD_RESOLVE_DID)
+        .parse::<DidDocumentWithMeta>(client, &bytes)
+        .map(|did_with_meta| did_with_meta.document);
 
-        info!(
+    info!(
             "{} result parse has finished. Result: {:?}",
-            Self::METHOD_RESOLVE_DID,
+            METHOD_RESOLVE_DID,
             result
         );
 
-        result
-    }
+    result
 }
 
 #[cfg(test)]
@@ -219,7 +219,7 @@ pub mod test {
     pub async fn create_did(client: &LedgerClient, signer: &crate::BasicSigner) -> DidDocument {
         let did_doc = did_doc(None);
         let mut transaction =
-            IndyDidRegistry::build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc)
+            build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc)
                 .await
                 .unwrap();
 
@@ -247,18 +247,18 @@ pub mod test {
         async fn build_create_did_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = IndyDidRegistry::build_create_did_transaction(
+            let transaction = build_create_did_transaction(
                 &client,
                 &TRUSTEE_ACC,
                 &did_doc(Some(ISSUER_ID)),
             )
-            .await
-            .unwrap();
+                .await
+                .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: DID_REGISTRY_ADDRESS.to_string(),
-                nonce: Some(DEFAULT_NONCE),
+                nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
                     134, 153, 87, 165, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -344,7 +344,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signed: None,
+                signature: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -355,9 +355,13 @@ pub mod test {
             let client = mock_client();
 
             let did = DidDocument {
-                context: StringOrVector::Vector(vec!["https://www.w3.org/ns/did/v1".to_string()]),
+                context: StringOrVector::Vector {
+                    value: vec!["https://www.w3.org/ns/did/v1".to_string()]
+                },
                 id: DID::new("did:indy2:testnet:3LpjszkgTmE3qThge25FZw"),
-                controller: StringOrVector::Vector(vec![]),
+                controller: StringOrVector::Vector {
+                    value: vec![]
+                },
                 verification_method: vec![
                     VerificationMethod {
                         id: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-1".to_string(),
@@ -377,8 +381,12 @@ pub mod test {
                     },
                 ],
                 authentication: vec![
-                    VerificationMethodOrReference::String("did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-1".to_string()),
-                    VerificationMethodOrReference::String("did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-2".to_string()),
+                    VerificationMethodOrReference::String {
+                        value: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-1".to_string()
+                    },
+                    VerificationMethodOrReference::String {
+                        value: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-2".to_string()
+                    },
                 ],
                 assertion_method: vec![],
                 capability_invocation: vec![],
@@ -388,20 +396,22 @@ pub mod test {
                     Service {
                         id: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#SERVICE-1".to_string(),
                         type_: "DIDCommService".to_string(),
-                        service_endpoint: ServiceEndpoint::String("127.0.0.1:5555".to_string()),
+                        service_endpoint: ServiceEndpoint::String {
+                            value: "127.0.0.1:5555".to_string()
+                        },
                     }
                 ],
                 also_known_as: Some(vec![]),
             };
             let transaction =
-                IndyDidRegistry::build_create_did_transaction(&client, &TRUSTEE_ACC, &did)
+                build_create_did_transaction(&client, &TRUSTEE_ACC, &did)
                     .await
                     .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
                 to: DID_REGISTRY_ADDRESS.to_string(),
-                nonce: Some(DEFAULT_NONCE),
+                nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
                     134, 153, 87, 165, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -557,7 +567,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0,
                 ],
-                signed: None,
+                signature: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -571,7 +581,7 @@ pub mod test {
             init_env_logger();
             let client = mock_client();
             let transaction =
-                IndyDidRegistry::build_resolve_did_transaction(&client, &DID::new(ISSUER_ID))
+                build_resolve_did_transaction(&client, &DID::new(ISSUER_ID))
                     .await
                     .unwrap();
             let expected_transaction = Transaction {
@@ -588,7 +598,7 @@ pub mod test {
                     115, 122, 107, 103, 84, 109, 69, 51, 113, 84, 104, 103, 101, 50, 53, 70, 90,
                     119, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signed: None,
+                signature: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -689,7 +699,7 @@ pub mod test {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ];
-            let parsed_did_doc = IndyDidRegistry::parse_resolve_did_result(&client, &data).unwrap();
+            let parsed_did_doc = parse_resolve_did_result(&client, data).unwrap();
             assert_eq!(did_doc(Some(issuer_did)), parsed_did_doc);
         }
     }

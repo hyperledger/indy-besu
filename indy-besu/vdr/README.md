@@ -4,7 +4,8 @@
 
 ## Introduction
 
-This is Rust library representing a convenient client for connecting to Indy2 Ledger and executing transactions/queries/contracts.
+This is Rust library representing a convenient client for connecting to Indy2 Ledger and executing
+transactions/queries/contracts.
 The library can be used to connect to multiple ledger networks simultaneously.
 
 The library provides methods to:
@@ -12,7 +13,7 @@ The library provides methods to:
 - connect to node
 - build transactions executing predefined contract methods
 - sign transactions
-  - in order to sign transactions using vdr library you need to provide callbacks for doing elliptic curve signatures
+    - in order to sign transactions using vdr library you need to provide callbacks for doing elliptic curve signatures
 - send transactions to connected node
 - parse data returned from the node
 - single step contract method execution
@@ -48,7 +49,8 @@ cargo +nightly fmt
 
 ## Features
 
-- `migration` (Optional) - module providing helper methods to convert old indy styled objects (schema id, schema, credential definition id, credential definition).
+- `migration` (Optional) - module providing helper methods to convert old indy styled objects (schema id, schema,
+  credential definition id, credential definition).
 - `ledger_test` (Optional) - enable ledger integration tests (requires running network).
 - `basic_signer` (Optional) - helper module for EcDSA signing.
 
@@ -67,3 +69,17 @@ cargo +nightly fmt
 # Logging
 
 - To see the logs, please set `RUST_LOG` environment variable to desired log level: `info`, `debug`, `trace` etc.
+
+## FFI
+
+`Indy-VDR` library uses [uniffi](https://mozilla.github.io/uniffi-rs/) to generate bindings for Kotlin, Python, Swift.
+
+In order to generate language specific bindings run the following commands replacing target
+language `<kotlin|python|swift>`:
+
+```
+cargo build --release
+cargo run --verbose --bin uniffi-bindgen generate --library target/release/libindy2_vdr.dylib --language <kotlin|python|swift> --out-dir out
+```
+
+The `out` directory will be created as the command execution result.
