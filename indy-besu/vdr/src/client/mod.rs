@@ -10,7 +10,9 @@ use crate::{
 pub use client::*;
 pub use constants::*;
 
-#[async_trait::async_trait]
+use async_trait::async_trait;
+
+#[async_trait(?Send)]
 pub trait Client {
     /// Retrieve count of transaction for the given account
     ///

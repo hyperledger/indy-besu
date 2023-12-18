@@ -8,6 +8,8 @@ use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction};
 use log::{trace, warn};
 use serde_json::json;
 use std::{str::FromStr, time::Duration};
+
+#[cfg(not(feature = "wasm"))]
 use web3::{
     api::Eth,
     transports::Http,
@@ -43,7 +45,7 @@ impl Web3Client {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait(?Send)]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
         let account_address = Address::from_str(address.value()).map_err(|_| {
