@@ -1,29 +1,30 @@
 mod client;
 mod constants;
 mod implementation;
-mod types;
 
-use crate::error::VdrResult;
+use crate::{
+    error::VdrResult,
+    types::{Address, ContractOutput, ContractParam, PingStatus, Transaction},
+};
 
 pub use client::*;
 pub use constants::*;
-pub use types::*;
 
 #[async_trait::async_trait]
 pub trait Client {
-    /// Sign transaction.
+    /// Retrieve count of transaction for the given account
     ///
     /// # Params
-    /// - `transaction` prepared transaction to sign
+    /// - `address` address of an account to get number of written transactions
     ///
     /// # Returns
-    /// signed transaction object
-    async fn sign_transaction(&self, transaction: &Transaction) -> VdrResult<Transaction>;
+    /// number of transactions
+    async fn get_transaction_count(&self, address: &Address) -> VdrResult<[u64; 4]>;
 
-    /// Submit signed write transaction to the ledger
+    /// Submit transaction to the ledger
     ///
     /// # Params
-    /// - `transaction` prepared and signed transaction to submit
+    /// - `transaction` prepared transaction to submit
     ///
     /// # Returns
     /// hash of a block in which transaction included

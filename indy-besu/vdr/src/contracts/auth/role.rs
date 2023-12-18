@@ -1,8 +1,8 @@
 use log::trace;
 
 use crate::{
-    client::{ContractOutput, ContractParam},
     error::VdrError,
+    types::{ContractOutput, ContractParam},
 };
 
 #[repr(u8)]
