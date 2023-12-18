@@ -278,7 +278,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signed: None,
+                signature: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -314,7 +314,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signed: None,
+                signature: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -344,7 +344,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signed: None,
+                signature: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -392,7 +392,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signed: None,
+                signature: None,
             };
 
             assert_eq!(expected_transaction, transaction);

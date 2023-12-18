@@ -13,12 +13,10 @@ path = "src/lib.rs"
 crate-type = ["staticlib", "rlib", "cdylib"]
 
 [features]
-default = ["main"]
-main = ["web3"]
-wasm = ["web-sys", "web3-wasm"]
+default = []
 ledger_test = ["basic_signer"]
-basic_signer = ["secp256k1"]
 migration = []
+basic_signer = ["secp256k1"]
 
 [dependencies]
 log = "0.4"

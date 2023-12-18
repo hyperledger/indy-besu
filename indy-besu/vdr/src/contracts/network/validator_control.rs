@@ -194,7 +194,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
-                signed: None,
+                signature: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -227,7 +227,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE),
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
-                signed: None,
+                signature: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -253,7 +253,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: encoded_method.into(),
-                signed: None,
+                signature: None,
             };
 
             assert_eq!(expected_transaction, transaction);

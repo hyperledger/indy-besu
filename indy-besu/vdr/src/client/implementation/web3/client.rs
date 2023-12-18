@@ -4,7 +4,6 @@ use crate::{
     types::{PingStatus, Transaction, TransactionType},
 };
 
-use async_trait::async_trait;
 use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction};
 use log::{trace, warn};
 use serde_json::json;
@@ -12,14 +11,6 @@ use std::{str::FromStr, time::Duration};
 
 #[cfg(not(feature = "wasm"))]
 use web3::{
-    api::Eth,
-    transports::Http,
-    types::{Address, Bytes, CallRequest, H256, U256},
-    Web3,
-};
-
-#[cfg(feature = "wasm")]
-use web3_wasm::{
     api::Eth,
     transports::Http,
     types::{Address, Bytes, CallRequest, H256, U256},
@@ -100,7 +91,7 @@ impl Client for Web3Client {
         })?;
 
         let signature = transaction
-            .signed
+            .signature
             .as_ref()
             .ok_or_else(|| VdrError::ClientInvalidTransaction("Missing signature".to_string()))?;
 

@@ -211,7 +211,7 @@ pub mod test {
 
     pub struct MockClient {}
 
-    #[async_trait(?Send)]
+    #[async_trait::async_trait]
     impl Client for MockClient {
         async fn get_transaction_count(&self, _address: &Address) -> VdrResult<[u64; 4]> {
             Ok([0, 0, 0, 0])
