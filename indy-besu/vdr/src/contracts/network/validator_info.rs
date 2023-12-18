@@ -1,6 +1,6 @@
 use log::trace;
 
-use crate::{client::ContractOutput, error::VdrError, Address};
+use crate::{error::VdrError, types::ContractOutput, Address};
 
 pub type ValidatorAddresses = Vec<Address>;
 
