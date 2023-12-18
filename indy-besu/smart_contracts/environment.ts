@@ -53,11 +53,11 @@ export const environment = {
     },
   },
   network: {
-    name: 'testnet'
+    name: 'testnet',
   },
   did: {
-    method: 'indy2'
-  }
+    method: 'indy2',
+  },
 }
 
 export const host = environment.besu.rpcnode.url
