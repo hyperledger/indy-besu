@@ -100,7 +100,7 @@ impl Client for Web3Client {
         })?;
 
         let signature = transaction
-            .signed
+            .signature
             .as_ref()
             .ok_or_else(|| VdrError::ClientInvalidTransaction("Missing signature".to_string()))?;
 

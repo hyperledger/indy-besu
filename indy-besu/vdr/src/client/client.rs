@@ -118,14 +118,21 @@ impl LedgerClient {
     ) -> VdrResult<HashMap<String, Box<dyn Contract>>> {
         let mut contracts: HashMap<String, Box<dyn Contract>> = HashMap::new();
         for contract_config in contract_configs {
-            let spec = match (contract_config.spec_path.as_ref(), contract_config.spec.as_ref()) {
-                (Some(spec_path) , None) => ContractSpec::from_file(spec_path)?,
-                (None , Some(spec)) => spec.clone(),
+            let spec = match (
+                contract_config.spec_path.as_ref(),
+                contract_config.spec.as_ref(),
+            ) {
+                (Some(spec_path), None) => ContractSpec::from_file(spec_path)?,
+                (None, Some(spec)) => spec.clone(),
                 (Some(_), Some(_)) => {
-                    return Err(VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))
+                    return Err(VdrError::ContractInvalidSpec(
+                        "Either `spec_path` or `spec` must be provided".to_string(),
+                    ))
                 }
                 (None, None) => {
-                    return Err(VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))
+                    return Err(VdrError::ContractInvalidSpec(
+                        "Either `spec_path` or `spec` must be provided".to_string(),
+                    ))
                 }
             };
 
@@ -140,9 +147,9 @@ impl LedgerClient {
 #[cfg(test)]
 pub mod test {
     use super::*;
+    use async_trait::async_trait;
     use once_cell::sync::Lazy;
     use std::{env, fs};
-    use async_trait::async_trait;
 
     pub const CHAIN_ID: u64 = 1337;
     pub const NODE_ADDRESS: &str = "http://127.0.0.1:8545";
