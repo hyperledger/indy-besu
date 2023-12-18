@@ -2,12 +2,6 @@
 pragma solidity ^0.8.20;
 
 /**
- * @notice Error that occurs when a required field is not provided.
- * @param name The name of the required field.
- */
-error FieldRequired(string name);
-
-/**
  * @notice Error that occurs when the specified issuer is not found.
  * @param id Issuer ID.
  */

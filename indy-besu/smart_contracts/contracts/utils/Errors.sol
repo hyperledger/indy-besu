@@ -2,7 +2,21 @@
 pragma solidity ^0.8.20;
 
 /**
+ * @dev Error that occurs when a required field is not provided.
+ * @param name The name of the required field.
+ */
+error FieldRequired(string name);
+
+/**
+ * @dev Error that occurs when provided two or more fields, which should not be provided together
+ * @param names Names of the conflicting fields
+ */
+error ConflictingFields(string names);
+
+/**
  * @dev Error that occurs when the operation is not supported or cannot be performed.
+ * @param operation Name of the operation being performed
+ * @param description A brief error descriptiion
  */
 error UnsupportedOperation(string operation, string description);
 

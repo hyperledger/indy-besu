@@ -6,26 +6,24 @@ import { HardhatUserConfig } from 'hardhat/config'
 import { host } from './environment'
 
 const config: HardhatUserConfig = {
-    solidity: {
-        version: '0.8.20',
-        settings: {
-            optimizer: {
-                enabled: false,
-                runs: 200
-            },
-            evmVersion: 'constantinople',
-        },
+  solidity: {
+    version: '0.8.20',
+    settings: {
+      optimizer: {
+        enabled: false,
+        runs: 200,
+      },
+      evmVersion: 'constantinople',
     },
-    dependencyCompiler: {
-        paths: [
-            '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol',
-        ]
+  },
+  dependencyCompiler: {
+    paths: ['@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol'],
+  },
+  networks: {
+    besu: {
+      url: host,
     },
-    networks: {
-        besu: {
-            url: host
-        }
-    }
-};
+  },
+}
 
-export default config;
+export default config

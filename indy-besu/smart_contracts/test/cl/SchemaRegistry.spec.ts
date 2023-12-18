@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { IndyDidRegistry, SchemaRegistry } from '../../contracts-ts'
 import { createSchemaObject } from '../../utils'
 import { createDid, deploySchemaRegistry, TestableSchemaRegistry } from '../utils/contract-helpers'
-import { ClErrors } from '../utils/errors'
+import { ClErrors, Errors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('SchemaRegistry', function () {
@@ -77,7 +77,7 @@ describe('SchemaRegistry', function () {
       const schema = createSchemaObject({ issuerId, name: '' })
 
       await expect(schemaRegistry.createSchema(schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.FieldRequired)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, Errors.FieldRequired)
         .withArgs('name')
     })
 
@@ -85,7 +85,7 @@ describe('SchemaRegistry', function () {
       const schema = createSchemaObject({ issuerId, version: '' })
 
       await expect(schemaRegistry.createSchema(schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.FieldRequired)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, Errors.FieldRequired)
         .withArgs('version')
     })
 
@@ -93,7 +93,7 @@ describe('SchemaRegistry', function () {
       const schema = createSchemaObject({ issuerId, attrNames: [] })
 
       await expect(schemaRegistry.createSchema(schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.FieldRequired)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, Errors.FieldRequired)
         .withArgs('attributes')
     })
 

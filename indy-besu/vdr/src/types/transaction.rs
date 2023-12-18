@@ -45,13 +45,6 @@ pub struct Transaction {
     pub signature: Option<TransactionSignature>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
-pub struct TransactionSignature {
-    pub v: u64,
-    pub r: Vec<u8>,
-    pub s: Vec<u8>,
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
 pub struct SignatureData {
     /// recovery ID using for public key recovery
@@ -123,9 +116,11 @@ impl Transaction {
         let v = signature_data.recovery_id + 35 + self.chain_id * 2;
         self.signature = Some(TransactionSignature {
             v,
-            r: signature_data.signature[..32].to_vec(),
-            s: signature_data.signature[32..].to_vec(),
-        })
+            H256::from_slice(&signature_data.signature[..32]),
+            H256::from_slice(&signature_data.signature[32..]),
+        );
+
+        self.signature = signature
     }
 }
 
