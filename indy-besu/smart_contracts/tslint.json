@@ -1,21 +1,19 @@
 {
   "defaultSeverity": "error",
   "extends": [
-    "tslint:recommended"
+    "tslint:recommended",
+    "tslint-config-prettier"
   ],
   "jsRules": {
     "no-unused-expression": true
   },
   "rules": {
+    "prettier": true,
     "no-console": false,
     "no-namespace": false,
     "eofline": false,
     "semicolon": false,
     "trailing-comma": true,
-    "quotemark": [
-      true,
-      "single"
-    ],
     "indent": false,
     "member-access": [ true, "check-parameter-property" ],
     "ordered-imports": true,
@@ -38,5 +36,5 @@
     "one-variable-per-declaration": false,
     "only-arrow-functions": false
   },
-  "rulesDirectory": []
+  "rulesDirectory": ["tslint-plugin-prettier"]
 }
