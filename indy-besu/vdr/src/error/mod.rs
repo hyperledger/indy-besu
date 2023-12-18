@@ -1,6 +1,16 @@
-use log::trace;
 use serde_json::json;
 use thiserror::Error;
+
+#[cfg(not(feature = "wasm"))]
+use web3::{
+    Error as Web3Error,
+    ethabi::Error as Web3EthabiError
+};
+#[cfg(feature = "wasm")]
+use web3_wasm::{
+    Error as Web3Error,
+    ethabi::Error as Web3EthabiError
+};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum VdrError {
@@ -52,54 +62,33 @@ pub enum VdrError {
 
 pub type VdrResult<T> = Result<T, VdrError>;
 
-impl From<web3::Error> for VdrError {
-    fn from(value: web3::Error) -> Self {
-        let vdr_error = match value {
-            web3::Error::Unreachable => VdrError::ClientNodeUnreachable,
-            web3::Error::InvalidResponse(err) => VdrError::ClientInvalidResponse(err),
-            web3::Error::Rpc(err) => VdrError::ClientTransactionReverted(json!(err).to_string()),
+impl From<Web3Error> for VdrError {
+    fn from(value: Web3Error) -> Self {
+        match value {
+            Web3Error::Unreachable => VdrError::ClientNodeUnreachable,
+            Web3Error::InvalidResponse(err) => VdrError::ClientInvalidResponse(err),
+            Web3Error::Rpc(err) => VdrError::ClientTransactionReverted(json!(err).to_string()),
             _ => VdrError::ClientUnexpectedError(value.to_string()),
-        };
-
-        trace!(
-            "VdrError convert from web3::Error has finished. Result: {:?}",
-            vdr_error
-        );
-
-        vdr_error
+        }
     }
 }
 
-impl From<web3::ethabi::Error> for VdrError {
-    fn from(value: web3::ethabi::Error) -> Self {
-        let vdr_error = match value {
-            web3::ethabi::Error::InvalidName(name) => VdrError::ContractInvalidName(name),
+impl From<Web3EthabiError> for VdrError {
+    fn from(value: Web3EthabiError) -> Self {
+        match value {
+            Web3EthabiError::InvalidName(name) => VdrError::ContractInvalidName(name),
             _ => VdrError::ContractInvalidInputData,
-        };
-
-        trace!(
-            "VdrError convert from web3::ethabi::Error has finished. Result: {:?}",
-            vdr_error
-        );
-
-        vdr_error
+        }
     }
 }
 
 #[cfg(feature = "basic_signer")]
 impl From<secp256k1::Error> for VdrError {
     fn from(value: secp256k1::Error) -> Self {
-        let vdr_error = match value {
+        match value {
             secp256k1::Error::InvalidSecretKey => VdrError::SignerInvalidPrivateKey,
             secp256k1::Error::InvalidMessage => VdrError::SignerInvalidMessage,
             err => VdrError::SignerUnexpectedError(err.to_string()),
-        };
-
-        trace!(
-            "VdrError convert from secp256k1::Error has finished. Result: {:?}",
-            vdr_error
-        );
-
-        vdr_error
+        }
     }
 }
