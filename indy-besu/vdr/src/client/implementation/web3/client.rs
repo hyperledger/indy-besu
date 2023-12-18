@@ -4,11 +4,22 @@ use crate::{
     types::{PingStatus, Transaction, TransactionType},
 };
 
+use async_trait::async_trait;
 use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction, TransactionSignature};
 use log::{trace, warn};
 use serde_json::json;
 use std::{str::FromStr, time::Duration};
+
+#[cfg(not(feature = "wasm"))]
 use web3::{
+    api::Eth,
+    transports::Http,
+    types::{Address, Bytes, CallRequest, H256, U256},
+    Web3,
+};
+
+#[cfg(feature = "wasm")]
+use web3_wasm::{
     api::Eth,
     transports::Http,
     types::{Address, Bytes, CallRequest, H256, U256},
@@ -43,6 +54,7 @@ impl Web3Client {
     }
 }
 
+// #[async_trait(?Send)]
 #[async_trait::async_trait]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {

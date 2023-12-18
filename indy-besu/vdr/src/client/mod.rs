@@ -11,6 +11,9 @@ use crate::{
 pub use client::*;
 pub use constants::*;
 
+// use async_trait::async_trait;
+
+// #[async_trait(?Send)]
 #[async_trait]
 pub trait Client: Sync + Send {
     /// Retrieve count of transaction for the given account
@@ -26,6 +29,7 @@ pub trait Client: Sync + Send {
     ///
     /// # Params
     /// - `transaction` transaction to submit
+    /// - `transaction` prepared transaction to submit
     ///
     /// # Returns
     /// hash of a block in which transaction included

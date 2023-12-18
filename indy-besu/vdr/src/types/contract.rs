@@ -11,11 +11,13 @@ pub struct ContractConfig {
     /// Address of deployed contract
     pub address: String,
     /// Contract ABI specification
-    pub spec_path: String,
+    pub spec_path: Option<String>,
+    /// Contract ABI specification
+    pub spec: Option<ContractSpec>,
 }
 
 /// Contract ABI specification
-#[derive(Debug, Default, PartialEq, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ContractSpec {
     /// Name of contract
     #[serde(rename = "contractName")]

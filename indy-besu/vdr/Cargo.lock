@@ -873,6 +873,10 @@ name = "futures-timer"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e64b03909df88034c26dc1547e8970b91f98bdb65165d6a4e9110d94263dbb2c"
+dependencies = [
+ "gloo-timers",
+ "send_wrapper",
+]
 
 [[package]]
 name = "futures-util"
@@ -909,8 +913,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be4136b2a15dd319360be1c07d9933517ccf0be8f16bf62a3bee4f0d618df427"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1204,6 +1210,7 @@ dependencies = [
  "thiserror",
  "uniffi",
  "uniffi_bindgen 0.25.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "web-sys",
  "web3",
 ]
 
@@ -1995,12 +2002,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "send_wrapper"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f638d531eccd6e23b980caf34876660d38e265409d8e99b397ab71eb3612fad0"
+
+[[package]]
 name = "serde"
 version = "1.0.188"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf9e0fcba69a370eed61bcf2b728575f726b50b55cba78064753d708ddc7549e"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-wasm-bindgen"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3b143e2833c57ab9ad3ea280d21fd34e285a42837aeb0ee301f4f41890fa00e"
+dependencies = [
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -2455,7 +2479,7 @@ checksum = "e51733f11c9c4f72aa0c160008246859e340b00807569a0da0e7a1079b27ba85"
 [[package]]
 name = "uniffi"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "anyhow",
  "camino",
@@ -2492,7 +2516,7 @@ dependencies = [
 [[package]]
 name = "uniffi_bindgen"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "anyhow",
  "askama",
@@ -2516,7 +2540,7 @@ dependencies = [
 [[package]]
 name = "uniffi_build"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "anyhow",
  "camino",
@@ -2536,7 +2560,7 @@ dependencies = [
 [[package]]
 name = "uniffi_checksum_derive"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "quote",
  "syn 2.0.37",
@@ -2545,7 +2569,7 @@ dependencies = [
 [[package]]
 name = "uniffi_core"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2560,7 +2584,7 @@ dependencies = [
 [[package]]
 name = "uniffi_macros"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "bincode",
  "camino",
@@ -2590,7 +2614,7 @@ dependencies = [
 [[package]]
 name = "uniffi_meta"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2614,7 +2638,7 @@ dependencies = [
 [[package]]
 name = "uniffi_testing"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "anyhow",
  "camino",
@@ -2638,7 +2662,7 @@ dependencies = [
 [[package]]
 name = "uniffi_udl"
 version = "0.25.3"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "anyhow",
  "textwrap",
@@ -2793,18 +2817,22 @@ dependencies = [
  "ethereum-types",
  "futures",
  "futures-timer",
+ "getrandom",
  "headers",
  "hex",
  "idna",
+ "js-sys",
  "jsonrpc-core",
  "log",
  "once_cell",
  "parking_lot",
  "pin-project",
+ "rand",
  "reqwest",
  "rlp",
  "secp256k1 0.27.0",
  "serde",
+ "serde-wasm-bindgen",
  "serde_json",
  "soketto",
  "tiny-keccak",
@@ -2812,6 +2840,8 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web3-async-native-tls",
 ]
 
@@ -2839,7 +2869,7 @@ dependencies = [
 [[package]]
 name = "weedle2"
 version = "4.0.0"
-source = "git+https://github.com/mozilla/uniffi-rs.git#4f4c989f16f123247004dbf969f529778ab08e00"
+source = "git+https://github.com/mozilla/uniffi-rs.git#63098f9eb10e35fd5f685de3768a11c7c161c084"
 dependencies = [
  "nom",
 ]
