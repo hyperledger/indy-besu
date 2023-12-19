@@ -27,7 +27,9 @@ pub struct DidDocumentBuilder {
 impl DidDocumentBuilder {
     pub fn new() -> DidDocumentBuilder {
         let did_doc_builder = DidDocumentBuilder {
-            context: StringOrVector::String { value: CONTEXT.to_string() },
+            context: StringOrVector::String {
+                value: CONTEXT.to_string(),
+            },
             ..DidDocumentBuilder::default()
         };
 
@@ -45,7 +47,9 @@ impl DidDocumentBuilder {
     }
 
     pub fn set_controller(mut self, controller: &str) -> DidDocumentBuilder {
-        self.controller = StringOrVector::String { value: controller.to_string() };
+        self.controller = StringOrVector::String {
+            value: controller.to_string(),
+        };
 
         trace!(
             "Set controller: {} to DidDocumentBuilder: {:?}",
@@ -183,7 +187,9 @@ impl DidDocumentBuilder {
         let service = Service {
             id: format!("#inline-{}", self.service.len() + 1),
             type_: type_.to_string(),
-            service_endpoint: ServiceEndpoint::String { value: endpoint.to_string() },
+            service_endpoint: ServiceEndpoint::String {
+                value: endpoint.to_string(),
+            },
         };
         self.service.push(service.clone());
 

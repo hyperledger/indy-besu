@@ -8,7 +8,8 @@ use log::trace;
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct Address {
     value: String,
 }
@@ -17,11 +18,11 @@ impl Address {
     pub fn new(address: &str) -> Address {
         if address.starts_with("0x") {
             Address {
-                value: address.to_string()
+                value: address.to_string(),
             }
         } else {
             Address {
-                value: format!("0x{}", address)
+                value: format!("0x{}", address),
             }
         }
     }
@@ -37,14 +38,13 @@ impl TryInto<ContractParam> for Address {
     fn try_into(self) -> Result<ContractParam, Self::Error> {
         trace!("Address: {:?} convert into ContractParam has started", self);
 
-        let acc_address = Address_::from_str(self.value()).map_err(|err| {
-            VdrError::CommonInvalidData {
+        let acc_address =
+            Address_::from_str(self.value()).map_err(|err| VdrError::CommonInvalidData {
                 msg: format!(
                     "Unable to parse account address. Err: {:?}",
                     err.to_string()
-                )
-            }
-        })?;
+                ),
+            })?;
 
         let acc_address_contract_param = ContractParam::Address(acc_address);
 
@@ -68,7 +68,7 @@ impl TryFrom<ContractOutput> for Address {
         );
 
         let acc_address = Address {
-            value: value.get_string(0)?
+            value: value.get_string(0)?,
         };
 
         trace!(

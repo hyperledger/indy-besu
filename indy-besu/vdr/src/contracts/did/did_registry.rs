@@ -10,11 +10,11 @@ use crate::{
     DID,
 };
 
-const CONTRACT_NAME: &'static str = "IndyDidRegistry";
-const METHOD_CREATE_DID: &'static str = "createDid";
-const METHOD_UPDATE_DID: &'static str = "updateDid";
-const METHOD_DEACTIVATE_DID: &'static str = "deactivateDid";
-const METHOD_RESOLVE_DID: &'static str = "resolveDid";
+const CONTRACT_NAME: &str = "IndyDidRegistry";
+const METHOD_CREATE_DID: &str = "createDid";
+const METHOD_UPDATE_DID: &str = "updateDid";
+const METHOD_DEACTIVATE_DID: &str = "deactivateDid";
+const METHOD_RESOLVE_DID: &str = "resolveDid";
 
 /// Build transaction to execute IndyDidRegistry.createDid contract method to create a new DID
 ///
@@ -25,18 +25,18 @@ const METHOD_RESOLVE_DID: &'static str = "resolveDid";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_create_did_transaction(
     client: &LedgerClient,
     from: &Address,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, DidDocument: {:?}",
-            METHOD_CREATE_DID,
-            from.value(),
-            did_doc
-        );
+        "{} txn build has started. Sender: {}, DidDocument: {:?}",
+        METHOD_CREATE_DID,
+        from.value(),
+        did_doc
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -48,10 +48,9 @@ pub async fn build_create_did_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_CREATE_DID,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_CREATE_DID, transaction
+    );
 
     transaction
 }
@@ -65,18 +64,18 @@ pub async fn build_create_did_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_update_did_transaction(
     client: &LedgerClient,
     from: &Address,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, DidDocument: {:?}",
-            METHOD_UPDATE_DID,
-            from.value(),
-            did_doc
-        );
+        "{} txn build has started. Sender: {}, DidDocument: {:?}",
+        METHOD_UPDATE_DID,
+        from.value(),
+        did_doc
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -88,10 +87,9 @@ pub async fn build_update_did_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_UPDATE_DID,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_UPDATE_DID, transaction
+    );
 
     transaction
 }
@@ -105,18 +103,18 @@ pub async fn build_update_did_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_deactivate_did_transaction(
     client: &LedgerClient,
     from: &Address,
     did: &DID,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, Did: {:?}",
-            METHOD_DEACTIVATE_DID,
-            from.value(),
-            did
-        );
+        "{} txn build has started. Sender: {}, Did: {:?}",
+        METHOD_DEACTIVATE_DID,
+        from.value(),
+        did
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -128,10 +126,9 @@ pub async fn build_deactivate_did_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_DEACTIVATE_DID,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_DEACTIVATE_DID, transaction
+    );
 
     transaction
 }
@@ -144,16 +141,15 @@ pub async fn build_deactivate_did_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_resolve_did_transaction(
     client: &LedgerClient,
     did: &DID,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Did: {:?}",
-            METHOD_RESOLVE_DID,
-            did
-        );
+        "{} txn build has started. Did: {:?}",
+        METHOD_RESOLVE_DID, did
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -164,10 +160,9 @@ pub async fn build_resolve_did_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_RESOLVE_DID,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_RESOLVE_DID, transaction
+    );
 
     transaction
 }
@@ -180,13 +175,12 @@ pub async fn build_resolve_did_transaction(
 ///
 /// # Returns
 /// parsed DID Document
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_resolve_did_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<DidDocument> {
     debug!(
-            "{} result parse has started. Bytes to parse: {:?}",
-            METHOD_RESOLVE_DID,
-            bytes
-        );
+        "{} result parse has started. Bytes to parse: {:?}",
+        METHOD_RESOLVE_DID, bytes
+    );
 
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
@@ -195,10 +189,9 @@ pub fn parse_resolve_did_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrRes
         .map(|did_with_meta| did_with_meta.document);
 
     info!(
-            "{} result parse has finished. Result: {:?}",
-            METHOD_RESOLVE_DID,
-            result
-        );
+        "{} result parse has finished. Result: {:?}",
+        METHOD_RESOLVE_DID, result
+    );
 
     result
 }
@@ -212,16 +205,16 @@ pub mod test {
         utils::init_env_logger,
         DID,
     };
+    use std::sync::RwLock;
 
     pub const _CRED_DEF_ID: &str = "did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/CLAIM_DEF/did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0/ff4EE9EUHRbb";
 
     #[cfg(feature = "ledger_test")]
     pub async fn create_did(client: &LedgerClient, signer: &crate::BasicSigner) -> DidDocument {
         let did_doc = did_doc(None);
-        let mut transaction =
-            build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc)
-                .await
-                .unwrap();
+        let mut transaction = build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc)
+            .await
+            .unwrap();
 
         let sign_bytes = transaction.get_signing_bytes().unwrap();
         let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
@@ -247,13 +240,10 @@ pub mod test {
         async fn build_create_did_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = build_create_did_transaction(
-                &client,
-                &TRUSTEE_ACC,
-                &did_doc(Some(ISSUER_ID)),
-            )
-                .await
-                .unwrap();
+            let transaction =
+                build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc(Some(ISSUER_ID)))
+                    .await
+                    .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
@@ -344,7 +334,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: None,
+                signature: RwLock::new(None),
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -403,10 +393,9 @@ pub mod test {
                 ],
                 also_known_as: Some(vec![]),
             };
-            let transaction =
-                build_create_did_transaction(&client, &TRUSTEE_ACC, &did)
-                    .await
-                    .unwrap();
+            let transaction = build_create_did_transaction(&client, &TRUSTEE_ACC, &did)
+                .await
+                .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
@@ -567,7 +556,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: None,
+                signature: RwLock::new(None),
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -580,10 +569,9 @@ pub mod test {
         async fn build_resolve_did_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction =
-                build_resolve_did_transaction(&client, &DID::new(ISSUER_ID))
-                    .await
-                    .unwrap();
+            let transaction = build_resolve_did_transaction(&client, &DID::new(ISSUER_ID))
+                .await
+                .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
@@ -598,7 +586,7 @@ pub mod test {
                     115, 122, 107, 103, 84, 109, 69, 51, 113, 84, 104, 103, 101, 50, 53, 70, 90,
                     119, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: None,
+                signature: RwLock::new(None),
             };
             assert_eq!(expected_transaction, transaction);
         }

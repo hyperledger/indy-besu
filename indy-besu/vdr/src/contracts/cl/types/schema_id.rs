@@ -2,9 +2,10 @@ use crate::DID;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct SchemaId {
-    value: String
+    value: String,
 }
 
 impl SchemaId {
@@ -12,7 +13,7 @@ impl SchemaId {
 
     pub fn new(id: &str) -> SchemaId {
         let schema_id = SchemaId {
-            value: id.to_string()
+            value: id.to_string(),
         };
 
         trace!("Created new SchemaId: {:?}", schema_id);

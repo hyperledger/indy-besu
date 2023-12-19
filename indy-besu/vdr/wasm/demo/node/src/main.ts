@@ -7,9 +7,10 @@ import { LedgerClient, IndyDidRegistry } from "indy2-vdr";
 
 const chainId = 1337
 const nodeAddress = 'http://127.0.0.1:8545'
+// set path to the compiled contract
 const didRegistryConfig = {
     address: '0x0000000000000000000000000000000000003333',
-    specPath: '/Users/artem/indy-node/indy-besu/smart_contracts/artifacts/contracts/did/IndyDidRegistry.sol/IndyDidRegistry.json'
+    specPath: '/Users/indy-besu/smart_contracts/artifacts/contracts/did/IndyDidRegistry.sol/IndyDidRegistry.json'
 }
 
 const account = '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5'

@@ -1,4 +1,8 @@
-use crate::{error::VdrError, types::{ContractOutput, ContractParam}, DID, JsonValue};
+use crate::{
+    error::VdrError,
+    types::{ContractOutput, ContractParam},
+    JsonValue, DID,
+};
 
 use crate::contracts::cl::types::{
     credential_definition_id::CredentialDefinitionId, schema_id::SchemaId,
@@ -6,14 +10,16 @@ use crate::contracts::cl::types::{
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialDefinitionWithMeta {
     pub credential_definition: CredentialDefinition,
     pub metadata: CredentialDefinitionMetadata,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct CredentialDefinition {
     pub id: CredentialDefinitionId,
     #[serde(rename = "issuerId")]
@@ -26,7 +32,8 @@ pub struct CredentialDefinition {
     pub value: JsonValue,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct CredentialDefinitionMetadata {
     pub created: u64,
 }
@@ -69,7 +76,7 @@ impl TryFrom<ContractOutput> for CredentialDefinition {
         let cred_def_value =
             serde_json::from_str::<JsonValue>(&value.get_string(5)?).map_err(|_err| {
                 let vdr_error = VdrError::ContractInvalidResponseData {
-                    msg: "Unable get to credential definition value".to_string()
+                    msg: "Unable get to credential definition value".to_string(),
                 };
 
                 warn!(
@@ -109,7 +116,9 @@ impl TryFrom<ContractOutput> for CredentialDefinitionMetadata {
         );
 
         let created = value.get_u128(0)?;
-        let cred_def_metadata = CredentialDefinitionMetadata { created: created as u64 };
+        let cred_def_metadata = CredentialDefinitionMetadata {
+            created: created as u64,
+        };
 
         trace!(
             "CredentialDefinitionMetadata convert from ContractOutput: {:?} has finished. Result: {:?}",

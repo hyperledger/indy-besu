@@ -12,9 +12,9 @@ use crate::{
     },
 };
 
-const CONTRACT_NAME: &'static str = "CredentialDefinitionRegistry";
-const METHOD_CREATE_CREDENTIAL_DEFINITION: &'static str = "createCredentialDefinition";
-const METHOD_RESOLVE_CREDENTIAL_DEFINITION: &'static str = "resolveCredentialDefinition";
+const CONTRACT_NAME: &str = "CredentialDefinitionRegistry";
+const METHOD_CREATE_CREDENTIAL_DEFINITION: &str = "createCredentialDefinition";
+const METHOD_RESOLVE_CREDENTIAL_DEFINITION: &str = "resolveCredentialDefinition";
 
 /// Build transaction to execute CredentialDefinitionRegistry.createCredentialDefinition contract
 /// method to create a new Credential Definition
@@ -26,18 +26,18 @@ const METHOD_RESOLVE_CREDENTIAL_DEFINITION: &'static str = "resolveCredentialDef
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_create_credential_definition_transaction(
     client: &LedgerClient,
     from: &Address,
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, CredentialDefinition: {:?}",
-            METHOD_CREATE_CREDENTIAL_DEFINITION,
-            from.value(),
-            credential_definition
-        );
+        "{} txn build has started. Sender: {}, CredentialDefinition: {:?}",
+        METHOD_CREATE_CREDENTIAL_DEFINITION,
+        from.value(),
+        credential_definition
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -49,10 +49,9 @@ pub async fn build_create_credential_definition_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_CREATE_CREDENTIAL_DEFINITION,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_CREATE_CREDENTIAL_DEFINITION, transaction
+    );
 
     transaction
 }
@@ -66,16 +65,15 @@ pub async fn build_create_credential_definition_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_resolve_credential_definition_transaction(
     client: &LedgerClient,
     id: &CredentialDefinitionId,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. CredentialDefinitionId: {:?}",
-            METHOD_RESOLVE_CREDENTIAL_DEFINITION,
-            id
-        );
+        "{} txn build has started. CredentialDefinitionId: {:?}",
+        METHOD_RESOLVE_CREDENTIAL_DEFINITION, id
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -86,10 +84,9 @@ pub async fn build_resolve_credential_definition_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_RESOLVE_CREDENTIAL_DEFINITION,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_RESOLVE_CREDENTIAL_DEFINITION, transaction
+    );
 
     transaction
 }
@@ -103,16 +100,15 @@ pub async fn build_resolve_credential_definition_transaction(
 ///
 /// # Returns
 /// parsed Credential Definition
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_resolve_credential_definition_result(
     client: &LedgerClient,
     bytes: Vec<u8>,
 ) -> VdrResult<CredentialDefinition> {
     debug!(
-            "{} result parse has started. Bytes to parse: {:?}",
-            METHOD_RESOLVE_CREDENTIAL_DEFINITION,
-            bytes
-        );
+        "{} result parse has started. Bytes to parse: {:?}",
+        METHOD_RESOLVE_CREDENTIAL_DEFINITION, bytes
+    );
 
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
@@ -123,10 +119,9 @@ pub fn parse_resolve_credential_definition_result(
         });
 
     info!(
-            "{} result parse has finished. Result: {:?}",
-            METHOD_RESOLVE_CREDENTIAL_DEFINITION,
-            result
-        );
+        "{} result parse has finished. Result: {:?}",
+        METHOD_RESOLVE_CREDENTIAL_DEFINITION, result
+    );
 
     result
 }
@@ -149,6 +144,7 @@ pub mod test {
         utils::init_env_logger,
         DID,
     };
+    use std::sync::RwLock;
 
     mod build_create_credential_definition_transaction {
         use super::*;
@@ -157,18 +153,17 @@ pub mod test {
         async fn build_create_credential_definition_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction =
-                build_create_credential_definition_transaction(
-                    &client,
-                    &TRUSTEE_ACC,
-                    &credential_definition(
-                        &DID::new(ISSUER_ID),
-                        &SchemaId::new(SCHEMA_ID),
-                        Some(CREDENTIAL_DEFINITION_TAG),
-                    ),
-                )
-                    .await
-                    .unwrap();
+            let transaction = build_create_credential_definition_transaction(
+                &client,
+                &TRUSTEE_ACC,
+                &credential_definition(
+                    &DID::new(ISSUER_ID),
+                    &SchemaId::new(SCHEMA_ID),
+                    Some(CREDENTIAL_DEFINITION_TAG),
+                ),
+            )
+            .await
+            .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
@@ -218,7 +213,7 @@ pub mod test {
                     44, 34, 122, 34, 58, 34, 54, 51, 50, 46, 46, 46, 48, 48, 53, 34, 125, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: None,
+                signature: RwLock::new(None),
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -231,18 +226,17 @@ pub mod test {
         async fn build_resolve_credential_definition_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction =
-                build_resolve_credential_definition_transaction(
-                    &client,
-                    &credential_definition(
-                        &DID::new(ISSUER_ID),
-                        &SchemaId::new(SCHEMA_ID),
-                        Some(CREDENTIAL_DEFINITION_TAG),
-                    )
-                        .id,
+            let transaction = build_resolve_credential_definition_transaction(
+                &client,
+                &credential_definition(
+                    &DID::new(ISSUER_ID),
+                    &SchemaId::new(SCHEMA_ID),
+                    Some(CREDENTIAL_DEFINITION_TAG),
                 )
-                    .await
-                    .unwrap();
+                .id,
+            )
+            .await
+            .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
@@ -263,7 +257,7 @@ pub mod test {
                     49, 68, 67, 108, 97, 70, 69, 122, 105, 51, 116, 47, 49, 46, 48, 46, 48, 47,
                     100, 101, 102, 97, 117, 108, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: None,
+                signature: RwLock::new(None),
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -321,10 +315,7 @@ pub mod test {
                 0, 0, 0, 0, 0, 0, 0,
             ];
             let parsed_cred_def =
-                parse_resolve_credential_definition_result(
-                    &client, data,
-                )
-                    .unwrap();
+                parse_resolve_credential_definition_result(&client, data).unwrap();
             assert_eq!(
                 credential_definition(
                     &DID::new(ISSUER_ID),

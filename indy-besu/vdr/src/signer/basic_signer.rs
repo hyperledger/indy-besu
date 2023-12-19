@@ -28,6 +28,7 @@ impl BasicSigner {
 
     pub fn create_key(&mut self, private_key: Option<&str>) -> VdrResult<(Address, Vec<u8>)> {
         let (account, key_pair) = self.create_account(private_key)?;
+        println!("account {:?}", account);
         let public_key_bytes = key_pair.public_key.serialize_uncompressed().to_vec();
         self.keys.insert(account.value().to_string(), key_pair);
         Ok((account, public_key_bytes))
@@ -35,7 +36,9 @@ impl BasicSigner {
 
     fn key_for_account(&self, account: &str) -> VdrResult<&KeyPair> {
         self.keys.get(account).ok_or_else(|| {
-            let vdr_error = VdrError::SignerMissingKey { msg: account.to_string() };
+            let vdr_error = VdrError::SignerMissingKey {
+                msg: account.to_string(),
+            };
 
             warn!(
                 "Error: {:?} during getting keys for account: {}",
@@ -106,5 +109,22 @@ pub mod test {
     fn add_key_test() {
         let basic_signer = basic_signer();
         basic_signer.key_for_account(TRUSTEE_ACC.value()).unwrap();
+    }
+
+    #[test]
+    fn basic_signer_sign_test() {
+        let basic_signer = basic_signer();
+        let data = vec![
+            43, 20, 70, 238, 250, 209, 10, 195, 87, 39, 219, 125, 26, 151, 3, 233, 70, 185, 237,
+            52, 240, 127, 64, 8, 98, 136, 107, 144, 241, 122, 142, 64,
+        ];
+        let signature = basic_signer.sign(&data, TRUSTEE_ACC.value()).unwrap();
+        let expected = vec![
+            200, 178, 128, 72, 163, 176, 188, 177, 119, 110, 11, 2, 194, 50, 220, 215, 0, 161, 247,
+            77, 43, 80, 139, 173, 141, 122, 58, 206, 72, 28, 63, 59, 9, 59, 95, 160, 244, 66, 209,
+            158, 150, 108, 172, 63, 216, 251, 53, 49, 237, 179, 250, 35, 127, 23, 178, 175, 72,
+            164, 219, 64, 129, 109, 109, 93,
+        ];
+        assert_eq!(expected, signature.signature);
     }
 }

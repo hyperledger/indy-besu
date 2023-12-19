@@ -2,7 +2,8 @@ use crate::DID;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct CredentialDefinitionId {
     value: String,
 }
@@ -12,7 +13,7 @@ impl CredentialDefinitionId {
 
     pub fn new(id: &str) -> CredentialDefinitionId {
         let cred_def_id = CredentialDefinitionId {
-            value: id.to_string()
+            value: id.to_string(),
         };
 
         trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
