@@ -10,7 +10,8 @@ use serde_json::{json, Value};
 
 pub const CONTEXT: &str = "https://www.w3.org/ns/did/v1";
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct DID {
     value: String,
 }
@@ -20,7 +21,7 @@ impl DID {
 
     pub fn new(did: &str) -> DID {
         DID {
-            value: did.to_string()
+            value: did.to_string(),
         }
     }
 
@@ -39,14 +40,16 @@ impl DID {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocumentWithMeta {
     pub document: DidDocument,
     pub metadata: DidMetadata,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
     #[serde(rename = "@context")]
@@ -63,7 +66,8 @@ pub struct DidDocument {
     pub also_known_as: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct DidMetadata {
     pub creator: Address,
     pub created: u64,
@@ -71,7 +75,8 @@ pub struct DidMetadata {
     pub deactivated: bool,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct VerificationMethod {
     pub id: String,
     #[serde(rename = "type")]
@@ -81,7 +86,8 @@ pub struct VerificationMethod {
     pub verification_key: VerificationKey,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Enum)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum VerificationKey {
     #[serde(rename_all = "camelCase")]
@@ -98,20 +104,16 @@ impl Default for VerificationKey {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Enum)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 pub enum VerificationKeyType {
+    #[default]
     Ed25519VerificationKey2018,
     X25519KeyAgreementKey2019,
     Ed25519VerificationKey2020,
     X25519KeyAgreementKey2020,
     JsonWebKey2020,
     EcdsaSecp256k1VerificationKey2019,
-}
-
-impl Default for VerificationKeyType {
-    fn default() -> Self {
-        VerificationKeyType::Ed25519VerificationKey2018
-    }
 }
 
 impl ToString for VerificationKeyType {
@@ -170,10 +172,7 @@ impl TryFrom<&str> for VerificationKeyType {
             }
             _type => Err({
                 let vdr_error = VdrError::CommonInvalidData {
-                    msg: format!(
-                        "Unexpected verification key type {}",
-                        _type
-                    )
+                    msg: format!("Unexpected verification key type {}", _type),
                 };
 
                 warn!(
@@ -195,18 +194,16 @@ impl TryFrom<&str> for VerificationKeyType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Enum)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum VerificationMethodOrReference {
-    String {
-        value: String
-    },
-    VerificationMethod {
-        value: VerificationMethod
-    },
+    String { value: String },
+    VerificationMethod { value: VerificationMethod },
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct Service {
     pub id: String,
@@ -215,21 +212,17 @@ pub struct Service {
     pub service_endpoint: ServiceEndpoint,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Enum)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum ServiceEndpoint {
-    String {
-        value: String
-    },
-    Object {
-        value: ServiceEndpointObject
-    },
-    Set {
-        value: Vec<ServiceEndpoint>
-    },
+    String { value: String },
+    Object { value: ServiceEndpointObject },
+    Set { value: Vec<ServiceEndpoint> },
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct ServiceEndpointObject {
     pub uri: String,
@@ -237,29 +230,25 @@ pub struct ServiceEndpointObject {
     pub routing_keys: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct VerificationRelationshipStruct {
     pub id: String,
     pub verification_method: VerificationMethod,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, uniffi::Enum)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum StringOrVector {
-    String {
-        value: String
-    },
-    Vector {
-        value: Vec<String>
-    },
+    String { value: String },
+    Vector { value: Vec<String> },
 }
 
 impl Default for StringOrVector {
     fn default() -> Self {
-        let vector = StringOrVector::Vector {
-            value: Vec::new()
-        };
+        let vector = StringOrVector::Vector { value: Vec::new() };
 
         trace!("Created new StringOrVerctor::Vector: {:?}", vector);
 
@@ -317,10 +306,7 @@ impl TryFrom<ContractOutput> for VerificationMethod {
             VerificationKey::JWK {
                 public_key_jwk: serde_json::from_str::<Value>(&public_key_jwk).map_err(|err| {
                     let vdr_error = VdrError::CommonInvalidData {
-                        msg: format!(
-                            "Unable to parse JWK key. Err: {:?}",
-                            err
-                        )
+                        msg: format!("Unable to parse JWK key. Err: {:?}", err),
                     };
 
                     warn!(
@@ -337,7 +323,7 @@ impl TryFrom<ContractOutput> for VerificationMethod {
             }
         } else {
             let vdr_error = VdrError::ContractInvalidResponseData {
-                msg: "Unable to parse verification method".to_string()
+                msg: "Unable to parse verification method".to_string(),
             };
 
             warn!("Error: {} during VerificationMethod parsing", vdr_error);
@@ -388,16 +374,18 @@ impl From<VerificationMethodOrReference> for ContractParam {
         );
 
         let token = match value {
-            VerificationMethodOrReference::String { value: reference } => ContractParam::Tuple(vec![
-                ContractParam::String(reference),
-                VerificationMethod::empty(),
-            ]),
-            VerificationMethodOrReference::VerificationMethod { value: verification_method } => {
+            VerificationMethodOrReference::String { value: reference } => {
                 ContractParam::Tuple(vec![
-                    ContractParam::String(verification_method.id.to_string()),
-                    verification_method.into(),
+                    ContractParam::String(reference),
+                    VerificationMethod::empty(),
                 ])
             }
+            VerificationMethodOrReference::VerificationMethod {
+                value: verification_method,
+            } => ContractParam::Tuple(vec![
+                ContractParam::String(verification_method.id.to_string()),
+                verification_method.into(),
+            ]),
         };
 
         trace!(
@@ -424,12 +412,10 @@ impl TryFrom<ContractOutput> for VerificationMethodOrReference {
 
         let token = if !verification_method.id.is_empty() {
             VerificationMethodOrReference::VerificationMethod {
-                value: verification_method
+                value: verification_method,
             }
         } else {
-            VerificationMethodOrReference::String {
-                value: id
-            }
+            VerificationMethodOrReference::String { value: id }
         };
 
         trace!(
@@ -540,7 +526,7 @@ impl TryFrom<ContractOutput> for Service {
                     uri,
                     accept,
                     routing_keys,
-                }
+                },
             },
         };
 
@@ -793,7 +779,7 @@ pub mod test {
 
     pub fn verification_relationship(id: &str) -> VerificationMethodOrReference {
         VerificationMethodOrReference::String {
-            value: format!("{}#{}", id, KEY_1)
+            value: format!("{}#{}", id, KEY_1),
         }
     }
 
@@ -806,7 +792,7 @@ pub mod test {
                     uri: SERVICE_ENDPOINT.to_string(),
                     accept: vec![],
                     routing_keys: vec![],
-                }
+                },
             },
         }
     }
@@ -822,12 +808,10 @@ pub mod test {
         let id = id.map(String::from).unwrap_or_else(new_id);
         DidDocument {
             context: StringOrVector::Vector {
-                value: vec![CONTEXT.to_string()]
+                value: vec![CONTEXT.to_string()],
             },
             id: DID::new(&id),
-            controller: StringOrVector::Vector {
-                value: vec![]
-            },
+            controller: StringOrVector::Vector { value: vec![] },
             verification_method: vec![verification_method(&id)],
             authentication: vec![verification_relationship(&id)],
             assertion_method: vec![],

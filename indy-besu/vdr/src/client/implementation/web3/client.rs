@@ -54,18 +54,14 @@ impl Web3Client {
     }
 }
 
-// #[async_trait(?Send)]
-#[async_trait::async_trait]
+#[cfg_attr(not(feature = "wasm"), async_trait)]
+#[cfg_attr(feature = "wasm", async_trait(?Send))]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
-        let account_address = Address::from_str(address.value()).map_err(|_| {
-            VdrError::ClientInvalidTransaction {
-                msg: format!(
-                    "Invalid transaction sender address {}",
-                    address.value()
-                )
-            }
-        })?;
+        let account_address =
+            Address::from_str(address.value()).map_err(|_| VdrError::ClientInvalidTransaction {
+                msg: format!("Invalid transaction sender address {}", address.value()),
+            })?;
 
         let nonce = self
             .client
@@ -84,10 +80,9 @@ impl Client for Web3Client {
         );
 
         if transaction.type_ != TransactionType::Write {
-            let vdr_error =
-                VdrError::ClientInvalidTransaction {
-                    msg: "Write transaction expected".to_string()
-                };
+            let vdr_error = VdrError::ClientInvalidTransaction {
+                msg: "Write transaction expected".to_string(),
+            };
 
             warn!(
                 "Error: {} during submitting transaction: {:?}",
@@ -97,50 +92,50 @@ impl Client for Web3Client {
             return Err(vdr_error);
         }
 
-        let to = Address::from_str(&transaction.to).map_err(|_| {
-            VdrError::ClientInvalidTransaction {
-                msg: format!(
-                    "Invalid transaction target address {}",
-                    transaction.to
-                )
-            }
-        })?;
+        let to =
+            Address::from_str(&transaction.to).map_err(|_| VdrError::ClientInvalidTransaction {
+                msg: format!("Invalid transaction target address {}", transaction.to),
+            })?;
 
-        let signature = transaction
-            .signature
-            .as_ref()
+        let nonce =
+            transaction
+                .nonce
+                .clone()
+                .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                    msg: "Transaction `nonce` is not set".to_string(),
+                })?;
+
+        let eth_transaction = {
+            let signature = transaction.signature.read().unwrap();
+            let signature = signature
+                .as_ref()
+                .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                    msg: "Missing signature".to_string(),
+                })?
+                .clone();
+
+            let v = signature.recovery_id + 35 + transaction.chain_id * 2;
+            let signature = TransactionSignature::new(
+                v,
+                H256::from_slice(&signature.signature[..32]),
+                H256::from_slice(&signature.signature[32..]),
+            )
             .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                msg: "Missing signature".to_string()
+                msg: "Transaction `nonce` is not set".to_string(),
+            })?;
+            let nonce: [u64; 4] = nonce.try_into().map_err(|_| VdrError::CommonInvalidData {
+                msg: "Invalid nonce provided".to_string(),
             })?;
 
-        let nonce = transaction.nonce.clone().ok_or_else(|| {
-            VdrError::ClientInvalidTransaction {
-                msg: "Transaction `nonce` is not set".to_string()
+            LegacyTransaction {
+                nonce: U256(nonce),
+                gas_price: U256([0, 0, 0, 0]),
+                gas_limit: U256([GAS, 0, 0, 0]),
+                action: TransactionAction::Call(to),
+                value: Default::default(),
+                input: transaction.data.clone(),
+                signature,
             }
-        })?;
-
-        let signature = TransactionSignature::new(
-            signature.v,
-            H256::from_slice(&signature.r),
-            H256::from_slice(&signature.s),
-        ).ok_or_else(|| {
-            VdrError::ClientInvalidTransaction {
-                msg: "Transaction `nonce` is not set".to_string()
-            }
-        })?;
-        let nonce: [u64; 4] = nonce.try_into()
-            .map_err(|_| VdrError::CommonInvalidData {
-                msg: "Invalid nonce provided".to_string()
-            })?;
-
-        let eth_transaction = LegacyTransaction {
-            nonce: U256(nonce),
-            gas_price: U256([0, 0, 0, 0]),
-            gas_limit: U256([GAS, 0, 0, 0]),
-            action: TransactionAction::Call(to),
-            value: Default::default(),
-            input: transaction.data.clone(),
-            signature,
         };
 
         let receipt = self
@@ -164,10 +159,9 @@ impl Client for Web3Client {
         );
 
         if transaction.type_ != TransactionType::Read {
-            let vdr_error =
-                VdrError::ClientInvalidTransaction {
-                    msg: "Read transaction expected".to_string()
-                };
+            let vdr_error = VdrError::ClientInvalidTransaction {
+                msg: "Read transaction expected".to_string(),
+            };
 
             warn!(
                 "Error: {} during calling transaction: {:?}",
@@ -178,10 +172,7 @@ impl Client for Web3Client {
         }
         let address = Address::from_str(&transaction.to).map_err(|_| {
             let vdr_error = VdrError::ClientInvalidTransaction {
-                msg: format!(
-                    "Invalid transaction target address {}",
-                    transaction.to
-                )
+                msg: format!("Invalid transaction target address {}", transaction.to),
             };
 
             warn!(
@@ -209,10 +200,9 @@ impl Client for Web3Client {
             .transaction_receipt(H256::from_slice(hash))
             .await?
             .ok_or_else(|| {
-                let vdr_error =
-                    VdrError::ClientInvalidResponse {
-                        msg: "Missing transaction receipt".to_string()
-                    };
+                let vdr_error = VdrError::ClientInvalidResponse {
+                    msg: "Missing transaction receipt".to_string(),
+                };
 
                 warn!("Error: {} getting receipt", vdr_error,);
 

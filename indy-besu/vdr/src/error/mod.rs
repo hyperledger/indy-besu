@@ -6,53 +6,38 @@ use web3::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 #[cfg(feature = "wasm")]
 use web3_wasm::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 
-#[derive(thiserror::Error, uniffi::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Error))]
 pub enum VdrError {
     #[error("Ledger Client: Node is unreachable")]
     ClientNodeUnreachable,
 
     #[error("Ledger Client: Invalid transaction: {}", msg)]
-    ClientInvalidTransaction {
-        msg: String
-    },
+    ClientInvalidTransaction { msg: String },
 
     #[error("Ledger Client: Got invalid response: {}", msg)]
-    ClientInvalidResponse {
-        msg: String
-    },
+    ClientInvalidResponse { msg: String },
 
     #[error("Ledger Client: Transaction reverted: {}", msg)]
-    ClientTransactionReverted {
-        msg: String
-    },
+    ClientTransactionReverted { msg: String },
 
     #[error("Ledger Client: Unexpected error occurred: {}", msg)]
-    ClientUnexpectedError {
-        msg: String
-    },
+    ClientUnexpectedError { msg: String },
 
     #[error("Ledger Client: Invalid state {}", msg)]
-    ClientInvalidState {
-        msg: String
-    },
+    ClientInvalidState { msg: String },
 
     #[error("Contract: Invalid name: {}", msg)]
-    ContractInvalidName {
-        msg: String
-    },
+    ContractInvalidName { msg: String },
 
     #[error("Contract: Invalid specification: {}", msg)]
-    ContractInvalidSpec {
-        msg: String
-    },
+    ContractInvalidSpec { msg: String },
 
     #[error("Contract: Invalid data")]
     ContractInvalidInputData,
 
     #[error("Contract: Invalid response data: {}", msg)]
-    ContractInvalidResponseData {
-        msg: String
-    },
+    ContractInvalidResponseData { msg: String },
 
     #[error("Signer: Invalid private key")]
     SignerInvalidPrivateKey,
@@ -61,19 +46,13 @@ pub enum VdrError {
     SignerInvalidMessage,
 
     #[error("Signer: Key is missing: {}", msg)]
-    SignerMissingKey {
-        msg: String
-    },
+    SignerMissingKey { msg: String },
 
     #[error("Signer: Unexpected error occurred: {}", msg)]
-    SignerUnexpectedError {
-        msg: String
-    },
+    SignerUnexpectedError { msg: String },
 
     #[error("Invalid data: {}", msg)]
-    CommonInvalidData {
-        msg: String
-    },
+    CommonInvalidData { msg: String },
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;
@@ -83,8 +62,12 @@ impl From<Web3Error> for VdrError {
         let vdr_error = match value {
             Web3Error::Unreachable => VdrError::ClientNodeUnreachable,
             Web3Error::InvalidResponse(err) => VdrError::ClientInvalidResponse { msg: err },
-            Web3Error::Rpc(err) => VdrError::ClientTransactionReverted { msg: json!(err).to_string() },
-            _ => VdrError::ClientUnexpectedError { msg: value.to_string() },
+            Web3Error::Rpc(err) => VdrError::ClientTransactionReverted {
+                msg: json!(err).to_string(),
+            },
+            _ => VdrError::ClientUnexpectedError {
+                msg: value.to_string(),
+            },
         };
 
         trace!(
@@ -118,7 +101,9 @@ impl From<secp256k1::Error> for VdrError {
         match value {
             secp256k1::Error::InvalidSecretKey => VdrError::SignerInvalidPrivateKey,
             secp256k1::Error::InvalidMessage => VdrError::SignerInvalidMessage,
-            err => VdrError::SignerUnexpectedError { msg: err.to_string() },
+            err => VdrError::SignerUnexpectedError {
+                msg: err.to_string(),
+            },
         }
     }
 }

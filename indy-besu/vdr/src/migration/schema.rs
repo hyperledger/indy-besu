@@ -26,7 +26,7 @@ impl SchemaId {
         let parts: Vec<&str> = id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
             let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema id".to_string()
+                msg: "Invalid indy schema id".to_string(),
             };
 
             warn!(
@@ -38,7 +38,7 @@ impl SchemaId {
         })?;
         let name = parts.get(2).ok_or_else(|| {
             let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema name".to_string()
+                msg: "Invalid indy schema name".to_string(),
             };
 
             warn!(
@@ -50,7 +50,7 @@ impl SchemaId {
         })?;
         let version = parts.get(3).ok_or_else(|| {
             let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema version".to_string()
+                msg: "Invalid indy schema version".to_string(),
             };
 
             warn!(
@@ -80,7 +80,7 @@ impl Schema {
 
         let indy_schema: IndySchemaFormat = serde_json::from_str(&schema).map_err(|_err| {
             let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema".to_string()
+                msg: "Invalid indy schema".to_string(),
             };
 
             warn!(
@@ -115,7 +115,7 @@ impl TryFrom<IndySchemaFormat> for Schema {
         let parts: Vec<&str> = schema.id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
             let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema".to_string()
+                msg: "Invalid indy schema".to_string(),
             };
 
             warn!(

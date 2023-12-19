@@ -2,7 +2,7 @@ use ethereum::{LegacyTransactionMessage, TransactionAction};
 use ethereum_types::{H160, U256};
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{str::FromStr, sync::RwLock};
 
 use crate::{
     client::GAS,
@@ -13,7 +13,8 @@ use crate::{
 
 /// Type of transaction: write/read
 /// depending on the transaction type different client methods will be executed to submit transaction
-#[derive(Clone, Debug, Default, PartialEq, uniffi::Enum)]
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 pub enum TransactionType {
     #[default]
     Read,
@@ -21,7 +22,8 @@ pub enum TransactionType {
 }
 
 /// Transaction object
-#[derive(Clone, Debug, Default, PartialEq, uniffi::Object)]
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Object))]
 pub struct Transaction {
     /// type of transaction: write/read
     /// depending on the transaction type different client methods will be executed to submit transaction
@@ -37,17 +39,11 @@ pub struct Transaction {
     /// transaction payload
     pub data: Vec<u8>,
     /// transaction signature
-    pub signature: Option<TransactionSignature>,
+    pub signature: RwLock<Option<SignatureData>>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
-pub struct TransactionSignature {
-    pub v: u64,
-    pub r: Vec<u8>,
-    pub s: Vec<u8>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct SignatureData {
     /// recovery ID using for public key recovery
     pub recovery_id: u64,
@@ -55,47 +51,26 @@ pub struct SignatureData {
     pub signature: Vec<u8>,
 }
 
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 impl Transaction {
-    #[uniffi::constructor]
-    pub fn new(type_: TransactionType,
-               from: Option<Address>,
-               to: String,
-               chain_id: u64,
-               data: Vec<u8>,
-               nonce: Option<Vec<u64>>,
-               signature: Option<TransactionSignature>,
-    ) -> Transaction {
-        Transaction {
-            type_,
-            from,
-            to,
-            chain_id,
-            data,
-            nonce,
-            signature,
-        }
-    }
-
     pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
-        let nonce = self.nonce.as_ref().ok_or_else(|| {
-            VdrError::ClientInvalidTransaction {
-                msg: "Transaction `nonce` is not set".to_string()
-            }
-        })?;
-        let to = H160::from_str(&self.to).map_err(|_| {
-            VdrError::ClientInvalidTransaction {
-                msg: format!(
-                    "Invalid transaction target address {}",
-                    self.to
-                )
-            }
+        let nonce = self
+            .nonce
+            .as_ref()
+            .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                msg: "Transaction `nonce` is not set".to_string(),
+            })?;
+        let to = H160::from_str(&self.to).map_err(|_| VdrError::ClientInvalidTransaction {
+            msg: format!("Invalid transaction target address {}", self.to),
         })?;
 
-        let nonce: [u64; 4] = nonce.clone().try_into()
-            .map_err(|_| VdrError::CommonInvalidData {
-                msg: "Invalid nonce provided".to_string()
-            })?;
+        let nonce: [u64; 4] =
+            nonce
+                .clone()
+                .try_into()
+                .map_err(|_| VdrError::CommonInvalidData {
+                    msg: "Invalid nonce provided".to_string(),
+                })?;
 
         let eth_transaction = LegacyTransactionMessage {
             nonce: U256(nonce),
@@ -110,17 +85,49 @@ impl Transaction {
         let hash = eth_transaction.hash();
         Ok(hash.as_bytes().to_vec())
     }
+
+    pub fn set_signature(&self, signature_data: SignatureData) {
+        let mut signature = self.signature.write().unwrap();
+        *signature = Some(signature_data)
+    }
 }
 
+#[cfg(feature = "uni_ffi")]
+#[uniffi::export]
 impl Transaction {
-    /// set signature for the transaction
-    pub fn set_signature(&mut self, signature_data: SignatureData) {
-        let v = signature_data.recovery_id + 35 + self.chain_id * 2;
-        self.signature = Some(TransactionSignature {
-            v,
-            r: signature_data.signature[..32].to_vec(),
-            s: signature_data.signature[32..].to_vec(),
-        })
+    #[uniffi::constructor]
+    pub fn new(
+        type_: TransactionType,
+        from: Option<Address>,
+        to: String,
+        chain_id: u64,
+        data: Vec<u8>,
+        nonce: Option<Vec<u64>>,
+        signature: Option<SignatureData>,
+    ) -> Transaction {
+        Transaction {
+            type_,
+            from,
+            to,
+            chain_id,
+            data,
+            nonce,
+            signature: RwLock::new(signature),
+        }
+    }
+}
+
+impl PartialEq for Transaction {
+    fn eq(&self, other: &Self) -> bool {
+        let self_signature = self.signature.read().unwrap();
+        let other_signature = other.signature.read().unwrap();
+        self.type_ == other.type_
+            && self.from == other.from
+            && self.to == other.to
+            && self.nonce == other.nonce
+            && self.chain_id == other.chain_id
+            && self.data == other.data
+            && *self_signature == *other_signature
     }
 }
 
@@ -196,11 +203,12 @@ impl TransactionBuilder {
         let data = contract.encode_input(&self.method, &self.params)?;
         let nonce = match self.type_ {
             TransactionType::Write => {
-                let from = self.from.as_ref().ok_or_else(|| {
-                    VdrError::ClientInvalidTransaction {
-                        msg: "Transaction `sender` is not set".to_string()
-                    }
-                })?;
+                let from =
+                    self.from
+                        .as_ref()
+                        .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                            msg: "Transaction `sender` is not set".to_string(),
+                        })?;
 
                 let nonce = client.get_transaction_count(from).await?;
                 Some(nonce.to_vec())
@@ -215,7 +223,7 @@ impl TransactionBuilder {
             chain_id: client.chain_id(),
             data,
             nonce,
-            signature: None,
+            signature: RwLock::new(None),
         };
 
         trace!("Built transaction: {:?}", transaction);
@@ -255,16 +263,15 @@ impl TransactionParser {
         self
     }
 
-    pub fn parse<T: TryFrom<ContractOutput, Error=VdrError>>(
+    pub fn parse<T: TryFrom<ContractOutput, Error = VdrError>>(
         self,
         client: &LedgerClient,
         bytes: &[u8],
     ) -> VdrResult<T> {
         if bytes.is_empty() {
-            let vdr_error =
-                VdrError::ContractInvalidResponseData {
-                    msg: "Empty response bytes".to_string()
-                };
+            let vdr_error = VdrError::ContractInvalidResponseData {
+                msg: "Empty response bytes".to_string(),
+            };
 
             warn!("Error: {:?} during transaction output parse", vdr_error);
 
@@ -274,10 +281,9 @@ impl TransactionParser {
         let output = contract.decode_output(&self.method, bytes)?;
 
         if output.is_empty() {
-            let vdr_error =
-                VdrError::ContractInvalidResponseData {
-                    msg: "Unable to parse response".to_string()
-                };
+            let vdr_error = VdrError::ContractInvalidResponseData {
+                msg: "Unable to parse response".to_string(),
+            };
 
             warn!("Error: {:?} during transaction output parse", vdr_error);
 

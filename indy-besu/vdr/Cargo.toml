@@ -23,6 +23,7 @@ wasm = ["web-sys", "web3-wasm"]
 ledger_test = ["basic_signer"]
 basic_signer = ["secp256k1"]
 migration = []
+uni_ffi = ["uniffi", "uniffi_bindgen"]
 
 [dependencies]
 log = "0.4"
@@ -43,13 +44,13 @@ thiserror = "1.0.49"
 web3 = { version = "0.19.0", optional = true }
 web-sys = { version = "0.3.64", optional = true, features = ["Window"] }
 web3-wasm = { package = "web3", version = "0.19.0", default-features = false, features = ["wasm", "http", "http-tls"], optional = true }
-
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = [ "cli" ] }
-uniffi_bindgen = "0.25.3"
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = ["tokio", "cli"], optional = true }
+uniffi_bindgen = { version = "0.25.3", optional = true }
 
 [build-dependencies]
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = [ "build" ] }
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = [ "build"], optional = true }
 
 [dev-dependencies]
 bs58 = "0.5.0"
 env_logger = "0.10.0"
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = ["tokio", "cli"] }

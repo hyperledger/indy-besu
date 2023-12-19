@@ -12,14 +12,14 @@ use crate::{
     Address,
 };
 
-#[derive(uniffi::Object)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Object))]
 pub struct LedgerClient {
     chain_id: u64,
     client: Box<dyn Client>,
     contracts: HashMap<String, Box<dyn Contract>>,
 }
 
-#[uniffi::export]
+#[cfg(not(feature = "uni_ffi"))]
 impl LedgerClient {
     /// Create client interacting with ledger
     ///
@@ -30,8 +30,74 @@ impl LedgerClient {
     ///
     /// # Returns
     ///  client to use for building and sending transactions
+    pub fn new(
+        chain_id: u64,
+        node_address: String,
+        contract_configs: Vec<ContractConfig>,
+    ) -> VdrResult<LedgerClient> {
+        LedgerClient::_new(chain_id, node_address, contract_configs)
+    }
+
+    /// Ping Ledger.
+    ///
+    /// # Returns
+    ///  ping status
+    pub async fn ping(&self) -> VdrResult<PingStatus> {
+        self._ping().await
+    }
+
+    /// Submit prepared transaction to the ledger
+    ///     Depending on the transaction type Write/Read ethereum methods will be used
+    ///
+    /// #Params
+    ///  transaction - transaction to submit
+    ///
+    /// #Returns
+    ///  transaction execution result:
+    ///    depending on the type it will be either result bytes or block hash
+    pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        self._submit_transaction(transaction).await
+    }
+
+    /// Get receipt for the given block hash
+    ///
+    /// # Params
+    ///  transaction - transaction to submit
+    ///
+    /// # Returns
+    ///  receipt for the given block
+    pub async fn get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {
+        self._get_receipt(hash).await
+    }
+}
+
+#[cfg(feature = "uni_ffi")]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
+impl LedgerClient {
     #[uniffi::constructor]
     pub fn new(
+        chain_id: u64,
+        node_address: String,
+        contract_configs: Vec<ContractConfig>,
+    ) -> VdrResult<LedgerClient> {
+        LedgerClient::_new(chain_id, node_address, contract_configs)
+    }
+
+    pub async fn ping(&self) -> VdrResult<PingStatus> {
+        self._ping().await
+    }
+
+    pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        self._submit_transaction(transaction).await
+    }
+
+    pub async fn get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {
+        self._get_receipt(hash).await
+    }
+}
+
+impl LedgerClient {
+    fn _new(
         chain_id: u64,
         node_address: String,
         contract_configs: Vec<ContractConfig>,
@@ -59,43 +125,21 @@ impl LedgerClient {
         Ok(ledger_client)
     }
 
-    /// Ping Ledger.
-    ///
-    /// # Returns
-    ///  ping status
-    pub async fn ping(&self) -> VdrResult<PingStatus> {
+    async fn _ping(&self) -> VdrResult<PingStatus> {
         self.client.ping().await
     }
 
-    /// Submit prepared transaction to the ledger
-    ///     Depending on the transaction type Write/Read ethereum methods will be used
-    ///
-    /// #Params
-    ///  transaction - transaction to submit
-    ///
-    /// #Returns
-    ///  transaction execution result:
-    ///    depending on the type it will be either result bytes or block hash
-    pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+    async fn _submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
         match transaction.type_ {
             TransactionType::Read => self.client.call_transaction(transaction).await,
             TransactionType::Write => self.client.submit_transaction(transaction).await,
         }
     }
 
-    /// Get receipt for the given block hash
-    ///
-    /// # Params
-    ///  transaction - transaction to submit
-    ///
-    /// # Returns
-    ///  receipt for the given block
-    pub async fn get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {
+    async fn _get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {
         self.client.get_receipt(&hash).await
     }
-}
 
-impl LedgerClient {
     pub(crate) async fn get_transaction_count(&self, address: &Address) -> VdrResult<Vec<u64>> {
         let nonce = self.client.get_transaction_count(address).await?;
         Ok(nonce.to_vec())
@@ -107,7 +151,7 @@ impl LedgerClient {
             .map(|contract| contract.as_ref())
             .ok_or_else(|| {
                 let vdr_error = VdrError::ContractInvalidName {
-                    msg: name.to_string()
+                    msg: name.to_string(),
                 };
 
                 warn!("Error during getting contract: {:?}", vdr_error);
@@ -133,14 +177,14 @@ impl LedgerClient {
                 (Some(spec_path), None) => ContractSpec::from_file(spec_path)?,
                 (None, Some(spec)) => spec.clone(),
                 (Some(_), Some(_)) => {
-                    return Err(VdrError::ContractInvalidSpec(
-                        "Either `spec_path` or `spec` must be provided".to_string(),
-                    ))
+                    return Err(VdrError::ContractInvalidSpec {
+                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
+                    });
                 }
                 (None, None) => {
-                    return Err(VdrError::ContractInvalidSpec(
-                        "Either `spec_path` or `spec` must be provided".to_string(),
-                    ))
+                    return Err(VdrError::ContractInvalidSpec {
+                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
+                    });
                 }
             };
 
@@ -225,7 +269,7 @@ pub mod test {
 
     pub struct MockClient {}
 
-    #[async_trait(?Send)]
+    #[async_trait]
     impl Client for MockClient {
         async fn get_transaction_count(&self, _address: &Address) -> VdrResult<[u64; 4]> {
             Ok([0, 0, 0, 0])
@@ -249,7 +293,8 @@ pub mod test {
     }
 
     pub fn mock_client() -> LedgerClient {
-        let mut client = LedgerClient::new(CHAIN_ID, NODE_ADDRESS.to_string(), contracts()).unwrap();
+        let mut client =
+            LedgerClient::new(CHAIN_ID, NODE_ADDRESS.to_string(), contracts()).unwrap();
         client.client = Box::new(MockClient {});
         client
     }
@@ -277,7 +322,8 @@ pub mod test {
         #[async_std::test]
         async fn client_ping_wrong_node_test() {
             let wrong_node_address = "http://127.0.0.1:1111";
-            let client = LedgerClient::new(CHAIN_ID, wrong_node_address.to_string(), contracts()).unwrap();
+            let client =
+                LedgerClient::new(CHAIN_ID, wrong_node_address.to_string(), contracts()).unwrap();
             match client.ping().await.unwrap().status {
                 Status::Err { .. } => {}
                 Status::Ok => assert!(false, "Ping status expected to be `Err`."),

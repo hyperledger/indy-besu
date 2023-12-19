@@ -6,11 +6,11 @@ use crate::{
 };
 use log::{debug, info};
 
-const CONTRACT_NAME: &'static str = "RoleControl";
-const METHOD_ASSIGN_ROLE: &'static str = "assignRole";
-const METHOD_REVOKE_ROLE: &'static str = "revokeRole";
-const METHOD_HAS_ROLE: &'static str = "hasRole";
-const METHOD_GET_ROLE: &'static str = "getRole";
+const CONTRACT_NAME: &str = "RoleControl";
+const METHOD_ASSIGN_ROLE: &str = "assignRole";
+const METHOD_REVOKE_ROLE: &str = "revokeRole";
+const METHOD_HAS_ROLE: &str = "hasRole";
+const METHOD_GET_ROLE: &str = "getRole";
 
 /// Build transaction to execute RoleControl.assignRole contract method to assign a role to an account
 ///
@@ -22,7 +22,7 @@ const METHOD_GET_ROLE: &'static str = "getRole";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_assign_role_transaction(
     client: &LedgerClient,
     from: &Address,
@@ -30,12 +30,12 @@ pub async fn build_assign_role_transaction(
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, assignee: {}, role: {:?}",
-            METHOD_ASSIGN_ROLE,
-            from.value(),
-            account.value(),
-            role
-        );
+        "{} txn build has started. Sender: {}, assignee: {}, role: {:?}",
+        METHOD_ASSIGN_ROLE,
+        from.value(),
+        account.value(),
+        role
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -48,10 +48,9 @@ pub async fn build_assign_role_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_ASSIGN_ROLE,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_ASSIGN_ROLE, transaction
+    );
 
     transaction
 }
@@ -66,7 +65,7 @@ pub async fn build_assign_role_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_revoke_role_transaction(
     client: &LedgerClient,
     from: &Address,
@@ -74,12 +73,12 @@ pub async fn build_revoke_role_transaction(
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, revokee: {}, role: {:?}",
-            METHOD_REVOKE_ROLE,
-            from.value(),
-            account.value(),
-            role
-        );
+        "{} txn build has started. Sender: {}, revokee: {}, role: {:?}",
+        METHOD_REVOKE_ROLE,
+        from.value(),
+        account.value(),
+        role
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -92,10 +91,9 @@ pub async fn build_revoke_role_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_REVOKE_ROLE,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_REVOKE_ROLE, transaction
+    );
 
     transaction
 }
@@ -109,18 +107,18 @@ pub async fn build_revoke_role_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_has_role_transaction(
     client: &LedgerClient,
     role: &Role,
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Account to check: {}, role: {:?}",
-            METHOD_HAS_ROLE,
-            account.value(),
-            role
-        );
+        "{} txn build has started. Account to check: {}, role: {:?}",
+        METHOD_HAS_ROLE,
+        account.value(),
+        role
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -132,10 +130,9 @@ pub async fn build_has_role_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result {:?}",
-            METHOD_HAS_ROLE,
-            transaction
-        );
+        "{} txn build has finished. Result {:?}",
+        METHOD_HAS_ROLE, transaction
+    );
 
     transaction
 }
@@ -148,16 +145,16 @@ pub async fn build_has_role_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_get_role_transaction(
     client: &LedgerClient,
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Account to get: {}",
-            METHOD_GET_ROLE,
-            account.value(),
-        );
+        "{} txn build has started. Account to get: {}",
+        METHOD_GET_ROLE,
+        account.value(),
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -168,10 +165,9 @@ pub async fn build_get_role_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_GET_ROLE,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_GET_ROLE, transaction
+    );
 
     transaction
 }
@@ -184,13 +180,12 @@ pub async fn build_get_role_transaction(
 ///
 /// # Returns
 /// Account has role result
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_has_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<bool> {
     debug!(
-            "{} result parse has started. Bytes to parse: {:?}",
-            METHOD_HAS_ROLE,
-            bytes
-        );
+        "{} result parse has started. Bytes to parse: {:?}",
+        METHOD_HAS_ROLE, bytes
+    );
 
     let parse_result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
@@ -198,10 +193,9 @@ pub fn parse_has_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult
         .parse::<HasRole>(client, &bytes);
 
     info!(
-            "{} result parse has finished. Result: {:?}",
-            METHOD_HAS_ROLE,
-            parse_result
-        );
+        "{} result parse has finished. Result: {:?}",
+        METHOD_HAS_ROLE, parse_result
+    );
 
     parse_result
 }
@@ -214,13 +208,12 @@ pub fn parse_has_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult
 ///
 /// # Returns
 /// Account's role
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_get_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<Role> {
     debug!(
-            "{} result parse has started. Bytes to parse: {:?}",
-            METHOD_GET_ROLE,
-            bytes
-        );
+        "{} result parse has started. Bytes to parse: {:?}",
+        METHOD_GET_ROLE, bytes
+    );
 
     let parse_result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
@@ -228,10 +221,9 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult
         .parse::<Role>(client, &bytes);
 
     info!(
-            "{} result parse has finished. Result: {:?}",
-            METHOD_GET_ROLE,
-            parse_result
-        );
+        "{} result parse has finished. Result: {:?}",
+        METHOD_GET_ROLE, parse_result
+    );
 
     parse_result
 }
@@ -243,6 +235,7 @@ pub mod test {
         client::test::{mock_client, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TRUSTEE_ACC},
         utils::init_env_logger,
     };
+    use std::sync::RwLock;
 
     pub const NEW_ACCOUNT: &str = "0x0886328869e4e1f401e1052a5f4aae8b45f42610";
 
@@ -263,14 +256,10 @@ pub mod test {
                 136, 105, 228, 225, 244, 1, 225, 5, 42, 95, 74, 174, 139, 69, 244, 38, 16,
             ];
 
-            let transaction = build_assign_role_transaction(
-                &client,
-                &TRUSTEE_ACC,
-                &Role::Trustee,
-                &account(),
-            )
-                .await
-                .unwrap();
+            let transaction =
+                build_assign_role_transaction(&client, &TRUSTEE_ACC, &Role::Trustee, &account())
+                    .await
+                    .unwrap();
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
@@ -279,7 +268,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signature: None,
+                signature: RwLock::new(None),
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -299,14 +288,10 @@ pub mod test {
                 136, 105, 228, 225, 244, 1, 225, 5, 42, 95, 74, 174, 139, 69, 244, 38, 16,
             ];
 
-            let transaction = build_revoke_role_transaction(
-                &client,
-                &TRUSTEE_ACC,
-                &Role::Trustee,
-                &account(),
-            )
-                .await
-                .unwrap();
+            let transaction =
+                build_revoke_role_transaction(&client, &TRUSTEE_ACC, &Role::Trustee, &account())
+                    .await
+                    .unwrap();
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
@@ -315,7 +300,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signature: None,
+                signature: RwLock::new(None),
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -345,7 +330,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signature: None,
+                signature: RwLock::new(None),
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -381,10 +366,9 @@ pub mod test {
                 136, 105, 228, 225, 244, 1, 225, 5, 42, 95, 74, 174, 139, 69, 244, 38, 16,
             ];
 
-            let transaction =
-                build_has_role_transaction(&client, &Role::Trustee, &account())
-                    .await
-                    .unwrap();
+            let transaction = build_has_role_transaction(&client, &Role::Trustee, &account())
+                .await
+                .unwrap();
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
@@ -393,7 +377,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: expected_data,
-                signature: None,
+                signature: RwLock::new(None),
             };
 
             assert_eq!(expected_transaction, transaction);

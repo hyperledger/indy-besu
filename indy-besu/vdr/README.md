@@ -72,14 +72,22 @@ cargo +nightly fmt
 
 ## FFI
 
+### Kotlin, Python, Swift
+
 `Indy-VDR` library uses [uniffi](https://mozilla.github.io/uniffi-rs/) to generate bindings for Kotlin, Python, Swift.
 
 In order to generate language specific bindings run the following commands replacing target
 language `<kotlin|python|swift>`:
 
 ```
-cargo build --release
-cargo run --verbose --bin uniffi-bindgen generate --library target/release/libindy2_vdr.dylib --language <kotlin|python|swift> --out-dir out
+cargo build --features "uni_ffi" --release
+cargo run --features "uni_ffi" --bin uniffi-bindgen generate --library target/release/libindy2_vdr.dylib --language <kotlin|python|swift> --out-dir out
 ```
 
 The `out` directory will be created as the command execution result.
+
+### JavaScript, NodeJs, WebAssembly
+
+`Indy-VDR` library uses [wasm-bindgen](https://rustwasm.github.io/wasm-bindgen/) to generate bindings for JavaScript, NodeJs, WebAssembly.
+
+See instructions [here](./wasm/README.md).

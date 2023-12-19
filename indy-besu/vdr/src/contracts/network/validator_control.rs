@@ -8,11 +8,10 @@ use crate::{
 
 use super::validator_info::ValidatorAddresses;
 
-
-const CONTRACT_NAME: &'static str = "ValidatorControl";
-const METHOD_ADD_VALIDATOR: &'static str = "addValidator";
-const METHOD_REMOVE_VALIDATOR: &'static str = "removeValidator";
-const METHOD_GET_VALIDATORS: &'static str = "getValidators";
+const CONTRACT_NAME: &str = "ValidatorControl";
+const METHOD_ADD_VALIDATOR: &str = "addValidator";
+const METHOD_REMOVE_VALIDATOR: &str = "removeValidator";
+const METHOD_GET_VALIDATORS: &str = "getValidators";
 
 /// Build transaction to execute ValidatorControl.addValidator contract method to add a new Validator
 ///
@@ -23,18 +22,18 @@ const METHOD_GET_VALIDATORS: &'static str = "getValidators";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_add_validator_transaction(
     client: &LedgerClient,
     from: &Address,
     validator_address: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, validator address: {}",
-            METHOD_ADD_VALIDATOR,
-            from.value(),
-            validator_address.value()
-        );
+        "{} txn build has started. Sender: {}, validator address: {}",
+        METHOD_ADD_VALIDATOR,
+        from.value(),
+        validator_address.value()
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -46,10 +45,9 @@ pub async fn build_add_validator_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_ADD_VALIDATOR,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_ADD_VALIDATOR, transaction
+    );
 
     transaction
 }
@@ -63,18 +61,18 @@ pub async fn build_add_validator_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_remove_validator_transaction(
     client: &LedgerClient,
     from: &Address,
     validator_address: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, validator address: {}",
-            METHOD_REMOVE_VALIDATOR,
-            from.value(),
-            validator_address.value()
-        );
+        "{} txn build has started. Sender: {}, validator address: {}",
+        METHOD_REMOVE_VALIDATOR,
+        from.value(),
+        validator_address.value()
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -86,10 +84,9 @@ pub async fn build_remove_validator_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_REMOVE_VALIDATOR,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_REMOVE_VALIDATOR, transaction
+    );
 
     transaction
 }
@@ -101,7 +98,7 @@ pub async fn build_remove_validator_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResult<Transaction> {
     debug!("{} txn build has started", METHOD_GET_VALIDATORS,);
 
@@ -113,10 +110,9 @@ pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResul
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_GET_VALIDATORS,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_GET_VALIDATORS, transaction
+    );
 
     transaction
 }
@@ -129,16 +125,15 @@ pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResul
 ///
 /// # Returns
 /// Parsed validator addresses
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_get_validators_result(
     client: &LedgerClient,
     bytes: Vec<u8>,
 ) -> VdrResult<ValidatorAddresses> {
     debug!(
-            "{} result parse has started. Bytes to parse: {:?}",
-            METHOD_GET_VALIDATORS,
-            bytes
-        );
+        "{} result parse has started. Bytes to parse: {:?}",
+        METHOD_GET_VALIDATORS, bytes
+    );
 
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
@@ -146,10 +141,9 @@ pub fn parse_get_validators_result(
         .parse::<ValidatorAddresses>(client, &bytes);
 
     info!(
-            "{} result parse has finished. Result: {:?}",
-            METHOD_GET_VALIDATORS,
-            result
-        );
+        "{} result parse has finished. Result: {:?}",
+        METHOD_GET_VALIDATORS, result
+    );
 
     result
 }
@@ -164,6 +158,7 @@ pub mod test {
         utils::init_env_logger,
     };
     use once_cell::sync::Lazy;
+    use std::sync::RwLock;
 
     pub static VALIDATOR_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::new("0x93917cadbace5dfce132b991732c6cda9bcc5b8a"));
@@ -175,13 +170,10 @@ pub mod test {
         async fn build_add_validator_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = build_add_validator_transaction(
-                &client,
-                &TRUSTEE_ACC,
-                &VALIDATOR_ADDRESS,
-            )
-                .await
-                .unwrap();
+            let transaction =
+                build_add_validator_transaction(&client, &TRUSTEE_ACC, &VALIDATOR_ADDRESS)
+                    .await
+                    .unwrap();
             let expected_data = [
                 77, 35, 140, 142, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 147, 145, 124, 173, 186, 206,
                 93, 252, 225, 50, 185, 145, 115, 44, 108, 218, 155, 204, 91, 138,
@@ -194,7 +186,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
-                signature: None,
+                signature: RwLock::new(None),
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -208,13 +200,10 @@ pub mod test {
         async fn build_remove_validator_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = build_remove_validator_transaction(
-                &client,
-                &TRUSTEE_ACC,
-                &VALIDATOR_ADDRESS,
-            )
-                .await
-                .unwrap();
+            let transaction =
+                build_remove_validator_transaction(&client, &TRUSTEE_ACC, &VALIDATOR_ADDRESS)
+                    .await
+                    .unwrap();
             let expected_data = [
                 64, 161, 65, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 147, 145, 124, 173, 186, 206,
                 93, 252, 225, 50, 185, 145, 115, 44, 108, 218, 155, 204, 91, 138,
@@ -227,7 +216,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
-                signature: None,
+                signature: RwLock::new(None),
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -241,9 +230,7 @@ pub mod test {
         async fn build_get_validators_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = build_get_validators_transaction(&client)
-                .await
-                .unwrap();
+            let transaction = build_get_validators_transaction(&client).await.unwrap();
             let encoded_method = [183, 171, 77, 181];
 
             let expected_transaction = Transaction {
@@ -253,7 +240,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: encoded_method.into(),
-                signature: None,
+                signature: RwLock::new(None),
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -287,8 +274,7 @@ pub mod test {
             ]; // initial localnet validator list
 
             let parse_get_validators_result =
-                parse_get_validators_result(&client, validator_list_bytes)
-                    .unwrap();
+                parse_get_validators_result(&client, validator_list_bytes).unwrap();
 
             assert_eq!(expected_validator_list, parse_get_validators_result);
         }

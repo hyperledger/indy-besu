@@ -12,9 +12,9 @@ use crate::{
     },
 };
 
-const CONTRACT_NAME: &'static str = "SchemaRegistry";
-const METHOD_CREATE_SCHEMA: &'static str = "createSchema";
-const METHOD_RESOLVE_SCHEMA: &'static str = "resolveSchema";
+const CONTRACT_NAME: &str = "SchemaRegistry";
+const METHOD_CREATE_SCHEMA: &str = "createSchema";
+const METHOD_RESOLVE_SCHEMA: &str = "resolveSchema";
 
 /// Build transaction to execute SchemaRegistry.createSchema contract method to create a new Schema
 ///
@@ -25,18 +25,18 @@ const METHOD_RESOLVE_SCHEMA: &'static str = "resolveSchema";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_create_schema_transaction(
     client: &LedgerClient,
     from: &Address,
     schema: &Schema,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Sender: {}, schema: {:?}",
-            METHOD_CREATE_SCHEMA,
-            from.value(),
-            schema
-        );
+        "{} txn build has started. Sender: {}, schema: {:?}",
+        METHOD_CREATE_SCHEMA,
+        from.value(),
+        schema
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -48,10 +48,9 @@ pub async fn build_create_schema_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_CREATE_SCHEMA,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_CREATE_SCHEMA, transaction
+    );
 
     transaction
 }
@@ -64,16 +63,15 @@ pub async fn build_create_schema_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_resolve_schema_transaction(
     client: &LedgerClient,
     id: &SchemaId,
 ) -> VdrResult<Transaction> {
     debug!(
-            "{} txn build has started. Schema ID: {:?}",
-            METHOD_RESOLVE_SCHEMA,
-            id
-        );
+        "{} txn build has started. Schema ID: {:?}",
+        METHOD_RESOLVE_SCHEMA, id
+    );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -84,10 +82,9 @@ pub async fn build_resolve_schema_transaction(
         .await;
 
     info!(
-            "{} txn build has finished. Result: {:?}",
-            METHOD_RESOLVE_SCHEMA,
-            transaction
-        );
+        "{} txn build has finished. Result: {:?}",
+        METHOD_RESOLVE_SCHEMA, transaction
+    );
 
     transaction
 }
@@ -100,13 +97,12 @@ pub async fn build_resolve_schema_transaction(
 ///
 /// # Returns
 /// parsed Schema
-#[uniffi::export]
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<Schema> {
     debug!(
-            "{} result parse has started. Bytes to parse: {:?}",
-            METHOD_RESOLVE_SCHEMA,
-            bytes
-        );
+        "{} result parse has started. Bytes to parse: {:?}",
+        METHOD_RESOLVE_SCHEMA, bytes
+    );
 
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
@@ -115,10 +111,9 @@ pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: Vec<u8>) -> Vdr
         .map(|schema_with_meta| schema_with_meta.schema);
 
     info!(
-            "{} result parse has finished. Result: {:?}",
-            METHOD_RESOLVE_SCHEMA,
-            result
-        );
+        "{} result parse has finished. Result: {:?}",
+        METHOD_RESOLVE_SCHEMA, result
+    );
 
     result
 }
@@ -126,12 +121,18 @@ pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: Vec<u8>) -> Vdr
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{client::test::{
-        mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
-    }, contracts::{
-        cl::types::schema::test::{schema, SCHEMA_NAME},
-        did::types::did_doc::test::ISSUER_ID,
-    }, utils::init_env_logger, DID};
+    use crate::{
+        client::test::{
+            mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
+        },
+        contracts::{
+            cl::types::schema::test::{schema, SCHEMA_NAME},
+            did::types::did_doc::test::ISSUER_ID,
+        },
+        utils::init_env_logger,
+        DID,
+    };
+    use std::sync::RwLock;
 
     #[cfg(feature = "ledger_test")]
     pub async fn create_schema(
@@ -140,10 +141,9 @@ pub mod test {
         signer: &crate::BasicSigner,
     ) -> Schema {
         let schema = schema(issuer_id, None);
-        let mut transaction =
-            build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
-                .await
-                .unwrap();
+        let mut transaction = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
+            .await
+            .unwrap();
 
         let sign_bytes = transaction.get_signing_bytes().unwrap();
         let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
@@ -165,8 +165,8 @@ pub mod test {
                 &TRUSTEE_ACC,
                 &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)),
             )
-                .await
-                .unwrap();
+            .await
+            .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
@@ -208,7 +208,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 9, 76, 97, 115, 116, 32, 78, 97, 109, 101, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: None,
+                signature: RwLock::new(None),
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -225,8 +225,8 @@ pub mod test {
                 &client,
                 &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)).id,
             )
-                .await
-                .unwrap();
+            .await
+            .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
@@ -243,7 +243,7 @@ pub mod test {
                     72, 69, 77, 65, 47, 70, 49, 68, 67, 108, 97, 70, 69, 122, 105, 51, 116, 47, 49,
                     46, 48, 46, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: None,
+                signature: RwLock::new(None),
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -293,8 +293,7 @@ pub mod test {
                 97, 115, 116, 32, 78, 97, 109, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0,
             ];
-            let parsed_schema =
-                parse_resolve_schema_result(&client, data).unwrap();
+            let parsed_schema = parse_resolve_schema_result(&client, data).unwrap();
             assert_eq!(
                 schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)),
                 parsed_schema

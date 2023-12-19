@@ -13,14 +13,14 @@ impl LedgerClientWrapper {
     #[wasm_bindgen(constructor)]
     pub fn new(
         chain_id: u32,
-        node_address: &str,
+        node_address: String,
         contract_configs: JsValue,
     ) -> Result<LedgerClientWrapper> {
         let contract_configs: Vec<ContractConfig> = serde_wasm_bindgen::from_value(contract_configs)?;
         let client = LedgerClient::new(
             chain_id as u64,
             node_address,
-            &contract_configs,
+            contract_configs,
         )
             .as_js()?;
         Ok(LedgerClientWrapper(client))
@@ -40,7 +40,7 @@ impl LedgerClientWrapper {
     }
 
     #[wasm_bindgen(js_name = getReceipt)]
-    pub async fn get_receipt(&self, hash: &[u8]) -> Result<String> {
+    pub async fn get_receipt(&self, hash: Vec<u8>) -> Result<String> {
         let receipt = self.0.get_receipt(hash).await.as_js()?;
         Ok(receipt)
     }

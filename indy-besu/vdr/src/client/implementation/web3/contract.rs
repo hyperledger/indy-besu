@@ -38,7 +38,7 @@ impl Web3Contract {
                 msg: format!(
                     "Unable to parse contract ABI from specification. Err: {:?}",
                     err.to_string()
-                )
+                ),
             };
 
             warn!("Error: {:?} during creating new Web3Contract", vdr_error);
@@ -50,7 +50,7 @@ impl Web3Contract {
                 msg: format!(
                     "Unable to parse contract address. Err: {:?}",
                     err.to_string()
-                )
+                ),
             };
 
             warn!("Error: {:?} during creating new Web3Contract", vdr_error);
