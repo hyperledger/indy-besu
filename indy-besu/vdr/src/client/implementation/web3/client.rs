@@ -4,7 +4,6 @@ use crate::{
     types::{PingStatus, Transaction, TransactionType},
 };
 
-use async_trait::async_trait;
 use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction};
 use log::{trace, warn};
 use serde_json::json;
@@ -14,15 +13,9 @@ use std::{str::FromStr, time::Duration};
 use web3::{
     api::Eth,
     transports::Http,
-    types::{Address, Bytes, CallRequest, H256, U256},
-    Web3,
-};
-
-#[cfg(feature = "wasm")]
-use web3_wasm::{
-    api::Eth,
-    transports::Http,
-    types::{Address, Bytes, CallRequest, H256, U256},
+    types::{
+        Address, Bytes, CallRequest, Transaction as Web3Transaction, TransactionId, H256, U256,
+    },
     Web3,
 };
 
@@ -203,5 +196,19 @@ impl Client for Web3Client {
         trace!("Ping result: {:?}", ping_result);
 
         ping_result
+    }
+
+    async fn get_transaction(&self, transaction_hash: H256) -> VdrResult<Option<Web3Transaction>> {
+        match self
+            .client
+            .eth()
+            .transaction(TransactionId::Hash(transaction_hash))
+            .await
+        {
+            Ok(transaction) => Ok(transaction),
+            Err(_) => Err(VdrError::GetTransactionError(
+                "Could not get transaction by hash".to_string(),
+            )),
+        }
     }
 }
