@@ -28,7 +28,6 @@ impl BasicSigner {
 
     pub fn create_key(&mut self, private_key: Option<&str>) -> VdrResult<(Address, Vec<u8>)> {
         let (account, key_pair) = self.create_account(private_key)?;
-        println!("account {:?}", account);
         let public_key_bytes = key_pair.public_key.serialize_uncompressed().to_vec();
         self.keys.insert(account.value().to_string(), key_pair);
         Ok((account, public_key_bytes))
