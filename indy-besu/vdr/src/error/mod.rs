@@ -12,8 +12,11 @@ use web3_wasm::{
     ethabi::Error as Web3EthabiError
 };
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Clone)]
 pub enum VdrError {
+    #[error("Ledger: Quorum not reached: {}", _0)]
+    QuorumNotReached(String),
+
     #[error("Ledger Client: Node is unreachable")]
     ClientNodeUnreachable,
 
@@ -58,6 +61,9 @@ pub enum VdrError {
 
     #[error("Invalid data: {}", _0)]
     CommonInvalidData(String),
+
+    #[error("Could not get transaction: {}", _0)]
+    GetTransactionError(String),
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;

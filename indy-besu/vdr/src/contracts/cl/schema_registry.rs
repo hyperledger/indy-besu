@@ -156,7 +156,10 @@ pub mod test {
         let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
         transaction.set_signature(signature);
 
-        client.submit_transaction(&transaction).await.unwrap();
+        client
+            .submit_transaction(&transaction, &QuorumConfig::default())
+            .await
+            .unwrap();
         schema
     }
 
