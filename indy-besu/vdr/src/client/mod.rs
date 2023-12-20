@@ -62,6 +62,13 @@ pub trait Client: Send + Sync {
     /// ledger status
     async fn ping(&self) -> VdrResult<PingStatus>;
 
+    /// Get the transaction for the given transaction hash
+    ///
+    /// # Params
+    /// - `hash` hash of a transaction to get
+    ///
+    /// # Returns
+    /// transaction for the requested hash
     async fn get_transaction(&self, hash: H256) -> VdrResult<Option<Web3Transaction>>;
 }
 
