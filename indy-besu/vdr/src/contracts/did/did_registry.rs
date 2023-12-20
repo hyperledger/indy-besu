@@ -210,7 +210,7 @@ pub mod test {
         client::test::{mock_client, CHAIN_ID, DEFAULT_NONCE, DID_REGISTRY_ADDRESS, TRUSTEE_ACC},
         contracts::did::types::did_doc::test::{did_doc, ISSUER_ID},
         utils::init_env_logger,
-        DID,
+        QuorumConfig, DID,
     };
 
     pub const _CRED_DEF_ID: &str = "did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/CLAIM_DEF/did:indy2:testnet:Az2hWFJh5pnoG7RbELies8/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0/ff4EE9EUHRbb";
