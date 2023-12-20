@@ -19,6 +19,14 @@ use web3::{
     Web3,
 };
 
+#[cfg(feature = "wasm")]
+use web3_wasm::{
+    api::Eth,
+    transports::Http,
+    types::{Address, Bytes, CallRequest, H256, U256},
+    Web3,
+};
+
 pub struct Web3Client {
     client: Web3<Http>,
 }
@@ -47,6 +55,7 @@ impl Web3Client {
     }
 }
 
+#[async_trait::async_trait]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
         let account_address = Address::from_str(address.value()).map_err(|_| {
