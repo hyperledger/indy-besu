@@ -1000,6 +1000,8 @@ dependencies = [
  "ethereum",
  "ethereum-types",
  "futures",
+ "futures-core",
+ "futures-util",
  "hex",
  "log",
  "mockall",
@@ -1010,8 +1012,8 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "thiserror",
- "web-sys",
  "tokio",
+ "web-sys",
  "web3",
 ]
 
