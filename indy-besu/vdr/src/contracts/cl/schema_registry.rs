@@ -137,7 +137,7 @@ pub mod test {
             did::types::did_doc::test::ISSUER_ID,
         },
         utils::init_env_logger,
-        DID,
+        QuorumConfig, DID,
     };
 
     #[cfg(feature = "ledger_test")]
