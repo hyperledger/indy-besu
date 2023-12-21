@@ -1,11 +1,14 @@
-use ethereum::{LegacyTransactionMessage, TransactionAction};
-use ethereum_types::{H160, U256};
+use ethereum::{
+    LegacyTransaction, LegacyTransactionMessage, TransactionAction,
+    TransactionSignature as EthTransactionSignature,
+};
+use ethereum_types::{H160, H256, U256};
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use std::{str::FromStr, sync::RwLock};
 
 use crate::{
-    client::GAS,
+    client::{GAS_LIMIT, GAS_PRICE},
     error::{VdrError, VdrResult},
     types::{Address, ContractOutput, ContractParam},
     LedgerClient,
@@ -36,7 +39,7 @@ pub struct Transaction {
     /// transaction sender account address
     pub from: Option<Address>,
     /// transaction recipient address
-    pub to: String,
+    pub to: Address,
     /// nonce - count of transaction sent by account
     pub nonce: Option<Vec<u64>>,
     /// chain id of the ledger
@@ -44,7 +47,7 @@ pub struct Transaction {
     /// transaction payload
     pub data: Vec<u8>,
     /// transaction signature
-    pub signature: RwLock<Option<SignatureData>>,
+    pub signature: RwLock<Option<TransactionSignature>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -56,44 +59,106 @@ pub struct SignatureData {
     pub signature: Vec<u8>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
+pub struct TransactionSignature {
+    v: u64,
+    r: Vec<u8>,
+    s: Vec<u8>,
+}
+
 #[cfg_attr(feature = "uni_ffi", uniffi::export)]
 impl Transaction {
     pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
-        let nonce = self
-            .nonce
-            .as_ref()
-            .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                msg: "Transaction `nonce` is not set".to_string(),
-            })?;
-        let to = H160::from_str(&self.to).map_err(|_| VdrError::ClientInvalidTransaction {
-            msg: format!("Invalid transaction target address {}", self.to),
-        })?;
-
-        let nonce: [u64; 4] =
-            nonce
-                .clone()
-                .try_into()
-                .map_err(|_| VdrError::CommonInvalidData {
-                    msg: "Invalid nonce provided".to_string(),
-                })?;
-
-        let eth_transaction = LegacyTransactionMessage {
-            nonce: U256(nonce),
-            gas_price: U256([0, 0, 0, 0]),
-            gas_limit: U256([GAS, 0, 0, 0]),
-            action: TransactionAction::Call(to),
-            value: Default::default(),
-            input: self.data.clone(),
-            chain_id: Some(self.chain_id),
-        };
-
+        let eth_transaction: LegacyTransactionMessage = self.try_into()?;
         let hash = eth_transaction.hash();
         Ok(hash.as_bytes().to_vec())
     }
 
     pub fn set_signature(&self, signature_data: SignatureData) {
+        let v = signature_data.recovery_id + 35 + self.chain_id * 2;
+        let transaction_signature = TransactionSignature {
+            v,
+            r: signature_data.signature[..32].to_vec(),
+            s: signature_data.signature[32..].to_vec(),
+        };
         let mut signature = self.signature.write().unwrap();
-        *signature = Some(signature_data)
+        *signature = Some(transaction_signature)
+    }
+}
+
+impl Transaction {
+    fn get_to(&self) -> VdrResult<H160> {
+        H160::from_str(self.to.value()).map_err(|_| VdrError::ClientInvalidTransaction {
+            msg: format!("Invalid transaction target address {}", self.to.value()),
+        })
+    }
+
+    fn get_nonce(&self) -> VdrResult<U256> {
+        let nonce: [u64; 4] = self
+            .nonce
+            .as_ref()
+            .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                msg: "Transaction `nonce` is not set".to_string(),
+            })?
+            .clone()
+            .try_into()
+            .map_err(|_| VdrError::CommonInvalidData {
+                msg: "Invalid nonce provided".to_string(),
+            })?;
+        Ok(U256(nonce))
+    }
+
+    fn get_transaction_signature(&self) -> VdrResult<EthTransactionSignature> {
+        let signature = self.signature.read().unwrap();
+        let signature = signature
+            .as_ref()
+            .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                msg: "Missing signature".to_string(),
+            })?
+            .clone();
+
+        let signature = EthTransactionSignature::new(
+            signature.v,
+            H256::from_slice(&signature.r),
+            H256::from_slice(&signature.s),
+        )
+        .ok_or_else(|| VdrError::ClientInvalidTransaction {
+            msg: "Transaction `nonce` is not set".to_string(),
+        })?;
+        Ok(signature)
+    }
+}
+
+impl TryInto<LegacyTransactionMessage> for &Transaction {
+    type Error = VdrError;
+
+    fn try_into(self) -> Result<LegacyTransactionMessage, Self::Error> {
+        Ok(LegacyTransactionMessage {
+            nonce: self.get_nonce()?,
+            gas_price: *GAS_PRICE,
+            gas_limit: *GAS_LIMIT,
+            action: TransactionAction::Call(self.get_to()?),
+            value: Default::default(),
+            input: self.data.clone(),
+            chain_id: Some(self.chain_id),
+        })
+    }
+}
+
+impl TryInto<LegacyTransaction> for &Transaction {
+    type Error = VdrError;
+
+    fn try_into(self) -> Result<LegacyTransaction, Self::Error> {
+        Ok(LegacyTransaction {
+            nonce: self.get_nonce()?,
+            gas_price: *GAS_PRICE,
+            gas_limit: *GAS_LIMIT,
+            action: TransactionAction::Call(self.get_to()?),
+            value: Default::default(),
+            input: self.data.clone(),
+            signature: self.get_transaction_signature()?,
+        })
     }
 }
 
@@ -104,11 +169,11 @@ impl Transaction {
     pub fn new(
         type_: TransactionType,
         from: Option<Address>,
-        to: String,
+        to: Address,
         chain_id: u64,
         data: Vec<u8>,
         nonce: Option<Vec<u64>>,
-        signature: Option<SignatureData>,
+        signature: Option<TransactionSignature>,
     ) -> Transaction {
         Transaction {
             type_,
@@ -224,7 +289,7 @@ impl TransactionBuilder {
         let transaction = Transaction {
             type_: self.type_,
             from: self.from,
-            to: contract.address(),
+            to: contract.address().clone(),
             chain_id: client.chain_id(),
             data,
             nonce,

@@ -167,7 +167,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
-                to: CRED_DEF_REGISTRY_ADDRESS.to_string(),
+                to: CRED_DEF_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -240,7 +240,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: CRED_DEF_REGISTRY_ADDRESS.to_string(),
+                to: CRED_DEF_REGISTRY_ADDRESS.clone(),
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: vec![

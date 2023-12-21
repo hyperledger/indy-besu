@@ -2,6 +2,7 @@ use crate::{
     client::{implementation::web3::client::Web3Client, Contract},
     error::{VdrError, VdrResult},
     types::{ContractOutput, ContractSpec},
+    Address,
 };
 
 use log::{trace, warn};
@@ -10,18 +11,18 @@ use std::str::FromStr;
 #[cfg(not(feature = "wasm"))]
 use web3::{
     contract::Contract as Web3ContractImpl,
-    ethabi::{Address, Function, Token},
+    ethabi::{Address as EthAddress, Function, Token},
     transports::Http,
 };
 #[cfg(feature = "wasm")]
 use web3_wasm::{
     contract::Contract as Web3ContractImpl,
-    ethabi::{Address, Function, Token},
+    ethabi::{Address as EthAddress, Function, Token},
     transports::Http,
 };
 
 pub struct Web3Contract {
-    address: String,
+    address: Address,
     contract: Web3ContractImpl<Http>,
 }
 
@@ -45,7 +46,7 @@ impl Web3Contract {
 
             vdr_error
         })?;
-        let parsed_address = Address::from_str(address).map_err(|err| {
+        let parsed_address = EthAddress::from_str(address).map_err(|err| {
             let vdr_error = VdrError::CommonInvalidData {
                 msg: format!(
                     "Unable to parse contract address. Err: {:?}",
@@ -64,7 +65,7 @@ impl Web3Contract {
 
         Ok(Web3Contract {
             contract,
-            address: address.to_string(),
+            address: Address::new(address),
         })
     }
 
@@ -83,8 +84,8 @@ impl Web3Contract {
 }
 
 impl Contract for Web3Contract {
-    fn address(&self) -> String {
-        self.address.to_string()
+    fn address(&self) -> &Address {
+        &self.address
     }
 
     fn encode_input(&self, method: &str, params: &[Token]) -> VdrResult<Vec<u8>> {

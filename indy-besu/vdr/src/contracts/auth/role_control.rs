@@ -264,7 +264,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
-                to: ROLE_CONTROL_ADDRESS.to_string(),
+                to: ROLE_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: expected_data,
@@ -296,7 +296,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
-                to: ROLE_CONTROL_ADDRESS.to_string(),
+                to: ROLE_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: expected_data,
@@ -326,7 +326,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: ROLE_CONTROL_ADDRESS.to_string(),
+                to: ROLE_CONTROL_ADDRESS.clone(),
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: expected_data,
@@ -373,7 +373,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: ROLE_CONTROL_ADDRESS.to_string(),
+                to: ROLE_CONTROL_ADDRESS.clone(),
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: expected_data,

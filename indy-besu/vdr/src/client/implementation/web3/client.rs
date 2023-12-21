@@ -1,10 +1,11 @@
 use crate::{
-    client::{constants::GAS, Client},
+    client::Client,
     error::{VdrError, VdrResult},
     types::{PingStatus, Transaction, TransactionType},
 };
 
-use ethereum::{EnvelopedEncodable, LegacyTransaction, TransactionAction, TransactionSignature};
+use async_trait::async_trait;
+use ethereum::{EnvelopedEncodable, LegacyTransaction};
 use log::{trace, warn};
 use serde_json::json;
 use std::{str::FromStr, time::Duration};
@@ -13,7 +14,15 @@ use std::{str::FromStr, time::Duration};
 use web3::{
     api::Eth,
     transports::Http,
-    types::{Address, Bytes, CallRequest, H256, U256},
+    types::{Address as EthAddress, Bytes, CallRequest, H256},
+    Web3,
+};
+
+#[cfg(feature = "wasm")]
+use web3_wasm::{
+    api::Eth,
+    transports::Http,
+    types::{Address as EthAddress, Bytes, CallRequest, H256, U256},
     Web3,
 };
 
@@ -49,10 +58,11 @@ impl Web3Client {
 #[cfg_attr(feature = "wasm", async_trait(?Send))]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
-        let account_address =
-            Address::from_str(address.value()).map_err(|_| VdrError::ClientInvalidTransaction {
+        let account_address = EthAddress::from_str(address.value()).map_err(|_| {
+            VdrError::ClientInvalidTransaction {
                 msg: format!("Invalid transaction sender address {}", address.value()),
-            })?;
+            }
+        })?;
 
         let nonce = self
             .client
@@ -83,51 +93,7 @@ impl Client for Web3Client {
             return Err(vdr_error);
         }
 
-        let to =
-            Address::from_str(&transaction.to).map_err(|_| VdrError::ClientInvalidTransaction {
-                msg: format!("Invalid transaction target address {}", transaction.to),
-            })?;
-
-        let nonce =
-            transaction
-                .nonce
-                .clone()
-                .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                    msg: "Transaction `nonce` is not set".to_string(),
-                })?;
-
-        let eth_transaction = {
-            let signature = transaction.signature.read().unwrap();
-            let signature = signature
-                .as_ref()
-                .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                    msg: "Missing signature".to_string(),
-                })?
-                .clone();
-
-            let v = signature.recovery_id + 35 + transaction.chain_id * 2;
-            let signature = TransactionSignature::new(
-                v,
-                H256::from_slice(&signature.signature[..32]),
-                H256::from_slice(&signature.signature[32..]),
-            )
-            .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                msg: "Transaction `nonce` is not set".to_string(),
-            })?;
-            let nonce: [u64; 4] = nonce.try_into().map_err(|_| VdrError::CommonInvalidData {
-                msg: "Invalid nonce provided".to_string(),
-            })?;
-
-            LegacyTransaction {
-                nonce: U256(nonce),
-                gas_price: U256([0, 0, 0, 0]),
-                gas_limit: U256([GAS, 0, 0, 0]),
-                action: TransactionAction::Call(to),
-                value: Default::default(),
-                input: transaction.data.clone(),
-                signature,
-            }
-        };
+        let eth_transaction: LegacyTransaction = transaction.try_into()?;
 
         let receipt = self
             .client
@@ -161,9 +127,12 @@ impl Client for Web3Client {
 
             return Err(vdr_error);
         }
-        let address = Address::from_str(&transaction.to).map_err(|_| {
+        let address = EthAddress::from_str(transaction.to.value()).map_err(|_| {
             let vdr_error = VdrError::ClientInvalidTransaction {
-                msg: format!("Invalid transaction target address {}", transaction.to),
+                msg: format!(
+                    "Invalid transaction target address {}",
+                    transaction.to.value()
+                ),
             };
 
             warn!(

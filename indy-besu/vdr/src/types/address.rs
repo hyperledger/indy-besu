@@ -8,7 +8,7 @@ use log::trace;
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct Address {
     value: String,
