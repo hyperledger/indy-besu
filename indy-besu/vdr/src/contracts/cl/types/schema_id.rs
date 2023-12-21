@@ -3,13 +3,18 @@ use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct SchemaId(String);
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
+pub struct SchemaId {
+    value: String,
+}
 
 impl SchemaId {
     const ID_PATH: &'static str = "anoncreds/v0/SCHEMA";
 
     pub fn new(id: &str) -> SchemaId {
-        let schema_id = SchemaId(id.to_string());
+        let schema_id = SchemaId {
+            value: id.to_string(),
+        };
 
         trace!("Created new SchemaId: {:?}", schema_id);
 
@@ -31,6 +36,6 @@ impl SchemaId {
     }
 
     pub fn value(&self) -> &str {
-        &self.0
+        &self.value
     }
 }

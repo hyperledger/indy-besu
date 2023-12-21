@@ -12,12 +12,14 @@ use crate::{
     Address,
 };
 
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Object))]
 pub struct LedgerClient {
     chain_id: u64,
     client: Box<dyn Client>,
     contracts: HashMap<String, Box<dyn Contract>>,
 }
 
+#[cfg(not(feature = "uni_ffi"))]
 impl LedgerClient {
     /// Create client interacting with ledger
     ///
@@ -30,8 +32,75 @@ impl LedgerClient {
     ///  client to use for building and sending transactions
     pub fn new(
         chain_id: u64,
-        node_address: &str,
-        contract_configs: &[ContractConfig],
+        node_address: String,
+        contract_configs: Vec<ContractConfig>,
+    ) -> VdrResult<LedgerClient> {
+        LedgerClient::_new(chain_id, node_address, contract_configs)
+    }
+
+    /// Ping Ledger.
+    ///
+    /// # Returns
+    ///  ping status
+    pub async fn ping(&self) -> VdrResult<PingStatus> {
+        self._ping().await
+    }
+
+    /// Submit prepared transaction to the ledger
+    ///     Depending on the transaction type Write/Read ethereum methods will be used
+    ///
+    /// #Params
+    ///  transaction - transaction to submit
+    ///
+    /// #Returns
+    ///  transaction execution result:
+    ///    depending on the type it will be either result bytes or block hash
+    pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        self._submit_transaction(transaction).await
+    }
+
+    /// Get receipt for the given block hash
+    ///
+    /// # Params
+    ///  transaction - transaction to submit
+    ///
+    /// # Returns
+    ///  receipt for the given block
+    pub async fn get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {
+        self._get_receipt(hash).await
+    }
+}
+
+#[cfg(feature = "uni_ffi")]
+#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
+impl LedgerClient {
+    #[uniffi::constructor]
+    pub fn new(
+        chain_id: u64,
+        node_address: String,
+        contract_configs: Vec<ContractConfig>,
+    ) -> VdrResult<LedgerClient> {
+        LedgerClient::_new(chain_id, node_address, contract_configs)
+    }
+
+    pub async fn ping(&self) -> VdrResult<PingStatus> {
+        self._ping().await
+    }
+
+    pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        self._submit_transaction(transaction).await
+    }
+
+    pub async fn get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {
+        self._get_receipt(hash).await
+    }
+}
+
+impl LedgerClient {
+    fn _new(
+        chain_id: u64,
+        node_address: String,
+        contract_configs: Vec<ContractConfig>,
     ) -> VdrResult<LedgerClient> {
         trace!(
             "Started creating new LedgerClient. Chain id: {}, node address: {}",
@@ -39,8 +108,8 @@ impl LedgerClient {
             node_address
         );
 
-        let client = Web3Client::new(node_address)?;
-        let contracts = Self::init_contracts(&client, contract_configs)?;
+        let client = Web3Client::new(&node_address)?;
+        let contracts = Self::init_contracts(&client, &contract_configs)?;
 
         let ledger_client = LedgerClient {
             chain_id,
@@ -56,43 +125,24 @@ impl LedgerClient {
         Ok(ledger_client)
     }
 
-    /// Ping Ledger.
-    ///
-    /// # Returns
-    ///  ping status
-    pub async fn ping(&self) -> VdrResult<PingStatus> {
+    async fn _ping(&self) -> VdrResult<PingStatus> {
         self.client.ping().await
     }
 
-    /// Submit prepared transaction to the ledger
-    ///     Depending on the transaction type Write/Read ethereum methods will be used
-    ///
-    /// #Params
-    ///  transaction - transaction to submit
-    ///
-    /// #Returns
-    ///  transaction execution result:
-    ///    depending on the type it will be either result bytes or block hash
-    pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+    async fn _submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
         match transaction.type_ {
             TransactionType::Read => self.client.call_transaction(transaction).await,
             TransactionType::Write => self.client.submit_transaction(transaction).await,
         }
     }
 
-    /// Get receipt for the given block hash
-    ///
-    /// # Params
-    ///  transaction - transaction to submit
-    ///
-    /// # Returns
-    ///  receipt for the given block
-    pub async fn get_receipt(&self, hash: &[u8]) -> VdrResult<String> {
-        self.client.get_receipt(hash).await
+    async fn _get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {
+        self.client.get_receipt(&hash).await
     }
 
-    pub(crate) async fn get_transaction_count(&self, address: &Address) -> VdrResult<[u64; 4]> {
-        self.client.get_transaction_count(address).await
+    pub(crate) async fn get_transaction_count(&self, address: &Address) -> VdrResult<Vec<u64>> {
+        let nonce = self.client.get_transaction_count(address).await?;
+        Ok(nonce.to_vec())
     }
 
     pub(crate) fn contract(&self, name: &str) -> VdrResult<&dyn Contract> {
@@ -100,7 +150,9 @@ impl LedgerClient {
             .get(name)
             .map(|contract| contract.as_ref())
             .ok_or_else(|| {
-                let vdr_error = VdrError::ContractInvalidName(name.to_string());
+                let vdr_error = VdrError::ContractInvalidName {
+                    msg: name.to_string(),
+                };
 
                 warn!("Error during getting contract: {:?}", vdr_error);
 
@@ -122,10 +174,14 @@ impl LedgerClient {
                 (Some(spec_path) , None) => ContractSpec::from_file(spec_path)?,
                 (None , Some(spec)) => spec.clone(),
                 (Some(_), Some(_)) => {
-                    return Err(VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))
+                    return Err(VdrError::ContractInvalidSpec {
+                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
+                    });
                 }
                 (None, None) => {
-                    return Err(VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))
+                    return Err(VdrError::ContractInvalidSpec {
+                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
+                    });
                 }
             };
 
@@ -147,17 +203,28 @@ pub mod test {
     pub const CHAIN_ID: u64 = 1337;
     pub const NODE_ADDRESS: &str = "http://127.0.0.1:8545";
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
-    pub const DID_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000003333";
     pub const DID_REGISTRY_SPEC_PATH: &str = "did/IndyDidRegistry.sol/IndyDidRegistry.json";
-    pub const SCHEMA_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000005555";
     pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
-    pub const CRED_DEF_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000004444";
     pub const CRED_DEF_REGISTRY_SPEC_PATH: &str =
         "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
-    pub const VALIDATOR_CONTROL_ADDRESS: &str = "0x0000000000000000000000000000000000007777";
     pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
-    pub const ROLE_CONTROL_ADDRESS: &str = "0x0000000000000000000000000000000000006666";
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
+    pub static DEFAULT_NONCE: Lazy<Vec<u64>> = Lazy::new(|| vec![0, 0, 0, 0]);
+
+    pub static DID_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000003333"));
+
+    pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000005555"));
+
+    pub static CRED_DEF_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000004444"));
+
+    pub static VALIDATOR_CONTROL_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000007777"));
+
+    pub static ROLE_CONTROL_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000006666"));
 
     pub static TRUSTEE_ACC: Lazy<Address> =
         Lazy::new(|| Address::new("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
@@ -176,27 +243,27 @@ pub mod test {
     fn contracts() -> Vec<ContractConfig> {
         vec![
             ContractConfig {
-                address: DID_REGISTRY_ADDRESS.to_string(),
+                address: DID_REGISTRY_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: SCHEMA_REGISTRY_ADDRESS.to_string(),
+                address: SCHEMA_REGISTRY_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: CRED_DEF_REGISTRY_ADDRESS.to_string(),
+                address: CRED_DEF_REGISTRY_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                address: VALIDATOR_CONTROL_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: ROLE_CONTROL_ADDRESS.to_string(),
+                address: ROLE_CONTROL_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(ROLE_CONTROL_PATH)),
                 spec: None,
             },
@@ -204,14 +271,12 @@ pub mod test {
     }
 
     pub fn client() -> LedgerClient {
-        LedgerClient::new(CHAIN_ID, NODE_ADDRESS, &contracts()).unwrap()
+        LedgerClient::new(CHAIN_ID, NODE_ADDRESS.to_string(), contracts()).unwrap()
     }
-
-    pub const DEFAULT_NONCE: [u64; 4] = [0, 0, 0, 0];
 
     pub struct MockClient {}
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl Client for MockClient {
         async fn get_transaction_count(&self, _address: &Address) -> VdrResult<[u64; 4]> {
             Ok([0, 0, 0, 0])
@@ -235,7 +300,8 @@ pub mod test {
     }
 
     pub fn mock_client() -> LedgerClient {
-        let mut client = LedgerClient::new(CHAIN_ID, NODE_ADDRESS, &contracts()).unwrap();
+        let mut client =
+            LedgerClient::new(CHAIN_ID, NODE_ADDRESS.to_string(), contracts()).unwrap();
         client.client = Box::new(MockClient {});
         client
     }
@@ -263,9 +329,10 @@ pub mod test {
         #[async_std::test]
         async fn client_ping_wrong_node_test() {
             let wrong_node_address = "http://127.0.0.1:1111";
-            let client = LedgerClient::new(CHAIN_ID, wrong_node_address, &contracts()).unwrap();
+            let client =
+                LedgerClient::new(CHAIN_ID, wrong_node_address.to_string(), contracts()).unwrap();
             match client.ping().await.unwrap().status {
-                Status::Err(_) => {}
+                Status::Err { .. } => {}
                 Status::Ok => assert!(false, "Ping status expected to be `Err`."),
             }
         }

@@ -11,24 +11,22 @@ use serde_json::{json, Value};
 pub const CONTEXT: &str = "https://www.w3.org/ns/did/v1";
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DidDocumentWithMeta {
-    pub document: DidDocument,
-    pub metadata: DidMetadata,
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
+pub struct DID {
+    value: String,
 }
-
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct DID(String);
 
 impl DID {
     pub const DID_PREFIX: &'static str = "did";
 
     pub fn new(did: &str) -> DID {
-        DID(did.to_string())
+        DID {
+            value: did.to_string(),
+        }
     }
 
     pub fn build(method: &str, network: &str, id: &str) -> DID {
-        DID(format!(
+        DID::new(&format!(
             "{}:{}:{}:{}",
             Self::DID_PREFIX,
             method,
@@ -38,11 +36,20 @@ impl DID {
     }
 
     pub fn value(&self) -> &str {
-        &self.0
+        &self.value
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
+#[serde(rename_all = "camelCase")]
+pub struct DidDocumentWithMeta {
+    pub document: DidDocument,
+    pub metadata: DidMetadata,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
     #[serde(rename = "@context")]
@@ -60,14 +67,16 @@ pub struct DidDocument {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct DidMetadata {
     pub creator: Address,
-    pub created: u128,
-    pub updated: u128,
+    pub created: u64,
+    pub updated: u64,
     pub deactivated: bool,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct VerificationMethod {
     pub id: String,
     #[serde(rename = "type")]
@@ -78,6 +87,7 @@ pub struct VerificationMethod {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum VerificationKey {
     #[serde(rename_all = "camelCase")]
@@ -94,20 +104,16 @@ impl Default for VerificationKey {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 pub enum VerificationKeyType {
+    #[default]
     Ed25519VerificationKey2018,
     X25519KeyAgreementKey2019,
     Ed25519VerificationKey2020,
     X25519KeyAgreementKey2020,
     JsonWebKey2020,
     EcdsaSecp256k1VerificationKey2019,
-}
-
-impl Default for VerificationKeyType {
-    fn default() -> Self {
-        VerificationKeyType::Ed25519VerificationKey2018
-    }
 }
 
 impl ToString for VerificationKeyType {
@@ -165,10 +171,9 @@ impl TryFrom<&str> for VerificationKeyType {
                 Ok(VerificationKeyType::EcdsaSecp256k1VerificationKey2019)
             }
             _type => Err({
-                let vdr_error = VdrError::CommonInvalidData(format!(
-                    "Unexpected verification key type {}",
-                    _type
-                ));
+                let vdr_error = VdrError::CommonInvalidData {
+                    msg: format!("Unexpected verification key type {}", _type),
+                };
 
                 warn!(
                     "Error: {} during converting VerificationKeyType from String: {} ",
@@ -190,13 +195,15 @@ impl TryFrom<&str> for VerificationKeyType {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum VerificationMethodOrReference {
-    String(String),
-    VerificationMethod(VerificationMethod),
+    String { value: String },
+    VerificationMethod { value: VerificationMethod },
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct Service {
     pub id: String,
@@ -206,14 +213,16 @@ pub struct Service {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum ServiceEndpoint {
-    String(String),
-    Object(ServiceEndpointObject),
-    Set(Vec<ServiceEndpoint>),
+    String { value: String },
+    Object { value: ServiceEndpointObject },
+    Set { value: Vec<ServiceEndpoint> },
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct ServiceEndpointObject {
     pub uri: String,
@@ -222,6 +231,7 @@ pub struct ServiceEndpointObject {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct VerificationRelationshipStruct {
     pub id: String,
@@ -229,15 +239,16 @@ pub struct VerificationRelationshipStruct {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 #[serde(untagged)]
 pub enum StringOrVector {
-    String(String),
-    Vector(Vec<String>),
+    String { value: String },
+    Vector { value: Vec<String> },
 }
 
 impl Default for StringOrVector {
     fn default() -> Self {
-        let vector = StringOrVector::Vector(Vec::new());
+        let vector = StringOrVector::Vector { value: Vec::new() };
 
         trace!("Created new StringOrVerctor::Vector: {:?}", vector);
 
@@ -294,10 +305,9 @@ impl TryFrom<ContractOutput> for VerificationMethod {
         let verification_key = if !public_key_jwk.is_empty() {
             VerificationKey::JWK {
                 public_key_jwk: serde_json::from_str::<Value>(&public_key_jwk).map_err(|err| {
-                    let vdr_error = VdrError::CommonInvalidData(format!(
-                        "Unable to parse JWK key. Err: {:?}",
-                        err
-                    ));
+                    let vdr_error = VdrError::CommonInvalidData {
+                        msg: format!("Unable to parse JWK key. Err: {:?}", err),
+                    };
 
                     warn!(
                         "Error: {:?} during parsing JWK key: {}",
@@ -312,9 +322,9 @@ impl TryFrom<ContractOutput> for VerificationMethod {
                 public_key_multibase,
             }
         } else {
-            let vdr_error = VdrError::ContractInvalidResponseData(
-                "Unable to parse verification method".to_string(),
-            );
+            let vdr_error = VdrError::ContractInvalidResponseData {
+                msg: "Unable to parse verification method".to_string(),
+            };
 
             warn!("Error: {} during VerificationMethod parsing", vdr_error);
 
@@ -364,16 +374,18 @@ impl From<VerificationMethodOrReference> for ContractParam {
         );
 
         let token = match value {
-            VerificationMethodOrReference::String(reference) => ContractParam::Tuple(vec![
-                ContractParam::String(reference),
-                VerificationMethod::empty(),
-            ]),
-            VerificationMethodOrReference::VerificationMethod(verification_method) => {
+            VerificationMethodOrReference::String { value: reference } => {
                 ContractParam::Tuple(vec![
-                    ContractParam::String(verification_method.id.to_string()),
-                    verification_method.into(),
+                    ContractParam::String(reference),
+                    VerificationMethod::empty(),
                 ])
             }
+            VerificationMethodOrReference::VerificationMethod {
+                value: verification_method,
+            } => ContractParam::Tuple(vec![
+                ContractParam::String(verification_method.id.to_string()),
+                verification_method.into(),
+            ]),
         };
 
         trace!(
@@ -399,9 +411,11 @@ impl TryFrom<ContractOutput> for VerificationMethodOrReference {
             VerificationMethod::try_from(value.get_tuple(1)?).unwrap_or_default();
 
         let token = if !verification_method.id.is_empty() {
-            VerificationMethodOrReference::VerificationMethod(verification_method)
+            VerificationMethodOrReference::VerificationMethod {
+                value: verification_method,
+            }
         } else {
-            VerificationMethodOrReference::String(id)
+            VerificationMethodOrReference::String { value: id }
         };
 
         trace!(
@@ -421,11 +435,11 @@ impl From<StringOrVector> for ContractParam {
         );
 
         let contract_param = match value {
-            StringOrVector::String(ref value) => {
+            StringOrVector::String { ref value } => {
                 ContractParam::Array(vec![ContractParam::String(value.to_string())])
             }
-            StringOrVector::Vector(ref values) => ContractParam::Array(
-                values
+            StringOrVector::Vector { ref value } => ContractParam::Array(
+                value
                     .iter()
                     .map(|value| ContractParam::String(value.to_string()))
                     .collect(),
@@ -450,29 +464,29 @@ impl From<Service> for ContractParam {
         );
 
         let (endpoint, accept, routing_keys) = match value.service_endpoint {
-            ServiceEndpoint::String(endpoint) => (
-                ContractParam::String(endpoint),
+            ServiceEndpoint::String { value } => (
+                ContractParam::String(value),
                 ContractParam::Array(vec![]),
                 ContractParam::Array(vec![]),
             ),
-            ServiceEndpoint::Object(endpoint) => (
-                ContractParam::String(endpoint.uri.to_string()),
+            ServiceEndpoint::Object { value } => (
+                ContractParam::String(value.uri.to_string()),
                 ContractParam::Array(
-                    endpoint
+                    value
                         .accept
                         .iter()
                         .map(|accept| ContractParam::String(accept.to_string()))
                         .collect(),
                 ),
                 ContractParam::Array(
-                    endpoint
+                    value
                         .routing_keys
                         .iter()
                         .map(|routing_key| ContractParam::String(routing_key.to_string()))
                         .collect(),
                 ),
             ),
-            ServiceEndpoint::Set(_) => unimplemented!(),
+            ServiceEndpoint::Set { .. } => unimplemented!(),
         };
 
         let service_contract_param = ContractParam::Tuple(vec![
@@ -507,11 +521,13 @@ impl TryFrom<ContractOutput> for Service {
         let service = Service {
             id: value.get_string(0)?,
             type_: value.get_string(1)?,
-            service_endpoint: ServiceEndpoint::Object(ServiceEndpointObject {
-                uri,
-                accept,
-                routing_keys,
-            }),
+            service_endpoint: ServiceEndpoint::Object {
+                value: ServiceEndpointObject {
+                    uri,
+                    accept,
+                    routing_keys,
+                },
+            },
         };
 
         trace!(
@@ -659,9 +675,9 @@ impl TryFrom<ContractOutput> for DidDocument {
         let also_known_as = value.get_string_array(10)?;
 
         let did_doc = DidDocument {
-            context: StringOrVector::Vector(context),
+            context: StringOrVector::Vector { value: context },
             id: DID::new(&id),
-            controller: StringOrVector::Vector(controller),
+            controller: StringOrVector::Vector { value: controller },
             verification_method,
             authentication,
             assertion_method,
@@ -691,8 +707,8 @@ impl TryFrom<ContractOutput> for DidMetadata {
         );
 
         let creator = value.get_address(0)?;
-        let created = value.get_u128(1)?;
-        let updated = value.get_u128(2)?;
+        let created = value.get_u128(1)? as u64;
+        let updated = value.get_u128(2)? as u64;
         let deactivated = value.get_bool(3)?;
 
         let did_metadata = DidMetadata {
@@ -762,18 +778,22 @@ pub mod test {
     }
 
     pub fn verification_relationship(id: &str) -> VerificationMethodOrReference {
-        VerificationMethodOrReference::String(format!("{}#{}", id, KEY_1))
+        VerificationMethodOrReference::String {
+            value: format!("{}#{}", id, KEY_1),
+        }
     }
 
     pub fn service(id: &str) -> Service {
         Service {
             id: format!("{}#didcomm-1", id),
             type_: SERVICE_TYPE.to_string(),
-            service_endpoint: ServiceEndpoint::Object(ServiceEndpointObject {
-                uri: SERVICE_ENDPOINT.to_string(),
-                accept: vec![],
-                routing_keys: vec![],
-            }),
+            service_endpoint: ServiceEndpoint::Object {
+                value: ServiceEndpointObject {
+                    uri: SERVICE_ENDPOINT.to_string(),
+                    accept: vec![],
+                    routing_keys: vec![],
+                },
+            },
         }
     }
 
@@ -787,9 +807,11 @@ pub mod test {
     pub fn did_doc(id: Option<&str>) -> DidDocument {
         let id = id.map(String::from).unwrap_or_else(new_id);
         DidDocument {
-            context: StringOrVector::Vector(vec![CONTEXT.to_string()]),
+            context: StringOrVector::Vector {
+                value: vec![CONTEXT.to_string()],
+            },
             id: DID::new(&id),
-            controller: StringOrVector::Vector(vec![]),
+            controller: StringOrVector::Vector { value: vec![] },
             verification_method: vec![verification_method(&id)],
             authentication: vec![verification_relationship(&id)],
             assertion_method: vec![],
