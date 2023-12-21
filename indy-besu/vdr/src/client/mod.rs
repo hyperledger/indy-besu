@@ -63,7 +63,7 @@ pub trait Contract: Sync + Send {
     ///
     /// # Returns
     /// address of the deployed contract. Should be used to execute contract methods
-    fn address(&self) -> String;
+    fn address(&self) -> &Address;
 
     /// Encode data required for the execution of a contract method
     ///

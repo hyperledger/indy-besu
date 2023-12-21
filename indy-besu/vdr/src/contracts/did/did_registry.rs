@@ -212,7 +212,7 @@ pub mod test {
     #[cfg(feature = "ledger_test")]
     pub async fn create_did(client: &LedgerClient, signer: &crate::BasicSigner) -> DidDocument {
         let did_doc = did_doc(None);
-        let mut transaction = build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc)
+        let transaction = build_create_did_transaction(&client, &TRUSTEE_ACC, &did_doc)
             .await
             .unwrap();
 
@@ -247,7 +247,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
-                to: DID_REGISTRY_ADDRESS.to_string(),
+                to: DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -399,7 +399,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACC.clone()),
-                to: DID_REGISTRY_ADDRESS.to_string(),
+                to: DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -575,7 +575,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: DID_REGISTRY_ADDRESS.to_string(),
+                to: DID_REGISTRY_ADDRESS.clone(),
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: vec![

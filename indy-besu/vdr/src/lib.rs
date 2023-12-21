@@ -80,7 +80,7 @@ mod tests {
 
     async fn sign_and_submit_transaction(
         client: &LedgerClient,
-        mut transaction: Transaction,
+        transaction: Transaction,
         signer: &BasicSigner,
     ) -> String {
         let sign_bytes = transaction.get_signing_bytes().unwrap();
@@ -259,7 +259,7 @@ mod tests {
             role_to_revoke: &Role,
             signer: &BasicSigner,
         ) -> String {
-            let mut transaction = role_control::build_revoke_role_transaction(
+            let transaction = role_control::build_revoke_role_transaction(
                 client,
                 &TRUSTEE_ACC,
                 role_to_revoke,

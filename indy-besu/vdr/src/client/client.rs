@@ -206,18 +206,28 @@ pub mod test {
     pub const CHAIN_ID: u64 = 1337;
     pub const NODE_ADDRESS: &str = "http://127.0.0.1:8545";
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
-    pub const DID_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000003333";
     pub const DID_REGISTRY_SPEC_PATH: &str = "did/IndyDidRegistry.sol/IndyDidRegistry.json";
-    pub const SCHEMA_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000005555";
     pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
-    pub const CRED_DEF_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000004444";
     pub const CRED_DEF_REGISTRY_SPEC_PATH: &str =
         "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
-    pub const VALIDATOR_CONTROL_ADDRESS: &str = "0x0000000000000000000000000000000000007777";
     pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
-    pub const ROLE_CONTROL_ADDRESS: &str = "0x0000000000000000000000000000000000006666";
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
     pub static DEFAULT_NONCE: Lazy<Vec<u64>> = Lazy::new(|| vec![0, 0, 0, 0]);
+
+    pub static DID_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000003333"));
+
+    pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000005555"));
+
+    pub static CRED_DEF_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000004444"));
+
+    pub static VALIDATOR_CONTROL_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000007777"));
+
+    pub static ROLE_CONTROL_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::new("0x0000000000000000000000000000000000006666"));
 
     pub static TRUSTEE_ACC: Lazy<Address> =
         Lazy::new(|| Address::new("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
@@ -236,27 +246,27 @@ pub mod test {
     fn contracts() -> Vec<ContractConfig> {
         vec![
             ContractConfig {
-                address: DID_REGISTRY_ADDRESS.to_string(),
+                address: DID_REGISTRY_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: SCHEMA_REGISTRY_ADDRESS.to_string(),
+                address: SCHEMA_REGISTRY_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: CRED_DEF_REGISTRY_ADDRESS.to_string(),
+                address: CRED_DEF_REGISTRY_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                address: VALIDATOR_CONTROL_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: ROLE_CONTROL_ADDRESS.to_string(),
+                address: ROLE_CONTROL_ADDRESS.value().to_string(),
                 spec_path: Some(build_contract_path(ROLE_CONTROL_PATH)),
                 spec: None,
             },
