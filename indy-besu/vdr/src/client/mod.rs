@@ -6,14 +6,14 @@ use crate::{
     error::VdrResult,
     types::{Address, ContractOutput, ContractParam, PingStatus, Transaction},
 };
+use async_trait::async_trait;
 
 pub use client::*;
 pub use constants::*;
 
-use async_trait::async_trait;
-
-#[async_trait(?Send)]
-pub trait Client {
+#[cfg_attr(not(feature = "wasm"), async_trait)]
+#[cfg_attr(feature = "wasm", async_trait(?Send))]
+pub trait Client: Sync + Send {
     /// Retrieve count of transaction for the given account
     ///
     /// # Params
@@ -26,6 +26,7 @@ pub trait Client {
     /// Submit transaction to the ledger
     ///
     /// # Params
+    /// - `transaction` transaction to submit
     /// - `transaction` prepared transaction to submit
     ///
     /// # Returns
@@ -57,12 +58,12 @@ pub trait Client {
     async fn ping(&self) -> VdrResult<PingStatus>;
 }
 
-pub trait Contract {
+pub trait Contract: Sync + Send {
     /// Get the address of deployed contract
     ///
     /// # Returns
     /// address of the deployed contract. Should be used to execute contract methods
-    fn address(&self) -> String;
+    fn address(&self) -> &Address;
 
     /// Encode data required for the execution of a contract method
     ///

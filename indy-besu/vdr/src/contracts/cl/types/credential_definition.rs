@@ -1,7 +1,7 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
-    DID,
+    JsonValue, DID,
 };
 
 use crate::contracts::cl::types::{
@@ -9,9 +9,9 @@ use crate::contracts::cl::types::{
 };
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialDefinitionWithMeta {
     pub credential_definition: CredentialDefinition,
@@ -19,6 +19,7 @@ pub struct CredentialDefinitionWithMeta {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct CredentialDefinition {
     pub id: CredentialDefinitionId,
     #[serde(rename = "issuerId")]
@@ -28,12 +29,13 @@ pub struct CredentialDefinition {
     #[serde(rename = "credDefType")]
     pub cred_def_type: String,
     pub tag: String,
-    pub value: Value,
+    pub value: JsonValue,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct CredentialDefinitionMetadata {
-    pub created: u128,
+    pub created: u64,
 }
 
 impl From<CredentialDefinition> for ContractParam {
@@ -72,10 +74,10 @@ impl TryFrom<ContractOutput> for CredentialDefinition {
         );
 
         let cred_def_value =
-            serde_json::from_str::<Value>(&value.get_string(5)?).map_err(|_err| {
-                let vdr_error = VdrError::ContractInvalidResponseData(
-                    "Unable get to credential definition value".to_string(),
-                );
+            serde_json::from_str::<JsonValue>(&value.get_string(5)?).map_err(|_err| {
+                let vdr_error = VdrError::ContractInvalidResponseData {
+                    msg: "Unable get to credential definition value".to_string(),
+                };
 
                 warn!(
                     "Error: {} during CredentialDefinition convert from ContractOutput: {:?}",
@@ -114,7 +116,9 @@ impl TryFrom<ContractOutput> for CredentialDefinitionMetadata {
         );
 
         let created = value.get_u128(0)?;
-        let cred_def_metadata = CredentialDefinitionMetadata { created };
+        let cred_def_metadata = CredentialDefinitionMetadata {
+            created: created as u64,
+        };
 
         trace!(
             "CredentialDefinitionMetadata convert from ContractOutput: {:?} has finished. Result: {:?}",
@@ -173,7 +177,7 @@ pub mod test {
         CredentialDefinitionId::build(issuer_id, schema_id.value(), tag)
     }
 
-    fn credential_definition_value() -> Value {
+    fn credential_definition_value() -> JsonValue {
         json!({
             "n": "779...397",
             "rctxt": "774...977",

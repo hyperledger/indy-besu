@@ -1,11 +1,14 @@
-use ethereum::{LegacyTransactionMessage, TransactionAction, TransactionSignature};
+use ethereum::{
+    LegacyTransaction, LegacyTransactionMessage, TransactionAction,
+    TransactionSignature as EthTransactionSignature,
+};
 use ethereum_types::{H160, H256, U256};
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{str::FromStr, sync::RwLock};
 
 use crate::{
-    client::GAS,
+    client::{GAS_LIMIT, GAS_PRICE},
     error::{VdrError, VdrResult},
     types::{Address, ContractOutput, ContractParam},
     LedgerClient,
@@ -14,6 +17,7 @@ use crate::{
 /// Type of transaction: write/read
 /// depending on the transaction type different client methods will be executed to submit transaction
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 pub enum TransactionType {
     #[default]
     Read,
@@ -21,7 +25,8 @@ pub enum TransactionType {
 }
 
 /// Transaction object
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Object))]
 pub struct Transaction {
     /// type of transaction: write/read
     /// depending on the transaction type different client methods will be executed to submit transaction
@@ -29,53 +34,165 @@ pub struct Transaction {
     /// transaction sender account address
     pub from: Option<Address>,
     /// transaction recipient address
-    pub to: String,
+    pub to: Address,
     /// nonce - count of transaction sent by account
-    pub nonce: Option<[u64; 4]>,
+    pub nonce: Option<Vec<u64>>,
     /// chain id of the ledger
     pub chain_id: u64,
     /// transaction payload
     pub data: Vec<u8>,
     /// transaction signature
-    pub signature: Option<TransactionSignature>,
+    pub signature: RwLock<Option<TransactionSignature>>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
+pub struct SignatureData {
+    /// recovery ID using for public key recovery
+    pub recovery_id: u64,
+    /// ECDSA signature
+    pub signature: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
+pub struct TransactionSignature {
+    v: u64,
+    r: Vec<u8>,
+    s: Vec<u8>,
+}
+
+#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 impl Transaction {
     pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
-        let nonce = self.nonce.ok_or_else(|| {
-            VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
-        })?;
-        let to = H160::from_str(&self.to).map_err(|_| {
-            VdrError::ClientInvalidTransaction(format!(
-                "Invalid transaction target address {}",
-                self.to
-            ))
-        })?;
-
-        let eth_transaction = LegacyTransactionMessage {
-            nonce: U256(nonce),
-            gas_price: U256([0, 0, 0, 0]),
-            gas_limit: U256([GAS, 0, 0, 0]),
-            action: TransactionAction::Call(to),
-            value: Default::default(),
-            input: self.data.clone(),
-            chain_id: Some(self.chain_id),
-        };
-
+        let eth_transaction: LegacyTransactionMessage = self.try_into()?;
         let hash = eth_transaction.hash();
         Ok(hash.as_bytes().to_vec())
     }
 
-    /// set signature for the transaction
-    pub fn set_signature(&mut self, signature_data: SignatureData) {
+    pub fn set_signature(&self, signature_data: SignatureData) {
         let v = signature_data.recovery_id + 35 + self.chain_id * 2;
-        let signature = TransactionSignature::new(
+        let transaction_signature = TransactionSignature {
             v,
-            H256::from_slice(&signature_data.signature[..32]),
-            H256::from_slice(&signature_data.signature[32..]),
-        );
+            r: signature_data.signature[..32].to_vec(),
+            s: signature_data.signature[32..].to_vec(),
+        };
+        let mut signature = self.signature.write().unwrap();
+        *signature = Some(transaction_signature)
+    }
+}
 
-        self.signature = signature
+impl Transaction {
+    fn get_to(&self) -> VdrResult<H160> {
+        H160::from_str(self.to.value()).map_err(|_| VdrError::ClientInvalidTransaction {
+            msg: format!("Invalid transaction target address {}", self.to.value()),
+        })
+    }
+
+    fn get_nonce(&self) -> VdrResult<U256> {
+        let nonce: [u64; 4] = self
+            .nonce
+            .as_ref()
+            .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                msg: "Transaction `nonce` is not set".to_string(),
+            })?
+            .clone()
+            .try_into()
+            .map_err(|_| VdrError::CommonInvalidData {
+                msg: "Invalid nonce provided".to_string(),
+            })?;
+        Ok(U256(nonce))
+    }
+
+    fn get_transaction_signature(&self) -> VdrResult<EthTransactionSignature> {
+        let signature = self.signature.read().unwrap();
+        let signature = signature
+            .as_ref()
+            .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                msg: "Missing signature".to_string(),
+            })?
+            .clone();
+
+        let signature = EthTransactionSignature::new(
+            signature.v,
+            H256::from_slice(&signature.r),
+            H256::from_slice(&signature.s),
+        )
+        .ok_or_else(|| VdrError::ClientInvalidTransaction {
+            msg: "Transaction `nonce` is not set".to_string(),
+        })?;
+        Ok(signature)
+    }
+}
+
+impl TryInto<LegacyTransactionMessage> for &Transaction {
+    type Error = VdrError;
+
+    fn try_into(self) -> Result<LegacyTransactionMessage, Self::Error> {
+        Ok(LegacyTransactionMessage {
+            nonce: self.get_nonce()?,
+            gas_price: *GAS_PRICE,
+            gas_limit: *GAS_LIMIT,
+            action: TransactionAction::Call(self.get_to()?),
+            value: Default::default(),
+            input: self.data.clone(),
+            chain_id: Some(self.chain_id),
+        })
+    }
+}
+
+impl TryInto<LegacyTransaction> for &Transaction {
+    type Error = VdrError;
+
+    fn try_into(self) -> Result<LegacyTransaction, Self::Error> {
+        Ok(LegacyTransaction {
+            nonce: self.get_nonce()?,
+            gas_price: *GAS_PRICE,
+            gas_limit: *GAS_LIMIT,
+            action: TransactionAction::Call(self.get_to()?),
+            value: Default::default(),
+            input: self.data.clone(),
+            signature: self.get_transaction_signature()?,
+        })
+    }
+}
+
+#[cfg(feature = "uni_ffi")]
+#[uniffi::export]
+impl Transaction {
+    #[uniffi::constructor]
+    pub fn new(
+        type_: TransactionType,
+        from: Option<Address>,
+        to: Address,
+        chain_id: u64,
+        data: Vec<u8>,
+        nonce: Option<Vec<u64>>,
+        signature: Option<TransactionSignature>,
+    ) -> Transaction {
+        Transaction {
+            type_,
+            from,
+            to,
+            chain_id,
+            data,
+            nonce,
+            signature: RwLock::new(signature),
+        }
+    }
+}
+
+impl PartialEq for Transaction {
+    fn eq(&self, other: &Self) -> bool {
+        let self_signature = self.signature.read().unwrap();
+        let other_signature = other.signature.read().unwrap();
+        self.type_ == other.type_
+            && self.from == other.from
+            && self.to == other.to
+            && self.nonce == other.nonce
+            && self.chain_id == other.chain_id
+            && self.data == other.data
+            && *self_signature == *other_signature
     }
 }
 
@@ -151,14 +268,15 @@ impl TransactionBuilder {
         let data = contract.encode_input(&self.method, &self.params)?;
         let nonce = match self.type_ {
             TransactionType::Write => {
-                let from = self.from.as_ref().ok_or_else(|| {
-                    VdrError::ClientInvalidTransaction(
-                        "Transaction `sender` is not set".to_string(),
-                    )
-                })?;
+                let from =
+                    self.from
+                        .as_ref()
+                        .ok_or_else(|| VdrError::ClientInvalidTransaction {
+                            msg: "Transaction `sender` is not set".to_string(),
+                        })?;
 
                 let nonce = client.get_transaction_count(from).await?;
-                Some(nonce)
+                Some(nonce.to_vec())
             }
             TransactionType::Read => None,
         };
@@ -166,11 +284,11 @@ impl TransactionBuilder {
         let transaction = Transaction {
             type_: self.type_,
             from: self.from,
-            to: contract.address(),
+            to: contract.address().clone(),
             chain_id: client.chain_id(),
             data,
             nonce,
-            signature: None,
+            signature: RwLock::new(None),
         };
 
         trace!("Built transaction: {:?}", transaction);
@@ -216,8 +334,9 @@ impl TransactionParser {
         bytes: &[u8],
     ) -> VdrResult<T> {
         if bytes.is_empty() {
-            let vdr_error =
-                VdrError::ContractInvalidResponseData("Empty response bytes".to_string());
+            let vdr_error = VdrError::ContractInvalidResponseData {
+                msg: "Empty response bytes".to_string(),
+            };
 
             warn!("Error: {:?} during transaction output parse", vdr_error);
 
@@ -227,8 +346,9 @@ impl TransactionParser {
         let output = contract.decode_output(&self.method, bytes)?;
 
         if output.is_empty() {
-            let vdr_error =
-                VdrError::ContractInvalidResponseData("Unable to parse response".to_string());
+            let vdr_error = VdrError::ContractInvalidResponseData {
+                msg: "Unable to parse response".to_string(),
+            };
 
             warn!("Error: {:?} during transaction output parse", vdr_error);
 
@@ -239,12 +359,4 @@ impl TransactionParser {
 
         T::try_from(output)
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SignatureData {
-    /// recovery ID using for public key recovery
-    pub recovery_id: u64,
-    /// ECDSA signature
-    pub signature: Vec<u8>,
 }
