@@ -14,7 +14,7 @@ pub struct IndyCredentialDefinitionFormat {
     #[serde(rename = "type")]
     pub type_: String,
     pub tag: String,
-    pub value: Value,
+    pub value: serde_json::Value,
     #[serde(default)]
     pub ver: String,
 }

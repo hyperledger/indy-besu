@@ -23,9 +23,9 @@ if __name__ == "__main__":
         include_package_data=True,
         package_data={
             "": [
-                "indy2_vdr.dll",
-                "libindy2_vdr.dylib",
-                "libindy2_vdr.so",
+                "indy2_vdr_uniffi.dll",
+                "libindy2_vdr_uniffi.dylib",
+                "libindy2_vdr_uniffi.so",
             ]
         },
         python_requires=">=3.6.3",

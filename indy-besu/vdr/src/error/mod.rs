@@ -7,7 +7,6 @@ use web3::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 use web3_wasm::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 
 #[derive(thiserror::Error, Debug, PartialEq)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Error))]
 pub enum VdrError {
     #[error("Ledger Client: Node is unreachable")]
     ClientNodeUnreachable,

@@ -1,4 +1,5 @@
 use log::{debug, info};
+use std::ops::Deref;
 
 use crate::{
     client::LedgerClient,
@@ -26,17 +27,14 @@ const METHOD_RESOLVE_CREDENTIAL_DEFINITION: &str = "resolveCredentialDefinition"
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_create_credential_definition_transaction(
     client: &LedgerClient,
     from: &Address,
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, CredentialDefinition: {:?}",
-        METHOD_CREATE_CREDENTIAL_DEFINITION,
-        from.value(),
-        credential_definition
+        "{} txn build has started. Sender: {:?}, CredentialDefinition: {:?}",
+        METHOD_CREATE_CREDENTIAL_DEFINITION, from, credential_definition
     );
 
     let transaction = TransactionBuilder::new()
@@ -65,7 +63,6 @@ pub async fn build_create_credential_definition_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_resolve_credential_definition_transaction(
     client: &LedgerClient,
     id: &CredentialDefinitionId,
@@ -78,7 +75,7 @@ pub async fn build_resolve_credential_definition_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
-        .add_param(ContractParam::String(id.value().into()))
+        .add_param(ContractParam::String(String::from(id.deref())))
         .set_type(TransactionType::Read)
         .build(client)
         .await;
@@ -100,10 +97,9 @@ pub async fn build_resolve_credential_definition_transaction(
 ///
 /// # Returns
 /// parsed Credential Definition
-#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_resolve_credential_definition_result(
     client: &LedgerClient,
-    bytes: Vec<u8>,
+    bytes: &[u8],
 ) -> VdrResult<CredentialDefinition> {
     debug!(
         "{} result parse has started. Bytes to parse: {:?}",
@@ -113,7 +109,7 @@ pub fn parse_resolve_credential_definition_result(
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
-        .parse::<CredentialDefinitionWithMeta>(client, &bytes)
+        .parse::<CredentialDefinitionWithMeta>(client, bytes)
         .map(|credential_definition_with_meta| {
             credential_definition_with_meta.credential_definition
         });
@@ -157,8 +153,8 @@ pub mod test {
                 &client,
                 &TRUSTEE_ACC,
                 &credential_definition(
-                    &DID::new(ISSUER_ID),
-                    &SchemaId::new(SCHEMA_ID),
+                    &DID::from(ISSUER_ID),
+                    &SchemaId::from(SCHEMA_ID),
                     Some(CREDENTIAL_DEFINITION_TAG),
                 ),
             )
@@ -229,8 +225,8 @@ pub mod test {
             let transaction = build_resolve_credential_definition_transaction(
                 &client,
                 &credential_definition(
-                    &DID::new(ISSUER_ID),
-                    &SchemaId::new(SCHEMA_ID),
+                    &DID::from(ISSUER_ID),
+                    &SchemaId::from(SCHEMA_ID),
                     Some(CREDENTIAL_DEFINITION_TAG),
                 )
                 .id,
@@ -315,11 +311,11 @@ pub mod test {
                 0, 0, 0, 0, 0, 0, 0,
             ];
             let parsed_cred_def =
-                parse_resolve_credential_definition_result(&client, data).unwrap();
+                parse_resolve_credential_definition_result(&client, &data).unwrap();
             assert_eq!(
                 credential_definition(
-                    &DID::new(ISSUER_ID),
-                    &SchemaId::new(SCHEMA_ID),
+                    &DID::from(ISSUER_ID),
+                    &SchemaId::from(SCHEMA_ID),
                     Some(CREDENTIAL_DEFINITION_TAG),
                 ),
                 parsed_cred_def
