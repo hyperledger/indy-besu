@@ -2,13 +2,13 @@ use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
 };
+use std::ops::Deref;
 
 use crate::{contracts::cl::types::schema_id::SchemaId, DID};
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaWithMeta {
     pub schema: Schema,
@@ -16,7 +16,6 @@ pub struct SchemaWithMeta {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct Schema {
     pub id: SchemaId,
     #[serde(rename = "issuerId")]
@@ -28,7 +27,6 @@ pub struct Schema {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct SchemaMetadata {
     pub created: u64,
 }
@@ -38,8 +36,8 @@ impl From<Schema> for ContractParam {
         trace!("Schema: {:?} convert into ContractParam has started", value);
 
         let schema_contract_param = ContractParam::Tuple(vec![
-            ContractParam::String(value.id.value().to_string()),
-            ContractParam::String(value.issuer_id.value().to_string()),
+            ContractParam::String(value.id.deref().to_string()),
+            ContractParam::String(value.issuer_id.deref().to_string()),
             ContractParam::String(value.name.to_string()),
             ContractParam::String(value.version.to_string()),
             ContractParam::Array(
@@ -71,8 +69,8 @@ impl TryFrom<ContractOutput> for Schema {
         );
 
         let schema = Schema {
-            id: SchemaId::new(&value.get_string(0)?),
-            issuer_id: DID::new(&value.get_string(1)?),
+            id: SchemaId::from(value.get_string(0)?.as_str()),
+            issuer_id: DID::from(value.get_string(1)?.as_str()),
             name: value.get_string(2)?,
             version: value.get_string(3)?,
             attr_names: value.get_string_array(4)?,
@@ -244,8 +242,8 @@ pub mod test {
     fn schema_param() -> ContractParam {
         ContractParam::Tuple(vec![
             ContractParam::String(
-                schema_id(&DID::new(ISSUER_ID), SCHEMA_NAME)
-                    .value()
+                schema_id(&DID::from(ISSUER_ID), SCHEMA_NAME)
+                    .deref()
                     .to_string(),
             ),
             ContractParam::String(ISSUER_ID.to_string()),
@@ -263,7 +261,7 @@ pub mod test {
 
         #[test]
         fn convert_schema_into_contract_param_test() {
-            let param: ContractParam = schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)).into();
+            let param: ContractParam = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME)).into();
             assert_eq!(schema_param(), param);
         }
     }
@@ -275,7 +273,7 @@ pub mod test {
         fn convert_contract_output_into_schema() {
             let data = ContractOutput::new(schema_param().into_tuple().unwrap());
             let converted = Schema::try_from(data).unwrap();
-            assert_eq!(schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)), converted);
+            assert_eq!(schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME)), converted);
         }
     }
 }

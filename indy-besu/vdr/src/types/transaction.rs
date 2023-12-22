@@ -17,7 +17,6 @@ use crate::{
 /// Type of transaction: write/read
 /// depending on the transaction type different client methods will be executed to submit transaction
 #[derive(Clone, Debug, Default, PartialEq)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 pub enum TransactionType {
     Read,
     Write,
@@ -31,7 +30,6 @@ impl Default for TransactionType {
 
 /// Transaction object
 #[derive(Debug, Default)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Object))]
 pub struct Transaction {
     /// type of transaction: write/read
     /// depending on the transaction type different client methods will be executed to submit transaction
@@ -51,7 +49,6 @@ pub struct Transaction {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct SignatureData {
     /// recovery ID using for public key recovery
     pub recovery_id: u64,
@@ -60,15 +57,33 @@ pub struct SignatureData {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct TransactionSignature {
-    v: u64,
-    r: Vec<u8>,
-    s: Vec<u8>,
+    pub v: u64,
+    pub r: Vec<u8>,
+    pub s: Vec<u8>,
 }
 
-#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 impl Transaction {
+    pub fn new(
+        type_: TransactionType,
+        from: Option<Address>,
+        to: Address,
+        chain_id: u64,
+        data: Vec<u8>,
+        nonce: Option<Vec<u64>>,
+        signature: Option<TransactionSignature>,
+    ) -> Transaction {
+        Transaction {
+            type_,
+            from,
+            to,
+            chain_id,
+            data,
+            nonce,
+            signature: RwLock::new(signature),
+        }
+    }
+
     pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
         let eth_transaction: LegacyTransactionMessage = self.try_into()?;
         let hash = eth_transaction.hash();
@@ -85,12 +100,10 @@ impl Transaction {
         let mut signature = self.signature.write().unwrap();
         *signature = Some(transaction_signature)
     }
-}
 
-impl Transaction {
     fn get_to(&self) -> VdrResult<H160> {
-        H160::from_str(self.to.value()).map_err(|_| VdrError::ClientInvalidTransaction {
-            msg: format!("Invalid transaction target address {}", self.to.value()),
+        H160::from_str(&self.to).map_err(|_| VdrError::ClientInvalidTransaction {
+            msg: format!("Invalid transaction target address {:?}", self.to),
         })
     }
 
@@ -159,31 +172,6 @@ impl TryInto<LegacyTransaction> for &Transaction {
             input: self.data.clone(),
             signature: self.get_transaction_signature()?,
         })
-    }
-}
-
-#[cfg(feature = "uni_ffi")]
-#[uniffi::export]
-impl Transaction {
-    #[uniffi::constructor]
-    pub fn new(
-        type_: TransactionType,
-        from: Option<Address>,
-        to: Address,
-        chain_id: u64,
-        data: Vec<u8>,
-        nonce: Option<Vec<u64>>,
-        signature: Option<TransactionSignature>,
-    ) -> Transaction {
-        Transaction {
-            type_,
-            from,
-            to,
-            chain_id,
-            data,
-            nonce,
-            signature: RwLock::new(signature),
-        }
     }
 }
 

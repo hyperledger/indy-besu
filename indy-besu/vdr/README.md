@@ -54,7 +54,6 @@ cargo +nightly fmt
 - `ledger_test` (Optional) - ledger integration tests requiring running network.
 - `basic_signer` (Optional) - basic helper module for EcDSA signing.
 - `wasm` (Optional) - library which can be compiled for [Web-Assembly](https://rustwasm.github.io/book/)
-- `uni_ffi` (Optional) - library can be compiled with [UniFFI](https://mozilla.github.io/uniffi-rs/)
 
 ## Test
 
@@ -78,15 +77,7 @@ cargo +nightly fmt
 
 `Indy-VDR` library uses [uniffi](https://mozilla.github.io/uniffi-rs/) to generate bindings for Kotlin, Python, Swift languages.
 
-In order to generate language specific bindings, run the following commands with replacing a target
-language `<kotlin|python|swift>`:
-
-```
-cargo build --features "uni_ffi" --release
-cargo run --features "uni_ffi" --bin uniffi-bindgen generate --library target/release/libindy2_vdr.dylib --language <kotlin|python|swift> --out-dir out
-```
-
-The `out` directory containing generated bindings will be created as the command execution result.
+See instructions [here](./uniffi/README.md).
 
 ### JavaScript, NodeJs, WebAssembly
 

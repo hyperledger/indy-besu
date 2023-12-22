@@ -1,0 +1,38 @@
+[package]
+name = "indy2-vdr-uniffi"
+description = "Uni-FFI bindings for Indy 2.0 VDR"
+version = "0.1.0"
+authors = [
+    "Artem Ivanov <artem.ivanov@dsr-corporation.com>",
+]
+edition = "2021"
+license = "Apache-2.0"
+readme = "./README.md"
+
+[lib]
+name = "indy2_vdr_uniffi"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin.rs"
+
+[features]
+default = []
+
+[dependencies]
+indy2_vdr = { path = ".." }
+serde = "1.0.188"
+serde_derive = "1.0.188"
+serde_json = "1.0.107"
+thiserror = "1.0.49"
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = ["tokio", "cli"] }
+uniffi_bindgen = { version = "0.25.3", optional = true }
+
+[build-dependencies]
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = [ "build"] }
+
+[dev-dependencies]
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = ["tokio", "cli"] }
+

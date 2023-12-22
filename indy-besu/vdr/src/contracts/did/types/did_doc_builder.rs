@@ -1,4 +1,6 @@
 use log::{trace, warn};
+use serde_json::Value;
+use std::ops::Deref;
 
 use crate::{
     contracts::{
@@ -6,7 +8,7 @@ use crate::{
         VerificationMethodOrReference,
     },
     error::{VdrError, VdrResult},
-    DidDocument, VerificationKey, VerificationKeyType, DID,
+    DidDocument, VerificationKeyType, DID,
 };
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -27,9 +29,7 @@ pub struct DidDocumentBuilder {
 impl DidDocumentBuilder {
     pub fn new() -> DidDocumentBuilder {
         let did_doc_builder = DidDocumentBuilder {
-            context: StringOrVector::String {
-                value: CONTEXT.to_string(),
-            },
+            context: StringOrVector::String(CONTEXT.to_string()),
             ..DidDocumentBuilder::default()
         };
 
@@ -41,15 +41,13 @@ impl DidDocumentBuilder {
     pub fn set_id(mut self, id: &DID) -> DidDocumentBuilder {
         self.id = id.to_owned();
 
-        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.value(), self);
+        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.deref(), self);
 
         self
     }
 
     pub fn set_controller(mut self, controller: &str) -> DidDocumentBuilder {
-        self.controller = StringOrVector::String {
-            value: controller.to_string(),
-        };
+        self.controller = StringOrVector::String(controller.to_string());
 
         trace!(
             "Set controller: {} to DidDocumentBuilder: {:?}",
@@ -64,18 +62,20 @@ impl DidDocumentBuilder {
         mut self,
         type_: VerificationKeyType,
         controller: &DID,
-        key: VerificationKey,
+        public_key_multibase: Option<String>,
+        public_key_jwk: Option<Value>,
     ) -> DidDocumentBuilder {
         let id = format!(
             "{}:KEY-{}",
-            self.id.value(),
+            self.id.deref(),
             self.verification_method.len() + 1
         );
         let verification_method = VerificationMethod {
             id,
             type_,
-            controller: controller.value().to_string(),
-            verification_key: key,
+            controller: controller.deref().to_string(),
+            public_key_multibase,
+            public_key_jwk,
         };
         self.verification_method.push(verification_method.clone());
 
@@ -107,7 +107,7 @@ impl DidDocumentBuilder {
             })?
             .id
             .to_string();
-        let auth_reference = VerificationMethodOrReference::String { value: kid };
+        let auth_reference = VerificationMethodOrReference::String(kid);
         self.authentication.push(auth_reference.clone());
 
         trace!(
@@ -121,7 +121,7 @@ impl DidDocumentBuilder {
 
     pub fn add_assertion_method_reference(mut self, index: usize) -> VdrResult<DidDocumentBuilder> {
         let kid = Self::get_kid_by_index(&self, index)?;
-        let assertion_reference = VerificationMethodOrReference::String { value: kid };
+        let assertion_reference = VerificationMethodOrReference::String(kid);
         self.assertion_method.push(assertion_reference.clone());
 
         trace!(
@@ -138,7 +138,7 @@ impl DidDocumentBuilder {
         index: usize,
     ) -> VdrResult<DidDocumentBuilder> {
         let kid = Self::get_kid_by_index(&self, index)?;
-        let capability_invocation_reference = VerificationMethodOrReference::String { value: kid };
+        let capability_invocation_reference = VerificationMethodOrReference::String(kid);
         self.capability_invocation
             .push(capability_invocation_reference.clone());
 
@@ -156,7 +156,7 @@ impl DidDocumentBuilder {
         index: usize,
     ) -> VdrResult<DidDocumentBuilder> {
         let kid = Self::get_kid_by_index(&self, index)?;
-        let capability_delegation_reference = VerificationMethodOrReference::String { value: kid };
+        let capability_delegation_reference = VerificationMethodOrReference::String(kid);
         self.capability_delegation
             .push(capability_delegation_reference.clone());
 
@@ -171,7 +171,7 @@ impl DidDocumentBuilder {
 
     pub fn add_key_agreement_reference(mut self, index: usize) -> VdrResult<DidDocumentBuilder> {
         let kid = Self::get_kid_by_index(&self, index)?;
-        let key_agreement_reference = VerificationMethodOrReference::String { value: kid };
+        let key_agreement_reference = VerificationMethodOrReference::String(kid);
         self.key_agreement.push(key_agreement_reference.clone());
 
         trace!(
@@ -187,9 +187,7 @@ impl DidDocumentBuilder {
         let service = Service {
             id: format!("#inline-{}", self.service.len() + 1),
             type_: type_.to_string(),
-            service_endpoint: ServiceEndpoint::String {
-                value: endpoint.to_string(),
-            },
+            service_endpoint: ServiceEndpoint::String(endpoint.to_string()),
         };
         self.service.push(service.clone());
 
