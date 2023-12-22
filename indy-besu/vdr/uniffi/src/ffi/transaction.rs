@@ -1,9 +1,8 @@
-use indy2_vdr::{
-    Address,
-    Transaction as Transaction_,
+use crate::ffi::{
+    error::{VdrError, VdrResult},
+    types::{SignatureData, TransactionSignature, TransactionType},
 };
-use crate::ffi::types::{SignatureData, TransactionSignature, TransactionType};
-use crate::ffi::error::{VdrResult, VdrError};
+use indy2_vdr::{Address, Transaction as Transaction_};
 
 #[derive(uniffi::Object)]
 pub struct Transaction {
@@ -31,7 +30,7 @@ impl Transaction {
                 data,
                 nonce,
                 signature.map(TransactionSignature::into),
-            )
+            ),
         }
     }
 

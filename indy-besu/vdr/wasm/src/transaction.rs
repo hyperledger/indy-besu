@@ -1,6 +1,6 @@
-use indy2_vdr::{Transaction, SignatureData};
-use wasm_bindgen::prelude::*;
+use indy2_vdr::{SignatureData, Transaction};
 use std::ops::Deref;
+use wasm_bindgen::prelude::*;
 
 use crate::error::Result;
 
