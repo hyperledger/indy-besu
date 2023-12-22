@@ -1000,8 +1000,6 @@ dependencies = [
  "ethereum",
  "ethereum-types",
  "futures",
- "futures-core",
- "futures-util",
  "hex",
  "log",
  "mockall",

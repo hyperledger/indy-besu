@@ -137,7 +137,7 @@ pub mod test {
             did::did_doc::test::ISSUER_ID,
         },
         utils::init_env_logger,
-        QuorumConfig, DID,
+        DID,
     };
 
     #[cfg(feature = "ledger_test")]
@@ -156,10 +156,7 @@ pub mod test {
         let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
         transaction.set_signature(signature);
 
-        client
-            .submit_transaction(&transaction, &QuorumConfig::default())
-            .await
-            .unwrap();
+        client.submit_transaction(&transaction).await.unwrap();
         schema
     }
 
