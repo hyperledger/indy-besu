@@ -7,12 +7,17 @@ import base58
 
 from indy2_vdr import *
 
+# chain id of the running network
 chain_id = 1337
+# address of an RPC node connected to the network
 node_address = 'http://127.0.0.1:8545'
+# address of deployed IndyDidRegistry smart contract
 did_contact_address = '0x0000000000000000000000000000000000003333'
-# set path to the compiled contract
+# Path to the compiled IndyDidRegistry smart contract
 did_contact_spec_path = '/Users/indy-besu/smart_contracts/artifacts/contracts/did/IndyDidRegistry.sol/IndyDidRegistry.json'
+# Account address to use for sending transactions
 account = '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5'
+# Account private key
 account_key = '8bbbb1b345af56b560a5b20bd4b0ed1cd8cc9958a16262bc75118453cb546df7'
 
 
