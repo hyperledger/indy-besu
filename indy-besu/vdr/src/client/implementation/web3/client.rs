@@ -22,7 +22,7 @@ use web3::{
 use web3_wasm::{
     api::Eth,
     transports::Http,
-    types::{Address as EthAddress, Bytes, CallRequest, H256, U256},
+    types::{Address as EthAddress, Bytes, CallRequest, H256},
     Web3,
 };
 
@@ -58,11 +58,10 @@ impl Web3Client {
 #[cfg_attr(feature = "wasm", async_trait(?Send))]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
-        let account_address = EthAddress::from_str(address.value()).map_err(|_| {
-            VdrError::ClientInvalidTransaction {
-                msg: format!("Invalid transaction sender address {}", address.value()),
-            }
-        })?;
+        let account_address =
+            EthAddress::from_str(address).map_err(|_| VdrError::ClientInvalidTransaction {
+                msg: format!("Invalid transaction sender address {:?}", address),
+            })?;
 
         let nonce = self
             .client
@@ -127,12 +126,9 @@ impl Client for Web3Client {
 
             return Err(vdr_error);
         }
-        let address = EthAddress::from_str(transaction.to.value()).map_err(|_| {
+        let address = EthAddress::from_str(&transaction.to).map_err(|_| {
             let vdr_error = VdrError::ClientInvalidTransaction {
-                msg: format!(
-                    "Invalid transaction target address {}",
-                    transaction.to.value()
-                ),
+                msg: format!("Invalid transaction target address {:?}", transaction.to),
             };
 
             warn!(

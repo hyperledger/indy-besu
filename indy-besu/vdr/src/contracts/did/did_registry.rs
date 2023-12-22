@@ -1,4 +1,5 @@
 use log::{debug, info};
+use std::ops::Deref;
 
 use crate::{
     client::LedgerClient,
@@ -25,17 +26,14 @@ const METHOD_RESOLVE_DID: &str = "resolveDid";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_create_did_transaction(
     client: &LedgerClient,
     from: &Address,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, DidDocument: {:?}",
-        METHOD_CREATE_DID,
-        from.value(),
-        did_doc
+        "{} txn build has started. Sender: {:?}, DidDocument: {:?}",
+        METHOD_CREATE_DID, from, did_doc
     );
 
     let transaction = TransactionBuilder::new()
@@ -64,17 +62,14 @@ pub async fn build_create_did_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_update_did_transaction(
     client: &LedgerClient,
     from: &Address,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, DidDocument: {:?}",
-        METHOD_UPDATE_DID,
-        from.value(),
-        did_doc
+        "{} txn build has started. Sender: {:?}, DidDocument: {:?}",
+        METHOD_UPDATE_DID, from, did_doc
     );
 
     let transaction = TransactionBuilder::new()
@@ -103,23 +98,20 @@ pub async fn build_update_did_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_deactivate_did_transaction(
     client: &LedgerClient,
     from: &Address,
     did: &DID,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, Did: {:?}",
-        METHOD_DEACTIVATE_DID,
-        from.value(),
-        did
+        "{} txn build has started. Sender: {:?}, Did: {:?}",
+        METHOD_DEACTIVATE_DID, from, did
     );
 
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_DEACTIVATE_DID)
-        .add_param(ContractParam::String(did.value().to_string()))
+        .add_param(ContractParam::String(String::from(did.clone().deref())))
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
@@ -141,7 +133,6 @@ pub async fn build_deactivate_did_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_resolve_did_transaction(
     client: &LedgerClient,
     did: &DID,
@@ -154,7 +145,7 @@ pub async fn build_resolve_did_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_DID)
-        .add_param(ContractParam::String(did.value().to_string()))
+        .add_param(ContractParam::String(did.deref().to_string()))
         .set_type(TransactionType::Read)
         .build(client)
         .await;
@@ -175,8 +166,7 @@ pub async fn build_resolve_did_transaction(
 ///
 /// # Returns
 /// parsed DID Document
-#[cfg_attr(feature = "uni_ffi", uniffi::export)]
-pub fn parse_resolve_did_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<DidDocument> {
+pub fn parse_resolve_did_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<DidDocument> {
     debug!(
         "{} result parse has started. Bytes to parse: {:?}",
         METHOD_RESOLVE_DID, bytes
@@ -185,7 +175,7 @@ pub fn parse_resolve_did_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrRes
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_DID)
-        .parse::<DidDocumentWithMeta>(client, &bytes)
+        .parse::<DidDocumentWithMeta>(client, bytes)
         .map(|did_with_meta| did_with_meta.document);
 
     info!(
@@ -217,7 +207,7 @@ pub mod test {
             .unwrap();
 
         let sign_bytes = transaction.get_signing_bytes().unwrap();
-        let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
+        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.deref()).unwrap();
         transaction.set_signature(signature);
 
         client.submit_transaction(&transaction).await.unwrap();
@@ -232,7 +222,6 @@ pub mod test {
                 Service, ServiceEndpoint, StringOrVector, VerificationMethod,
                 VerificationMethodOrReference,
             },
-            VerificationKey::Multibase,
             VerificationKeyType,
         };
 
@@ -346,24 +335,22 @@ pub mod test {
 
             let did = DidDocument {
                 context: StringOrVector::Vector(vec!["https://www.w3.org/ns/did/v1".to_string()]),
-                id: DID::new("did:indy2:testnet:3LpjszkgTmE3qThge25FZw"),
+                id: DID::from("did:indy2:testnet:3LpjszkgTmE3qThge25FZw"),
                 controller: StringOrVector::Vector(vec![]),
                 verification_method: vec![
                     VerificationMethod {
                         id: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-1".to_string(),
                         type_: VerificationKeyType::Ed25519VerificationKey2018,
                         controller: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw".to_string(),
-                        verification_key: Multibase {
-                            public_key_multibase: "8rnQ4gvtEYi59DMAzN7FyCVatVATkFo7wPXVMy38WmvG".to_string()
-                        },
+                        public_key_multibase: Some("8rnQ4gvtEYi59DMAzN7FyCVatVATkFo7wPXVMy38WmvG".to_string()),
+                        public_key_jwk: None,
                     },
                     VerificationMethod {
                         id: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-2".to_string(),
                         type_: VerificationKeyType::EcdsaSecp256k1VerificationKey2019,
                         controller: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw".to_string(),
-                        verification_key: Multibase {
-                            public_key_multibase: "NaqS2qSLZTJcuKLvFAoBSeRFXeivDfyoUqvSs8DQ4ajydz4KbUvT6vdJyz8i9gJEqGjFkCN27niZhoAbQLgk3imn".to_string()
-                        },
+                        public_key_multibase: Some("NaqS2qSLZTJcuKLvFAoBSeRFXeivDfyoUqvSs8DQ4ajydz4KbUvT6vdJyz8i9gJEqGjFkCN27niZhoAbQLgk3imn".to_string()),
+                        public_key_jwk: None,
                     },
                 ],
                 authentication: vec![
@@ -559,7 +546,7 @@ pub mod test {
         async fn build_resolve_did_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let transaction = build_resolve_did_transaction(&client, &DID::new(ISSUER_ID))
+            let transaction = build_resolve_did_transaction(&client, &DID::from(ISSUER_ID))
                 .await
                 .unwrap();
             let expected_transaction = Transaction {
@@ -677,7 +664,7 @@ pub mod test {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ];
-            let parsed_did_doc = parse_resolve_did_result(&client, data).unwrap();
+            let parsed_did_doc = parse_resolve_did_result(&client, &data).unwrap();
             assert_eq!(did_doc(Some(issuer_did)), parsed_did_doc);
         }
     }

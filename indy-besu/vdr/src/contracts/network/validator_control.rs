@@ -22,17 +22,14 @@ const METHOD_GET_VALIDATORS: &str = "getValidators";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_add_validator_transaction(
     client: &LedgerClient,
     from: &Address,
     validator_address: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, validator address: {}",
-        METHOD_ADD_VALIDATOR,
-        from.value(),
-        validator_address.value()
+        "{} txn build has started. Sender: {:?}, validator address: {:?}",
+        METHOD_ADD_VALIDATOR, from, validator_address
     );
 
     let transaction = TransactionBuilder::new()
@@ -61,17 +58,14 @@ pub async fn build_add_validator_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_remove_validator_transaction(
     client: &LedgerClient,
     from: &Address,
     validator_address: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, validator address: {}",
-        METHOD_REMOVE_VALIDATOR,
-        from.value(),
-        validator_address.value()
+        "{} txn build has started. Sender: {:?}, validator address: {:?}",
+        METHOD_REMOVE_VALIDATOR, from, validator_address
     );
 
     let transaction = TransactionBuilder::new()
@@ -98,7 +92,6 @@ pub async fn build_remove_validator_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResult<Transaction> {
     debug!("{} txn build has started", METHOD_GET_VALIDATORS,);
 
@@ -125,10 +118,9 @@ pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResul
 ///
 /// # Returns
 /// Parsed validator addresses
-#[cfg_attr(feature = "uni_ffi", uniffi::export)]
 pub fn parse_get_validators_result(
     client: &LedgerClient,
-    bytes: Vec<u8>,
+    bytes: &[u8],
 ) -> VdrResult<ValidatorAddresses> {
     debug!(
         "{} result parse has started. Bytes to parse: {:?}",
@@ -138,7 +130,7 @@ pub fn parse_get_validators_result(
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_VALIDATORS)
-        .parse::<ValidatorAddresses>(client, &bytes);
+        .parse::<ValidatorAddresses>(client, bytes);
 
     info!(
         "{} result parse has finished. Result: {:?}",
@@ -161,7 +153,7 @@ pub mod test {
     use std::sync::RwLock;
 
     pub static VALIDATOR_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::new("0x93917cadbace5dfce132b991732c6cda9bcc5b8a"));
+        Lazy::new(|| Address::from("0x93917cadbace5dfce132b991732c6cda9bcc5b8a"));
 
     mod build_add_validator_transaction {
         use super::*;
@@ -267,14 +259,14 @@ pub mod test {
                 232, 21, 38, 208, 137, 247, 38, 79, 237, 156,
             ];
             let expected_validator_list = vec![
-                Address::new("0x93917cadbace5dfce132b991732c6cda9bcc5b8a"),
-                Address::new("0x27a97c9aaf04f18f3014c32e036dd0ac76da5f18"),
-                Address::new("0xce412f988377e31f4d0ff12d74df73b51c42d0ca"),
-                Address::new("0x98c1334496614aed49d2e81526d089f7264fed9c"),
+                Address::from("0x93917cadbace5dfce132b991732c6cda9bcc5b8a"),
+                Address::from("0x27a97c9aaf04f18f3014c32e036dd0ac76da5f18"),
+                Address::from("0xce412f988377e31f4d0ff12d74df73b51c42d0ca"),
+                Address::from("0x98c1334496614aed49d2e81526d089f7264fed9c"),
             ]; // initial localnet validator list
 
             let parse_get_validators_result =
-                parse_get_validators_result(&client, validator_list_bytes).unwrap();
+                parse_get_validators_result(&client, &validator_list_bytes).unwrap();
 
             assert_eq!(expected_validator_list, parse_get_validators_result);
         }

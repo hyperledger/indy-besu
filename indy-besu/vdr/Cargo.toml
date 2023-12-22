@@ -12,18 +12,12 @@ name = "indy2_vdr"
 path = "src/lib.rs"
 crate-type = ["rlib", "cdylib"]
 
-[[bin]]
-name = "uniffi-bindgen"
-path = "src/bin.rs"
-
 [features]
-default = ["main"]
-main = ["web3"]
+default = ["web3"]
 wasm = ["web-sys", "web3-wasm"]
 ledger_test = ["basic_signer"]
-basic_signer = ["secp256k1"]
+basic_signer = ["secp256k1", "rand"]
 migration = []
-uni_ffi = ["uniffi", "uniffi_bindgen"]
 
 [dependencies]
 log = "0.4"
@@ -35,22 +29,17 @@ ethabi = "18.0.0"
 hex = "0.4.3"
 futures = "0.3.28"
 once_cell = "1.18.0"
+rand = { version = "0.8.5", optional = true }
 secp256k1 = { version = "0.28.0", optional = true, features = ["recovery", "rand"] }
 serde = "1.0.188"
 serde_derive = "1.0.188"
 serde_json = "1.0.107"
-rand = "0.8.5"
 thiserror = "1.0.49"
 web3 = { version = "0.19.0", optional = true }
 web-sys = { version = "0.3.64", optional = true, features = ["Window"] }
 web3-wasm = { package = "web3", version = "0.19.0", default-features = false, features = ["wasm", "http", "http-tls"], optional = true }
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = ["tokio", "cli"], optional = true }
-uniffi_bindgen = { version = "0.25.3", optional = true }
-
-[build-dependencies]
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = [ "build"], optional = true }
 
 [dev-dependencies]
 bs58 = "0.5.0"
 env_logger = "0.10.0"
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", features = ["tokio", "cli"] }
+rand = "0.8.5"

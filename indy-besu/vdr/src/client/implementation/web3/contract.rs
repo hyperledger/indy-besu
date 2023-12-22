@@ -65,7 +65,7 @@ impl Web3Contract {
 
         Ok(Web3Contract {
             contract,
-            address: Address::new(address),
+            address: Address::from(address),
         })
     }
 

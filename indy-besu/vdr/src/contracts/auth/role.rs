@@ -7,7 +7,6 @@ use crate::{
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
 pub enum Role {
     Empty = 0,
     Trustee = 1,
