@@ -67,10 +67,7 @@ mod tests {
         let sign_bytes = transaction.get_signing_bytes().unwrap();
         let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
         transaction.set_signature(signature);
-        let block_hash = client
-            .submit_transaction(&transaction, &QuorumConfig::default())
-            .await
-            .unwrap();
+        let block_hash = client.submit_transaction(&transaction).await.unwrap();
         client.get_receipt(&block_hash).await.unwrap()
     }
 
@@ -104,10 +101,7 @@ mod tests {
             let transaction = IndyDidRegistry::build_resolve_did_transaction(&client, &did_doc.id)
                 .await
                 .unwrap();
-            let result = client
-                .submit_transaction(&transaction, &QuorumConfig::default())
-                .await
-                .unwrap();
+            let result = client.submit_transaction(&transaction).await.unwrap();
             let resolved_did_doc =
                 IndyDidRegistry::parse_resolve_did_result(&client, &result).unwrap();
             assert_eq!(did_doc, resolved_did_doc);
@@ -149,10 +143,7 @@ mod tests {
             let transaction = SchemaRegistry::build_resolve_schema_transaction(&client, &schema.id)
                 .await
                 .unwrap();
-            let result = client
-                .submit_transaction(&transaction, &QuorumConfig::default())
-                .await
-                .unwrap();
+            let result = client.submit_transaction(&transaction).await.unwrap();
             let resolved_schema =
                 SchemaRegistry::parse_resolve_schema_result(&client, &result).unwrap();
             assert_eq!(schema, resolved_schema);
@@ -207,10 +198,7 @@ mod tests {
                 )
                 .await
                 .unwrap();
-            let result = client
-                .submit_transaction(&transaction, &QuorumConfig::default())
-                .await
-                .unwrap();
+            let result = client.submit_transaction(&transaction).await.unwrap();
             let resolved_credential_definition =
                 CredentialDefinitionRegistry::parse_resolve_credential_definition_result(
                     &client, &result,
@@ -261,10 +249,7 @@ mod tests {
             let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
             transaction.set_signature(signature);
 
-            let block_hash = client
-                .submit_transaction(&transaction, &QuorumConfig::default())
-                .await
-                .unwrap();
+            let block_hash = client.submit_transaction(&transaction).await.unwrap();
 
             client.get_receipt(&block_hash).await.unwrap()
         }
@@ -276,10 +261,7 @@ mod tests {
             let transaction = RoleControl::build_get_role_transaction(client, assignee_account)
                 .await
                 .unwrap();
-            let result = client
-                .submit_transaction(&transaction, &QuorumConfig::default())
-                .await
-                .unwrap();
+            let result = client.submit_transaction(&transaction).await.unwrap();
             RoleControl::parse_get_role_result(&client, &result).unwrap()
         }
 
@@ -292,10 +274,7 @@ mod tests {
                 RoleControl::build_has_role_transaction(client, role, assignee_account)
                     .await
                     .unwrap();
-            let result = client
-                .submit_transaction(&transaction, &QuorumConfig::default())
-                .await
-                .unwrap();
+            let result = client.submit_transaction(&transaction).await.unwrap();
             RoleControl::parse_has_role_result(&client, &result).unwrap()
         }
 
@@ -350,10 +329,7 @@ mod tests {
             let transaction = ValidatorControl::build_get_validators_transaction(&client)
                 .await
                 .unwrap();
-            let result = client
-                .submit_transaction(&transaction, &QuorumConfig::default())
-                .await
-                .unwrap();
+            let result = client.submit_transaction(&transaction).await.unwrap();
 
             ValidatorControl::parse_get_validators_result(&client, &result).unwrap()
         }
