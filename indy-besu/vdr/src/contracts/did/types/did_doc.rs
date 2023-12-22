@@ -73,31 +73,16 @@ pub struct DidMetadata {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
+#[serde(rename_all = "camelCase")]
 pub struct VerificationMethod {
     pub id: String,
     #[serde(rename = "type")]
     pub type_: VerificationKeyType,
     pub controller: String,
-    #[serde(flatten)]
-    pub verification_key: VerificationKey,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Enum))]
-#[serde(untagged)]
-pub enum VerificationKey {
-    #[serde(rename_all = "camelCase")]
-    Multibase { public_key_multibase: String },
-    #[serde(rename_all = "camelCase")]
-    JWK { public_key_jwk: Value },
-}
-
-impl Default for VerificationKey {
-    fn default() -> Self {
-        VerificationKey::Multibase {
-            public_key_multibase: "".to_string(),
-        }
-    }
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key_multibase: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key_jwk: Option<Value>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -259,16 +244,8 @@ impl From<VerificationMethod> for ContractParam {
             value
         );
 
-        let public_key_jwk = match value.verification_key {
-            VerificationKey::JWK { ref public_key_jwk } => json!(public_key_jwk).to_string(),
-            _ => "".to_string(),
-        };
-        let public_key_multibase = match value.verification_key {
-            VerificationKey::Multibase {
-                public_key_multibase,
-            } => public_key_multibase,
-            _ => "".to_string(),
-        };
+        let public_key_jwk = value.public_key_jwk.map(|public_key_jwk| json!(public_key_jwk).to_string()).unwrap_or_default();
+        let public_key_multibase = value.public_key_multibase.unwrap_or_default();
 
         let ver_method_contract_param = ContractParam::Tuple(vec![
             ContractParam::String(value.id.to_string()),
@@ -298,9 +275,11 @@ impl TryFrom<ContractOutput> for VerificationMethod {
 
         let public_key_jwk = value.get_string(3)?;
         let public_key_multibase = value.get_string(4)?;
-        let verification_key = if !public_key_jwk.is_empty() {
-            VerificationKey::JWK {
-                public_key_jwk: serde_json::from_str::<Value>(&public_key_jwk).map_err(|err| {
+        let public_key_jwk= if public_key_jwk.is_empty() {
+            None
+        } else {
+            Some(
+                serde_json::from_str::<Value>(&public_key_jwk).map_err(|err| {
                     let vdr_error = VdrError::CommonInvalidData {
                         msg: format!("Unable to parse JWK key. Err: {:?}", err),
                     };
@@ -311,27 +290,22 @@ impl TryFrom<ContractOutput> for VerificationMethod {
                     );
 
                     vdr_error
-                })?,
-            }
-        } else if !public_key_multibase.is_empty() {
-            VerificationKey::Multibase {
-                public_key_multibase,
-            }
+                })?
+            )
+        };
+
+        let public_key_multibase = if public_key_multibase.is_empty() {
+            None
         } else {
-            let vdr_error = VdrError::ContractInvalidResponseData {
-                msg: "Unable to parse verification method".to_string(),
-            };
-
-            warn!("Error: {} during VerificationMethod parsing", vdr_error);
-
-            return Err(vdr_error);
+            Some(public_key_multibase)
         };
 
         let verification_method = VerificationMethod {
             id: value.get_string(0)?,
             type_: VerificationKeyType::try_from(value.get_string(1)?.as_str())?,
             controller: value.get_string(2)?,
-            verification_key,
+            public_key_multibase,
+            public_key_jwk,
         };
 
         trace!(
