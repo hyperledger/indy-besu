@@ -1,11 +1,12 @@
-use indy2_vdr::{
-    LedgerClient as LedgerClient_,
-    ContractConfig as ContractConfig_
+use crate::{
+    ffi::{
+        error::VdrResult,
+        transaction::Transaction,
+        types::{ContractConfig, PingStatus},
+    },
+    VdrError,
 };
-use crate::ffi::transaction::Transaction;
-use crate::ffi::types::{ContractConfig, PingStatus};
-use crate::ffi::error::VdrResult;
-use crate::VdrError;
+use indy2_vdr::{ContractConfig as ContractConfig_, LedgerClient as LedgerClient_};
 
 #[derive(uniffi::Object)]
 pub struct LedgerClient {
@@ -20,11 +21,12 @@ impl LedgerClient {
         node_address: String,
         contract_configs: Vec<ContractConfig>,
     ) -> VdrResult<LedgerClient> {
-        let contract_configs: Vec<ContractConfig_> = contract_configs.into_iter().map(ContractConfig::into).collect();
+        let contract_configs: Vec<ContractConfig_> = contract_configs
+            .into_iter()
+            .map(ContractConfig::into)
+            .collect();
         let client = LedgerClient_::new(chain_id, &node_address, &contract_configs)?;
-        Ok(LedgerClient {
-            client
-        })
+        Ok(LedgerClient { client })
     }
 
     pub async fn ping(&self) -> VdrResult<PingStatus> {
@@ -33,7 +35,10 @@ impl LedgerClient {
     }
 
     pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
-        self.client.submit_transaction(&transaction.transaction).await.map_err(VdrError::from)
+        self.client
+            .submit_transaction(&transaction.transaction)
+            .await
+            .map_err(VdrError::from)
     }
 
     pub async fn get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {

@@ -1,12 +1,8 @@
 use crate::JsonValue;
 use indy2_vdr::{
-    PingStatus as PingStatus_,
-    Status as Status_,
-    ContractConfig as ContractConfig_,
-    ContractSpec as ContractSpec_,
-    TransactionType as TransactionType_,
-    SignatureData as SignatureData_,
-    TransactionSignature as TransactionSignature_,
+    ContractConfig as ContractConfig_, ContractSpec as ContractSpec_, PingStatus as PingStatus_,
+    SignatureData as SignatureData_, Status as Status_,
+    TransactionSignature as TransactionSignature_, TransactionType as TransactionType_,
 };
 
 #[derive(uniffi::Record)]
