@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from eth_keys import keys
 
@@ -25,31 +26,32 @@ async def demo():
     print('Status: ' + str(status))
 
     print("2. Publish DID Document")
-    did = 'did:indy2:' + str(base58.b58encode(os.urandom(16)).decode())
+    did = 'did:indy2:testnet:' + str(base58.b58encode(os.urandom(16)).decode())
     kid = did + '#KEY-1'
-    did_doc = DidDocument(
-        StringOrVector.VECTOR([
-            'https://www.w3.org/ns/did/v1'
-        ]),
-        Did(did),
-        StringOrVector.STRING(did),
-        [
-            VerificationMethod(kid, VerificationKeyType.ED25519_VERIFICATION_KEY2018, did,
-                               VerificationKey.MULTIBASE("zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"))
+    did_doc = {
+        "@context": ["https://www.w3.org/ns/did/v1"],
+        "id": did,
+        "controller": [],
+        "verificationMethod": [
+            {
+                "id": kid,
+                "type": "EcdsaSecp256k1VerificationKey2019",
+                "controller": did,
+                "publicKeyMultibase": "zQ3shnKp9QFbmV6Xj4YkoCg23DryaxNMTCJikSezYwLibafef"
+            }
         ],
-        [
-            VerificationMethodOrReference.STRING(kid)
-        ],
-        [],
-        [],
-        [],
-        [],
-        [],
-        []
-    )
-    print('DID Document: ' + str(did_doc))
+        "authentication": [kid],
+        "assertionMethod": [],
+        "capabilityInvocation": [],
+        "capabilityDelegation": [],
+        "keyAgreement": [],
+        "service": [],
+        "alsoKnownAs": []
+    }
 
-    transaction = await build_create_did_transaction(client, Address(account), did_doc)
+    print('DID Document: ' + json.dumps(did_doc))
+
+    transaction = await build_create_did_transaction(client, account, json.dumps(did_doc))
     bytes_to_sign = transaction.get_signing_bytes()
 
     signature = keys.PrivateKey(bytearray.fromhex(account_key)).sign_msg_hash(bytes_to_sign)
@@ -63,11 +65,10 @@ async def demo():
     print('Transaction receipt: ' + str(receipt))
 
     print("3. Resolve DID Document")
-    transaction = await build_resolve_did_transaction(client, Did(did))
+    transaction = await build_resolve_did_transaction(client, did)
     response = await client.submit_transaction(transaction)
     resolved_did_doc = parse_resolve_did_result(client, response)
-    print('Resolved DID Document:')
-    print(str(resolved_did_doc))
+    print('Resolved DID Document:' + resolved_did_doc)
 
 
 if __name__ == "__main__":

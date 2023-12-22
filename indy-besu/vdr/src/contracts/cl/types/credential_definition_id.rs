@@ -1,9 +1,9 @@
 use crate::DID;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
+use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct CredentialDefinitionId {
     value: String,
 }
@@ -11,7 +11,26 @@ pub struct CredentialDefinitionId {
 impl CredentialDefinitionId {
     const ID_PATH: &'static str = "anoncreds/v0/CLAIM_DEF";
 
-    pub fn new(id: &str) -> CredentialDefinitionId {
+    pub fn build(issuer_id: &DID, schema_id: &str, tag: &str) -> CredentialDefinitionId {
+        let cred_def_id = CredentialDefinitionId::from(
+            format!(
+                "{}/{}/{}/{}",
+                issuer_id.deref(),
+                Self::ID_PATH,
+                schema_id,
+                tag
+            )
+            .as_str(),
+        );
+
+        trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
+
+        cred_def_id
+    }
+}
+
+impl From<&str> for CredentialDefinitionId {
+    fn from(id: &str) -> Self {
         let cred_def_id = CredentialDefinitionId {
             value: id.to_string(),
         };
@@ -20,22 +39,12 @@ impl CredentialDefinitionId {
 
         cred_def_id
     }
+}
 
-    pub fn build(issuer_id: &DID, schema_id: &str, tag: &str) -> CredentialDefinitionId {
-        let cred_def_id = CredentialDefinitionId::new(&format!(
-            "{}/{}/{}/{}",
-            issuer_id.value(),
-            ID_PATH,
-            schema_id,
-            tag
-        ));
+impl Deref for CredentialDefinitionId {
+    type Target = str;
 
-        trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
-
-        cred_def_id
-    }
-
-    pub fn value(&self) -> &str {
+    fn deref(&self) -> &Self::Target {
         &self.value
     }
 }

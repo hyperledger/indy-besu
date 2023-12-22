@@ -1,4 +1,5 @@
 use log::{debug, info};
+use std::ops::Deref;
 
 use crate::{
     client::LedgerClient,
@@ -25,17 +26,14 @@ const METHOD_RESOLVE_SCHEMA: &str = "resolveSchema";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_create_schema_transaction(
     client: &LedgerClient,
     from: &Address,
     schema: &Schema,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, schema: {:?}",
-        METHOD_CREATE_SCHEMA,
-        from.value(),
-        schema
+        "{} txn build has started. Sender: {:?}, schema: {:?}",
+        METHOD_CREATE_SCHEMA, from, schema
     );
 
     let transaction = TransactionBuilder::new()
@@ -63,7 +61,6 @@ pub async fn build_create_schema_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_resolve_schema_transaction(
     client: &LedgerClient,
     id: &SchemaId,
@@ -76,7 +73,7 @@ pub async fn build_resolve_schema_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
-        .add_param(ContractParam::String(id.value().into()))
+        .add_param(ContractParam::String(String::from(id.deref())))
         .set_type(TransactionType::Read)
         .build(client)
         .await;
@@ -97,8 +94,7 @@ pub async fn build_resolve_schema_transaction(
 ///
 /// # Returns
 /// parsed Schema
-#[cfg_attr(feature = "uni_ffi", uniffi::export)]
-pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<Schema> {
+pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Schema> {
     debug!(
         "{} result parse has started. Bytes to parse: {:?}",
         METHOD_RESOLVE_SCHEMA, bytes
@@ -107,7 +103,7 @@ pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: Vec<u8>) -> Vdr
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
-        .parse::<SchemaWithMeta>(client, &bytes)
+        .parse::<SchemaWithMeta>(client, bytes)
         .map(|schema_with_meta| schema_with_meta.schema);
 
     info!(
@@ -146,7 +142,7 @@ pub mod test {
             .unwrap();
 
         let sign_bytes = transaction.get_signing_bytes().unwrap();
-        let signature = signer.sign(&sign_bytes, &TRUSTEE_ACC.value()).unwrap();
+        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.deref()).unwrap();
         transaction.set_signature(signature);
 
         client.submit_transaction(&transaction).await.unwrap();
@@ -163,7 +159,7 @@ pub mod test {
             let transaction = build_create_schema_transaction(
                 &client,
                 &TRUSTEE_ACC,
-                &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)),
+                &schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME)),
             )
             .await
             .unwrap();
@@ -223,7 +219,7 @@ pub mod test {
             let client = mock_client();
             let transaction = build_resolve_schema_transaction(
                 &client,
-                &schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)).id,
+                &schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME)).id,
             )
             .await
             .unwrap();
@@ -293,9 +289,9 @@ pub mod test {
                 97, 115, 116, 32, 78, 97, 109, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0,
             ];
-            let parsed_schema = parse_resolve_schema_result(&client, data).unwrap();
+            let parsed_schema = parse_resolve_schema_result(&client, &data).unwrap();
             assert_eq!(
-                schema(&DID::new(ISSUER_ID), Some(SCHEMA_NAME)),
+                schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME)),
                 parsed_schema
             );
         }

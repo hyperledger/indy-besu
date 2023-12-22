@@ -22,7 +22,6 @@ const METHOD_GET_ROLE: &str = "getRole";
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_assign_role_transaction(
     client: &LedgerClient,
     from: &Address,
@@ -30,11 +29,8 @@ pub async fn build_assign_role_transaction(
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, assignee: {}, role: {:?}",
-        METHOD_ASSIGN_ROLE,
-        from.value(),
-        account.value(),
-        role
+        "{} txn build has started. Sender: {:?}, assignee: {:?}, role: {:?}",
+        METHOD_ASSIGN_ROLE, from, account, role
     );
 
     let transaction = TransactionBuilder::new()
@@ -65,7 +61,6 @@ pub async fn build_assign_role_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_revoke_role_transaction(
     client: &LedgerClient,
     from: &Address,
@@ -73,11 +68,8 @@ pub async fn build_revoke_role_transaction(
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Sender: {}, revokee: {}, role: {:?}",
-        METHOD_REVOKE_ROLE,
-        from.value(),
-        account.value(),
-        role
+        "{} txn build has started. Sender: {:?}, revokee: {:?}, role: {:?}",
+        METHOD_REVOKE_ROLE, from, account, role
     );
 
     let transaction = TransactionBuilder::new()
@@ -107,17 +99,14 @@ pub async fn build_revoke_role_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_has_role_transaction(
     client: &LedgerClient,
     role: &Role,
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Account to check: {}, role: {:?}",
-        METHOD_HAS_ROLE,
-        account.value(),
-        role
+        "{} txn build has started. Account to check: {:?}, role: {:?}",
+        METHOD_HAS_ROLE, account, role
     );
 
     let transaction = TransactionBuilder::new()
@@ -145,15 +134,13 @@ pub async fn build_has_role_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
-#[cfg_attr(feature = "uni_ffi", uniffi::export(async_runtime = "tokio"))]
 pub async fn build_get_role_transaction(
     client: &LedgerClient,
     account: &Address,
 ) -> VdrResult<Transaction> {
     debug!(
-        "{} txn build has started. Account to get: {}",
-        METHOD_GET_ROLE,
-        account.value(),
+        "{} txn build has started. Account to get: {:?}",
+        METHOD_GET_ROLE, account,
     );
 
     let transaction = TransactionBuilder::new()
@@ -180,8 +167,7 @@ pub async fn build_get_role_transaction(
 ///
 /// # Returns
 /// Account has role result
-#[cfg_attr(feature = "uni_ffi", uniffi::export)]
-pub fn parse_has_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<bool> {
+pub fn parse_has_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<bool> {
     debug!(
         "{} result parse has started. Bytes to parse: {:?}",
         METHOD_HAS_ROLE, bytes
@@ -190,7 +176,7 @@ pub fn parse_has_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult
     let parse_result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_HAS_ROLE)
-        .parse::<HasRole>(client, &bytes);
+        .parse::<HasRole>(client, bytes);
 
     info!(
         "{} result parse has finished. Result: {:?}",
@@ -208,8 +194,7 @@ pub fn parse_has_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult
 ///
 /// # Returns
 /// Account's role
-#[cfg_attr(feature = "uni_ffi", uniffi::export)]
-pub fn parse_get_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<Role> {
+pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Role> {
     debug!(
         "{} result parse has started. Bytes to parse: {:?}",
         METHOD_GET_ROLE, bytes
@@ -218,7 +203,7 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult
     let parse_result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_ROLE)
-        .parse::<Role>(client, &bytes);
+        .parse::<Role>(client, bytes);
 
     info!(
         "{} result parse has finished. Result: {:?}",
@@ -240,7 +225,7 @@ pub mod test {
     pub const NEW_ACCOUNT: &str = "0x0886328869e4e1f401e1052a5f4aae8b45f42610";
 
     fn account() -> Address {
-        Address::new(NEW_ACCOUNT)
+        Address::from(NEW_ACCOUNT)
     }
 
     mod build_assign_role_transaction {
@@ -347,7 +332,7 @@ pub mod test {
             let result = vec![0; 32];
             let expected_role = Role::Empty;
 
-            let role = parse_get_role_result(&client, result).unwrap();
+            let role = parse_get_role_result(&client, &result).unwrap();
 
             assert_eq!(expected_role, role);
         }
@@ -394,7 +379,7 @@ pub mod test {
             let result = vec![0; 32];
             let expected_has_role = false;
 
-            let has_role = parse_has_role_result(&client, result).unwrap();
+            let has_role = parse_has_role_result(&client, &result).unwrap();
 
             assert_eq!(expected_has_role, has_role);
         }

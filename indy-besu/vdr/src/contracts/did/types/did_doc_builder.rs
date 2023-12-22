@@ -1,5 +1,6 @@
 use log::{trace, warn};
 use serde_json::Value;
+use std::ops::Deref;
 
 use crate::{
     contracts::{
@@ -40,7 +41,7 @@ impl DidDocumentBuilder {
     pub fn set_id(mut self, id: &DID) -> DidDocumentBuilder {
         self.id = id.to_owned();
 
-        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.value(), self);
+        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.deref(), self);
 
         self
     }
@@ -66,13 +67,13 @@ impl DidDocumentBuilder {
     ) -> DidDocumentBuilder {
         let id = format!(
             "{}:KEY-{}",
-            self.id.value(),
+            self.id.deref(),
             self.verification_method.len() + 1
         );
         let verification_method = VerificationMethod {
             id,
             type_,
-            controller: controller.value().to_string(),
+            controller: controller.deref().to_string(),
             public_key_multibase,
             public_key_jwk,
         };

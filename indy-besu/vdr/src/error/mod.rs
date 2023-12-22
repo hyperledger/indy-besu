@@ -12,7 +12,6 @@ use web3_wasm::{
 };
 
 #[derive(thiserror::Error, Debug, PartialEq)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Error))]
 pub enum VdrError {
     #[error("Ledger Client: Node is unreachable")]
     ClientNodeUnreachable,

@@ -1,13 +1,12 @@
 use crate::error::{VdrError, VdrResult};
 
-use crate::{Address, JsonValue};
+use crate::Address;
 use ethabi::Token;
 use log::{trace, warn};
 use serde::{Deserialize, Serialize};
 
 /// Contract configuration
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct ContractConfig {
     /// Address of deployed contract
     pub address: String,
@@ -19,13 +18,12 @@ pub struct ContractConfig {
 
 /// Contract ABI specification
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "uni_ffi", derive(uniffi::Record))]
 pub struct ContractSpec {
     /// Name of contract
     #[serde(rename = "contractName")]
     pub name: String,
     /// Contract ABI itself
-    pub abi: JsonValue,
+    pub abi: serde_json::Value,
 }
 
 impl ContractSpec {
@@ -129,7 +127,7 @@ impl ContractOutput {
             .clone()
             .to_string();
 
-        Ok(Address::new(&address_str))
+        Ok(Address::from(address_str.as_str()))
     }
 
     pub fn get_bool(&self, index: usize) -> VdrResult<bool> {
@@ -210,7 +208,7 @@ impl ContractOutput {
                 msg: "Missing address string array value".to_string(),
             })?
             .into_iter()
-            .map(|token| Address::new(&token.to_string()))
+            .map(|token| Address::from(token.to_string().as_str()))
             .collect())
     }
 
