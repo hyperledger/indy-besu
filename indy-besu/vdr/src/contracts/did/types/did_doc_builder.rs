@@ -1,4 +1,5 @@
 use log::{trace, warn};
+use serde_json::Value;
 
 use crate::{
     contracts::{
@@ -6,7 +7,7 @@ use crate::{
         VerificationMethodOrReference,
     },
     error::{VdrError, VdrResult},
-    DidDocument, VerificationKey, VerificationKeyType, DID,
+    DidDocument, VerificationKeyType, DID,
 };
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -60,7 +61,8 @@ impl DidDocumentBuilder {
         mut self,
         type_: VerificationKeyType,
         controller: &DID,
-        key: VerificationKey,
+        public_key_multibase: Option<String>,
+        public_key_jwk: Option<Value>,
     ) -> DidDocumentBuilder {
         let id = format!(
             "{}:KEY-{}",
@@ -71,7 +73,8 @@ impl DidDocumentBuilder {
             id,
             type_,
             controller: controller.value().to_string(),
-            verification_key: key,
+            public_key_multibase,
+            public_key_jwk,
         };
         self.verification_method.push(verification_method.clone());
 

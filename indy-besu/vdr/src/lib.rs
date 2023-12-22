@@ -24,7 +24,7 @@ pub use contracts::{
     did::{
         did_registry,
         types::{
-            did_doc::{DidDocument, VerificationKey, VerificationKeyType, DID},
+            did_doc::{DidDocument, VerificationKeyType, DID},
             did_doc_builder::DidDocumentBuilder,
         },
     },
@@ -124,8 +124,6 @@ mod tests {
                 .unwrap();
             let result = client.submit_transaction(&transaction).await.unwrap();
             let resolved_did_doc = did_registry::parse_resolve_did_result(&client, result).unwrap();
-            println!("did_doc {}", json!(did_doc).to_string());
-            println!("resolved_did_doc {}", json!(resolved_did_doc).to_string());
             assert_eq!(did_doc, resolved_did_doc);
 
             Ok(())
