@@ -9,7 +9,7 @@ pub struct TransactionWrapper(pub(crate) Transaction);
 #[wasm_bindgen(js_class = Transaction)]
 impl TransactionWrapper {
     pub fn to(&self) -> Result<String> {
-        Ok(self.0.to.clone())
+        Ok(self.0.to.value().to_string())
     }
 
     #[wasm_bindgen(js_name = getSigningBytes)]

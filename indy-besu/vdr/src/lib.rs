@@ -91,6 +91,7 @@ mod tests {
     }
 
     mod did {
+        use serde_json::json;
         use super::*;
         use crate::did_registry;
 
@@ -112,7 +113,7 @@ mod tests {
             let client = client();
 
             // write
-            let did_doc = did_doc(None);
+            let did_doc = serde_json::from_str(r#"{"@context":["https://w3id.org/did/v1","https://www.w3.org/ns/did/v1"],"id":"did:indy2:testnet:NQG9TzLTjqDEZvjDDL7jQM","controller":[],"verificationMethod":[{"id":"did:indy2:testnet:NQG9TzLTjqDEZvjDDL7jQM#KEY-1","type":"EcdsaSecp256k1VerificationKey2019","controller":"did:indy2:testnet:NQG9TzLTjqDEZvjDDL7jQM","publicKeyJwk":"","publicKeyMultibase":"zQ3shnKp9QFbmV6Xj4YkoCg23DryaxNMTCJikSezYwLibafef"}],"authentication":["did:indy2:testnet:NQG9TzLTjqDEZvjDDL7jQM#KEY-1"],"assertionMethod":[],"capabilityInvocation":[],"capabilityDelegation":[],"keyAgreement":[],"service":[{"id":"did:indy2:testnet:NQG9TzLTjqDEZvjDDL7jQM#endpoint","type":"endpoint","serviceEndpoint":"https://example.com/endpoint","accept":[],"routingKeys":[]}],"alsoKnownAs":[]}"#).unwrap();
             let receipt =
                 build_and_submit_create_did_doc_transaction(&client, &did_doc, &signer).await;
             println!("Receipt: {}", receipt);
@@ -123,6 +124,8 @@ mod tests {
                 .unwrap();
             let result = client.submit_transaction(&transaction).await.unwrap();
             let resolved_did_doc = did_registry::parse_resolve_did_result(&client, result).unwrap();
+            println!("did_doc {}", json!(did_doc).to_string());
+            println!("resolved_did_doc {}", json!(resolved_did_doc).to_string());
             assert_eq!(did_doc, resolved_did_doc);
 
             Ok(())

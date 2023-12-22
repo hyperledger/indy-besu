@@ -345,13 +345,9 @@ pub mod test {
             let client = mock_client();
 
             let did = DidDocument {
-                context: StringOrVector::Vector {
-                    value: vec!["https://www.w3.org/ns/did/v1".to_string()]
-                },
+                context: StringOrVector::Vector(vec!["https://www.w3.org/ns/did/v1".to_string()]),
                 id: DID::new("did:indy2:testnet:3LpjszkgTmE3qThge25FZw"),
-                controller: StringOrVector::Vector {
-                    value: vec![]
-                },
+                controller: StringOrVector::Vector(vec![]),
                 verification_method: vec![
                     VerificationMethod {
                         id: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-1".to_string(),
@@ -371,12 +367,8 @@ pub mod test {
                     },
                 ],
                 authentication: vec![
-                    VerificationMethodOrReference::String {
-                        value: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-1".to_string()
-                    },
-                    VerificationMethodOrReference::String {
-                        value: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-2".to_string()
-                    },
+                    VerificationMethodOrReference::String("did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-1".to_string()),
+                    VerificationMethodOrReference::String("did:indy2:testnet:3LpjszkgTmE3qThge25FZw#KEY-2".to_string()),
                 ],
                 assertion_method: vec![],
                 capability_invocation: vec![],
@@ -386,9 +378,7 @@ pub mod test {
                     Service {
                         id: "did:indy2:testnet:3LpjszkgTmE3qThge25FZw#SERVICE-1".to_string(),
                         type_: "DIDCommService".to_string(),
-                        service_endpoint: ServiceEndpoint::String {
-                            value: "127.0.0.1:5555".to_string()
-                        },
+                        service_endpoint: ServiceEndpoint::String("127.0.0.1:5555".to_string()),
                     }
                 ],
                 also_known_as: Some(vec![]),
