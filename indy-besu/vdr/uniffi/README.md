@@ -2,6 +2,12 @@
 
 `Indy-VDR` library uses [uniffi](https://mozilla.github.io/uniffi-rs/) to generate bindings for **Kotlin**, **Python**, **Swift** languages.
 
+### Requirements
+
+* Rust of version 1.70.0 or higher.
+
+### Build
+
 In order to generate language specific bindings, run the following commands with replacing a target
 language `<kotlin|python|swift>`:
 
