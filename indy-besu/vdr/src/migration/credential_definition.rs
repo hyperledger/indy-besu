@@ -5,7 +5,6 @@ use crate::{
 };
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IndyCredentialDefinitionFormat {
@@ -15,7 +14,7 @@ pub struct IndyCredentialDefinitionFormat {
     #[serde(rename = "type")]
     pub type_: String,
     pub tag: String,
-    pub value: Value,
+    pub value: serde_json::Value,
     #[serde(default)]
     pub ver: String,
 }
@@ -29,7 +28,9 @@ impl CredentialDefinitionId {
 
         let parts: Vec<&str> = id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def id".to_string());
+            let vdr_error = VdrError::CommonInvalidData {
+                msg: "Invalid indy cred def id".to_string(),
+            };
 
             warn!(
                 "Error: {:?} during converting CredentialDefinitionId from indy format",
@@ -39,8 +40,9 @@ impl CredentialDefinitionId {
             vdr_error
         })?;
         let schema_id = parts.get(3).ok_or_else(|| {
-            let vdr_error =
-                VdrError::CommonInvalidData("Invalid indy cred def schema id".to_string());
+            let vdr_error = VdrError::CommonInvalidData {
+                msg: "Invalid indy cred def schema id".to_string(),
+            };
 
             warn!(
                 "Error: {:?} during converting CredentialDefinitionId from indy format",
@@ -50,7 +52,9 @@ impl CredentialDefinitionId {
             vdr_error
         })?;
         let tag = parts.get(4).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def tag".to_string());
+            let vdr_error = VdrError::CommonInvalidData {
+                msg: "Invalid indy cred def tag".to_string(),
+            };
 
             warn!(
                 "Error: {:?} during converting CredentialDefinitionId from indy format",
@@ -81,8 +85,11 @@ impl CredentialDefinition {
         );
 
         let indy_cred_def: IndyCredentialDefinitionFormat =
-            serde_json::from_str(&credential_definition)
-                .map_err(|_err| VdrError::CommonInvalidData("Invalid indy cred def".to_string()))?;
+            serde_json::from_str(&credential_definition).map_err(|_err| {
+                VdrError::CommonInvalidData {
+                    msg: "Invalid indy cred def".to_string(),
+                }
+            })?;
         let besu_cred_def = CredentialDefinition::try_from(indy_cred_def);
 
         trace!(
@@ -106,14 +113,18 @@ impl TryFrom<IndyCredentialDefinitionFormat> for CredentialDefinition {
 
         let parts: Vec<&str> = cred_def.id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def id".to_string());
+            let vdr_error = VdrError::CommonInvalidData {
+                msg: "Invalid indy cred def id".to_string()
+            };
 
             warn!("Error: {:?} during converting CredentialDefinition from IndyCredentialDefinitionFormat", vdr_error);
 
             vdr_error
         })?;
         let schema_id_seq_no = parts.get(3).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def id".to_string());
+            let vdr_error = VdrError::CommonInvalidData {
+                msg: "Invalid indy cred def id".to_string()
+            };
 
             warn!("Error: {:?} during converting CredentialDefinition from IndyCredentialDefinitionFormat", vdr_error);
 
