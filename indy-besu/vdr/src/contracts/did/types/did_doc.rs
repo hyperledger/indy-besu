@@ -3,6 +3,7 @@ use crate::{
     types::{ContractOutput, ContractParam},
     Address,
 };
+use std::ops::Deref;
 
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
@@ -16,21 +17,21 @@ pub struct DID(String);
 impl DID {
     pub const DID_PREFIX: &'static str = "did";
 
-    pub fn new(did: &str) -> DID {
+    pub fn build(method: &str, network: &str, id: &str) -> DID {
+        DID::from(format!("{}:{}:{}:{}", Self::DID_PREFIX, method, network, id).as_str())
+    }
+}
+
+impl From<&str> for DID {
+    fn from(did: &str) -> Self {
         DID(did.to_string())
     }
+}
 
-    pub fn build(method: &str, network: &str, id: &str) -> DID {
-        DID(format!(
-            "{}:{}:{}:{}",
-            Self::DID_PREFIX,
-            method,
-            network,
-            id
-        ))
-    }
+impl Deref for DID {
+    type Target = str;
 
-    pub fn value(&self) -> &str {
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
@@ -62,52 +63,33 @@ pub struct DidDocument {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct DidMetadata {
     pub creator: Address,
-    pub created: u128,
-    pub updated: u128,
+    pub created: u64,
+    pub updated: u64,
     pub deactivated: bool,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VerificationMethod {
     pub id: String,
     #[serde(rename = "type")]
     pub type_: VerificationKeyType,
     pub controller: String,
-    #[serde(flatten)]
-    pub verification_key: VerificationKey,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key_multibase: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key_jwk: Option<Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum VerificationKey {
-    #[serde(rename_all = "camelCase")]
-    Multibase { public_key_multibase: String },
-    #[serde(rename_all = "camelCase")]
-    JWK { public_key_jwk: Value },
-}
-
-impl Default for VerificationKey {
-    fn default() -> Self {
-        VerificationKey::Multibase {
-            public_key_multibase: "".to_string(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub enum VerificationKeyType {
+    #[default]
     Ed25519VerificationKey2018,
     X25519KeyAgreementKey2019,
     Ed25519VerificationKey2020,
     X25519KeyAgreementKey2020,
     JsonWebKey2020,
     EcdsaSecp256k1VerificationKey2019,
-}
-
-impl Default for VerificationKeyType {
-    fn default() -> Self {
-        VerificationKeyType::Ed25519VerificationKey2018
-    }
 }
 
 impl ToString for VerificationKeyType {
@@ -165,10 +147,9 @@ impl TryFrom<&str> for VerificationKeyType {
                 Ok(VerificationKeyType::EcdsaSecp256k1VerificationKey2019)
             }
             _type => Err({
-                let vdr_error = VdrError::CommonInvalidData(format!(
-                    "Unexpected verification key type {}",
-                    _type
-                ));
+                let vdr_error = VdrError::CommonInvalidData {
+                    msg: format!("Unexpected verification key type {}", _type),
+                };
 
                 warn!(
                     "Error: {} during converting VerificationKeyType from String: {} ",
@@ -252,21 +233,16 @@ impl From<VerificationMethod> for ContractParam {
             value
         );
 
-        let public_key_jwk = match value.verification_key {
-            VerificationKey::JWK { ref public_key_jwk } => json!(public_key_jwk).to_string(),
-            _ => "".to_string(),
-        };
-        let public_key_multibase = match value.verification_key {
-            VerificationKey::Multibase {
-                public_key_multibase,
-            } => public_key_multibase,
-            _ => "".to_string(),
-        };
+        let public_key_jwk = value
+            .public_key_jwk
+            .map(|public_key_jwk| json!(public_key_jwk).to_string())
+            .unwrap_or_default();
+        let public_key_multibase = value.public_key_multibase.unwrap_or_default();
 
         let ver_method_contract_param = ContractParam::Tuple(vec![
             ContractParam::String(value.id.to_string()),
             ContractParam::String(value.type_.to_string()),
-            ContractParam::String(value.controller.to_string()),
+            ContractParam::String(value.controller),
             ContractParam::String(public_key_jwk),
             ContractParam::String(public_key_multibase),
         ]);
@@ -291,13 +267,14 @@ impl TryFrom<ContractOutput> for VerificationMethod {
 
         let public_key_jwk = value.get_string(3)?;
         let public_key_multibase = value.get_string(4)?;
-        let verification_key = if !public_key_jwk.is_empty() {
-            VerificationKey::JWK {
-                public_key_jwk: serde_json::from_str::<Value>(&public_key_jwk).map_err(|err| {
-                    let vdr_error = VdrError::CommonInvalidData(format!(
-                        "Unable to parse JWK key. Err: {:?}",
-                        err
-                    ));
+        let public_key_jwk = if public_key_jwk.is_empty() {
+            None
+        } else {
+            Some(
+                serde_json::from_str::<Value>(&public_key_jwk).map_err(|err| {
+                    let vdr_error = VdrError::CommonInvalidData {
+                        msg: format!("Unable to parse JWK key. Err: {:?}", err),
+                    };
 
                     warn!(
                         "Error: {:?} during parsing JWK key: {}",
@@ -306,26 +283,21 @@ impl TryFrom<ContractOutput> for VerificationMethod {
 
                     vdr_error
                 })?,
-            }
-        } else if !public_key_multibase.is_empty() {
-            VerificationKey::Multibase {
-                public_key_multibase,
-            }
+            )
+        };
+
+        let public_key_multibase = if public_key_multibase.is_empty() {
+            None
         } else {
-            let vdr_error = VdrError::ContractInvalidResponseData(
-                "Unable to parse verification method".to_string(),
-            );
-
-            warn!("Error: {} during VerificationMethod parsing", vdr_error);
-
-            return Err(vdr_error);
+            Some(public_key_multibase)
         };
 
         let verification_method = VerificationMethod {
             id: value.get_string(0)?,
             type_: VerificationKeyType::try_from(value.get_string(1)?.as_str())?,
             controller: value.get_string(2)?,
-            verification_key,
+            public_key_multibase,
+            public_key_jwk,
         };
 
         trace!(
@@ -424,8 +396,8 @@ impl From<StringOrVector> for ContractParam {
             StringOrVector::String(ref value) => {
                 ContractParam::Array(vec![ContractParam::String(value.to_string())])
             }
-            StringOrVector::Vector(ref values) => ContractParam::Array(
-                values
+            StringOrVector::Vector(ref value) => ContractParam::Array(
+                value
                     .iter()
                     .map(|value| ContractParam::String(value.to_string()))
                     .collect(),
@@ -450,29 +422,29 @@ impl From<Service> for ContractParam {
         );
 
         let (endpoint, accept, routing_keys) = match value.service_endpoint {
-            ServiceEndpoint::String(endpoint) => (
-                ContractParam::String(endpoint),
+            ServiceEndpoint::String(value) => (
+                ContractParam::String(value),
                 ContractParam::Array(vec![]),
                 ContractParam::Array(vec![]),
             ),
-            ServiceEndpoint::Object(endpoint) => (
-                ContractParam::String(endpoint.uri.to_string()),
+            ServiceEndpoint::Object(value) => (
+                ContractParam::String(value.uri.to_string()),
                 ContractParam::Array(
-                    endpoint
+                    value
                         .accept
                         .iter()
                         .map(|accept| ContractParam::String(accept.to_string()))
                         .collect(),
                 ),
                 ContractParam::Array(
-                    endpoint
+                    value
                         .routing_keys
                         .iter()
                         .map(|routing_key| ContractParam::String(routing_key.to_string()))
                         .collect(),
                 ),
             ),
-            ServiceEndpoint::Set(_) => unimplemented!(),
+            ServiceEndpoint::Set { .. } => unimplemented!(),
         };
 
         let service_contract_param = ContractParam::Tuple(vec![
@@ -531,7 +503,7 @@ impl From<DidDocument> for ContractParam {
         );
 
         let context: ContractParam = value.context.into();
-        let id = ContractParam::String(value.id.value().to_string());
+        let id = ContractParam::String(value.id.deref().to_string());
         let controller: ContractParam = value.controller.into();
         let verification_method: ContractParam = ContractParam::Array(
             value
@@ -660,7 +632,7 @@ impl TryFrom<ContractOutput> for DidDocument {
 
         let did_doc = DidDocument {
             context: StringOrVector::Vector(context),
-            id: DID::new(&id),
+            id: DID::from(id.as_str()),
             controller: StringOrVector::Vector(controller),
             verification_method,
             authentication,
@@ -691,8 +663,8 @@ impl TryFrom<ContractOutput> for DidMetadata {
         );
 
         let creator = value.get_address(0)?;
-        let created = value.get_u128(1)?;
-        let updated = value.get_u128(2)?;
+        let created = value.get_u128(1)? as u64;
+        let updated = value.get_u128(2)? as u64;
         let deactivated = value.get_bool(3)?;
 
         let did_metadata = DidMetadata {
@@ -755,9 +727,8 @@ pub mod test {
             id: format!("{}#{}", id, KEY_1),
             type_: VerificationKeyType::Ed25519VerificationKey2018,
             controller: id.to_string(),
-            verification_key: VerificationKey::Multibase {
-                public_key_multibase: MULTIBASE_KEY.to_string(),
-            },
+            public_key_multibase: Some(MULTIBASE_KEY.to_string()),
+            public_key_jwk: None,
         }
     }
 
@@ -788,7 +759,7 @@ pub mod test {
         let id = id.map(String::from).unwrap_or_else(new_id);
         DidDocument {
             context: StringOrVector::Vector(vec![CONTEXT.to_string()]),
-            id: DID::new(&id),
+            id: DID::from(id.as_str()),
             controller: StringOrVector::Vector(vec![]),
             verification_method: vec![verification_method(&id)],
             authentication: vec![verification_relationship(&id)],

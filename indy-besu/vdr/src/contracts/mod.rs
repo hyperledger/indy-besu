@@ -3,10 +3,10 @@ pub mod cl;
 pub mod did;
 pub mod network;
 
-pub use auth::{Role, RoleControl};
-pub use cl::{CredentialDefinition, CredentialDefinitionRegistry, Schema, SchemaRegistry};
+pub use auth::{role_control, Role};
+pub use cl::{credential_definition_registry, schema_registry, CredentialDefinition, Schema};
 pub use did::{
-    DidDocument, DidDocumentWithMeta, IndyDidRegistry, Service, ServiceEndpoint, StringOrVector,
+    did_registry, DidDocument, DidDocumentWithMeta, Service, ServiceEndpoint, StringOrVector,
     VerificationMethod, VerificationMethodOrReference,
 };
-pub use network::ValidatorControl;
+pub use network::validator_control;

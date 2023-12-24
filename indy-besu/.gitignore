@@ -4,4 +4,5 @@ node_modules
 logs
 .localnet.lock
 .idea
+vdr/out
 vdr/target

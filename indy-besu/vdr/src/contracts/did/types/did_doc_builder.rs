@@ -1,4 +1,6 @@
 use log::{trace, warn};
+use serde_json::Value;
+use std::ops::Deref;
 
 use crate::{
     contracts::did::types::did_doc::{
@@ -6,7 +8,7 @@ use crate::{
         VerificationMethodOrReference, CONTEXT,
     },
     error::{VdrError, VdrResult},
-    DidDocument, VerificationKey, VerificationKeyType, DID,
+    DidDocument, VerificationKeyType, DID,
 };
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -39,7 +41,7 @@ impl DidDocumentBuilder {
     pub fn set_id(mut self, id: &DID) -> DidDocumentBuilder {
         self.id = id.to_owned();
 
-        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.value(), self);
+        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.deref(), self);
 
         self
     }
@@ -60,18 +62,20 @@ impl DidDocumentBuilder {
         mut self,
         type_: VerificationKeyType,
         controller: &DID,
-        key: VerificationKey,
+        public_key_multibase: Option<String>,
+        public_key_jwk: Option<Value>,
     ) -> DidDocumentBuilder {
         let id = format!(
             "{}:KEY-{}",
-            self.id.value(),
+            self.id.deref(),
             self.verification_method.len() + 1
         );
         let verification_method = VerificationMethod {
             id,
             type_,
-            controller: controller.value().to_string(),
-            verification_key: key,
+            controller: controller.deref().to_string(),
+            public_key_multibase,
+            public_key_jwk,
         };
         self.verification_method.push(verification_method.clone());
 
@@ -90,7 +94,9 @@ impl DidDocumentBuilder {
             .get(index)
             .ok_or_else(|| {
                 let vdr_error =
-                    VdrError::CommonInvalidData("Missing verification method".to_string());
+                    VdrError::CommonInvalidData {
+                        msg: "Missing verification method".to_string()
+                    };
 
                 warn!(
                     "Error: {} during getting verification method by index: {} from DidDocumentBuilder: {:?}",
@@ -216,21 +222,23 @@ impl DidDocumentBuilder {
 
     fn get_kid_by_index(&self, index: usize) -> VdrResult<String> {
         let kid = self
-        .verification_method
-        .get(index)
-        .ok_or_else(|| {
-            let vdr_error =
-                VdrError::CommonInvalidData("Missing verification method".to_string());
+            .verification_method
+            .get(index)
+            .ok_or_else(|| {
+                let vdr_error =
+                    VdrError::CommonInvalidData {
+                        msg: "Missing verification method".to_string()
+                    };
 
-            warn!(
+                warn!(
                 "Error: {} during getting verification method by index: {} from DidDocumentBuilder: {:?}",
                 vdr_error, index, self
             );
 
-            vdr_error
-        })?
-        .id
-        .to_string();
+                vdr_error
+            })?
+            .id
+            .to_string();
 
         Ok(kid)
     }

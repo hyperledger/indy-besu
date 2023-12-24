@@ -107,8 +107,9 @@ impl LedgerClient {
         self.client.get_receipt(hash).await
     }
 
-    pub(crate) async fn get_transaction_count(&self, address: &Address) -> VdrResult<[u64; 4]> {
-        self.client.get_transaction_count(address).await
+    pub(crate) async fn get_transaction_count(&self, address: &Address) -> VdrResult<Vec<u64>> {
+        let nonce = self.client.get_transaction_count(address).await?;
+        Ok(nonce.to_vec())
     }
 
     pub(crate) fn contract(&self, name: &str) -> VdrResult<&dyn Contract> {
@@ -116,7 +117,9 @@ impl LedgerClient {
             .get(name)
             .map(|contract| contract.as_ref())
             .ok_or_else(|| {
-                let vdr_error = VdrError::ContractInvalidName(name.to_string());
+                let vdr_error = VdrError::ContractInvalidName {
+                    msg: name.to_string(),
+                };
 
                 warn!("Error during getting contract: {:?}", vdr_error);
 
@@ -141,14 +144,14 @@ impl LedgerClient {
                 (Some(spec_path), None) => ContractSpec::from_file(spec_path)?,
                 (None, Some(spec)) => spec.clone(),
                 (Some(_), Some(_)) => {
-                    return Err(VdrError::ContractInvalidSpec(
-                        "Either `spec_path` or `spec` must be provided".to_string(),
-                    ))
+                    return Err(VdrError::ContractInvalidSpec {
+                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
+                    });
                 }
                 (None, None) => {
-                    return Err(VdrError::ContractInvalidSpec(
-                        "Either `spec_path` or `spec` must be provided".to_string(),
-                    ))
+                    return Err(VdrError::ContractInvalidSpec {
+                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
+                    });
                 }
             };
 
@@ -166,20 +169,16 @@ pub mod test {
     use ethereum_types::H256;
     use once_cell::sync::Lazy;
     use std::{env, fs};
+    use std::{env, fs, ops::Deref};
     use web3::types::Transaction as Web3Transaction;
 
     pub const CHAIN_ID: u64 = 1337;
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
-    pub const DID_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000003333";
     pub const DID_REGISTRY_SPEC_PATH: &str = "did/IndyDidRegistry.sol/IndyDidRegistry.json";
-    pub const SCHEMA_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000005555";
     pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
-    pub const CRED_DEF_REGISTRY_ADDRESS: &str = "0x0000000000000000000000000000000000004444";
     pub const CRED_DEF_REGISTRY_SPEC_PATH: &str =
         "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
-    pub const VALIDATOR_CONTROL_ADDRESS: &str = "0x0000000000000000000000000000000000007777";
     pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
-    pub const ROLE_CONTROL_ADDRESS: &str = "0x0000000000000000000000000000000000006666";
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
     pub const RPC_NODE_ADDRESS: &str = "http://127.0.0.1:8545";
     pub const CLIENT_NODE_ADDRESSES: [&str; 4] = [
@@ -188,9 +187,25 @@ pub mod test {
         "http://127.0.0.1:21003",
         "http://127.0.0.1:21004",
     ];
+    pub static DEFAULT_NONCE: Lazy<Vec<u64>> = Lazy::new(|| vec![0, 0, 0, 0]);
+
+    pub static DID_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000003333"));
+
+    pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000005555"));
+
+    pub static CRED_DEF_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000004444"));
+
+    pub static VALIDATOR_CONTROL_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000007777"));
+
+    pub static ROLE_CONTROL_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000006666"));
 
     pub static TRUSTEE_ACC: Lazy<Address> =
-        Lazy::new(|| Address::new("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
+        Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
 
     fn build_contract_path(contract_path: &str) -> String {
         let mut cur_dir = env::current_dir().unwrap();
@@ -206,27 +221,27 @@ pub mod test {
     fn contracts() -> Vec<ContractConfig> {
         vec![
             ContractConfig {
-                address: DID_REGISTRY_ADDRESS.to_string(),
+                address: DID_REGISTRY_ADDRESS.deref().to_string(),
                 spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: SCHEMA_REGISTRY_ADDRESS.to_string(),
+                address: SCHEMA_REGISTRY_ADDRESS.deref().to_string(),
                 spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: CRED_DEF_REGISTRY_ADDRESS.to_string(),
+                address: CRED_DEF_REGISTRY_ADDRESS.deref().to_string(),
                 spec_path: Some(build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                address: VALIDATOR_CONTROL_ADDRESS.deref().to_string(),
                 spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: ROLE_CONTROL_ADDRESS.to_string(),
+                address: ROLE_CONTROL_ADDRESS.deref().to_string(),
                 spec_path: Some(build_contract_path(ROLE_CONTROL_PATH)),
                 spec: None,
             },
@@ -243,11 +258,9 @@ pub mod test {
         .unwrap()
     }
 
-    pub const DEFAULT_NONCE: [u64; 4] = [0, 0, 0, 0];
-
     pub struct MockClient {}
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl Client for MockClient {
         async fn get_transaction_count(&self, _address: &Address) -> VdrResult<[u64; 4]> {
             Ok([0, 0, 0, 0])
@@ -320,7 +333,7 @@ pub mod test {
             )
             .unwrap();
             match client.ping().await.unwrap().status {
-                Status::Err(_) => {}
+                Status::Err { .. } => {}
                 Status::Ok => assert!(false, "Ping status expected to be `Err`."),
             }
         }

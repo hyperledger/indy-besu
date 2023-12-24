@@ -9,7 +9,7 @@ pub struct PingStatus {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Status {
     Ok,
-    Err(String),
+    Err { msg: String },
 }
 
 impl PingStatus {
@@ -19,7 +19,9 @@ impl PingStatus {
 
     pub fn err(err: &str) -> PingStatus {
         PingStatus {
-            status: Status::Err(err.to_string()),
+            status: Status::Err {
+                msg: err.to_string(),
+            },
         }
     }
 }
