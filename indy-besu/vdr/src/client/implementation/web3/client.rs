@@ -14,7 +14,10 @@ use std::{str::FromStr, time::Duration};
 use web3::{
     api::Eth,
     transports::Http,
-    types::{Address as EthAddress, Bytes, CallRequest, H256},
+    types::{
+        Address as EthAddress, Bytes, CallRequest, Transaction as Web3Transaction, TransactionId,
+        H256,
+    },
     Web3,
 };
 
@@ -22,7 +25,10 @@ use web3::{
 use web3_wasm::{
     api::Eth,
     transports::Http,
-    types::{Address as EthAddress, Bytes, CallRequest, H256},
+    types::{
+        Address as EthAddress, Bytes, CallRequest, Transaction as Web3Transaction, TransactionId,
+        H256,
+    },
     Web3,
 };
 

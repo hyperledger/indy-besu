@@ -163,6 +163,7 @@ impl LedgerClient {
 #[cfg(test)]
 pub mod test {
     use super::*;
+    use async_trait::async_trait;
     use ethereum_types::H256;
     use once_cell::sync::Lazy;
     use std::{env, fs, ops::Deref};
