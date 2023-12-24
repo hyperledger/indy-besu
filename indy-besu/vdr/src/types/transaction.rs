@@ -24,7 +24,7 @@ pub enum TransactionType {
 }
 
 /// Transaction object
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Transaction {
     /// type of transaction: write/read
     /// depending on the transaction type different client methods will be executed to submit transaction
