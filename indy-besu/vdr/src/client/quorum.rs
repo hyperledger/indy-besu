@@ -17,7 +17,8 @@ use super::implementation::web3::client::Web3Client;
 pub struct QuorumConfig {
     nodes: Vec<String>,
     request_retries: u8,
-    request_timeout: u8,
+    request_timeout_sec: u8,
+    retry_interval_sec: u8,
 }
 
 pub struct QuorumHandler {
@@ -46,11 +47,11 @@ impl QuorumHandler {
         client: Arc<Box<dyn Client>>,
         transaction: Transaction,
         transaction_hash: Vec<u8>,
-        request_retries: u8,
+        quorum_config: QuorumConfig,
     ) {
         trace!("Started eth_call task for transaction: {:?}", transaction);
 
-        for _ in 1..=request_retries {
+        for _ in 1..=quorum_config.request_retries {
             match transaction.type_ {
                 TransactionType::Write => {
                     if let Ok(Some(transaction)) = client
@@ -66,6 +67,11 @@ impl QuorumHandler {
                             "eth_getTransaction not succeed for transaction_hash: {:?}. retry",
                             transaction_hash
                         );
+
+                        tokio::time::sleep(Duration::from_millis(
+                            quorum_config.retry_interval_sec.into(),
+                        ))
+                        .await;
                     }
                 }
                 TransactionType::Read => {
@@ -84,8 +90,6 @@ impl QuorumHandler {
             };
         }
 
-        drop(sender);
-
         trace!("Finished eth_call task for transaction: {:?}", transaction);
     }
 
@@ -100,7 +104,7 @@ impl QuorumHandler {
 
         while let Some(result) = tokio::select! {
             transaction = receiver.recv() => transaction,
-            _ = tokio::time::sleep(Duration::from_secs(self.config.request_timeout.into())) => {
+            _ = tokio::time::sleep(Duration::from_secs(self.config.request_timeout_sec.into())) => {
                 trace!("Quorum timeout reached");
                 None
             }
@@ -135,7 +139,7 @@ impl QuorumHandler {
                 client,
                 transaction.clone(),
                 expected_result.clone(),
-                self.config.request_retries,
+                self.config.clone(),
             ));
         });
 
@@ -181,7 +185,8 @@ pub mod write_quorum_test {
                     .map(|s| s.to_string())
                     .collect(),
                 request_retries: 5,
-                request_timeout: 200,
+                request_timeout_sec: 200,
+                retry_interval_sec: 1,
             }
         }
     }
@@ -290,7 +295,7 @@ pub mod write_quorum_test {
         let quorum = QuorumHandler {
             clients,
             config: QuorumConfig {
-                request_timeout: timeout_time,
+                request_timeout_sec: timeout_time,
                 ..Default::default()
             },
         };
@@ -455,7 +460,7 @@ pub mod read_quorum_test {
         let quorum = QuorumHandler {
             clients,
             config: QuorumConfig {
-                request_timeout: timeout_time,
+                request_timeout_sec: timeout_time,
                 ..Default::default()
             },
         };

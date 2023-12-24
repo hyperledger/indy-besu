@@ -24,8 +24,9 @@ impl LedgerClient {
     ///
     /// # Params
     ///  - chain_id chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
-    ///  - param node_address: string - RPC node endpoint
-    ///  - param contract_specs: Vec<ContractSpec> - specifications for contracts  deployed on the network
+    ///  - param rpc_node: string - RPC node endpoint
+    ///  - param contract_configs: [ContractSpec] - specifications for contracts  deployed on the network
+    /// -  param: quorum_config: Option<QuorumConfig> - quorum configuration. Can be None if quorum is not needed
     ///
     /// # Returns
     ///  client to use for building and sending transactions
