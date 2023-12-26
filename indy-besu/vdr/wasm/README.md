@@ -36,7 +36,7 @@ wasm-pack build
 * Install dependencies
   ```
   cd demo/node
-  yarn isntall
+  yarn install
   ```
 * Run demo
   ```

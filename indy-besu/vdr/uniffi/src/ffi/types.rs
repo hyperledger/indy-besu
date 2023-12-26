@@ -1,7 +1,7 @@
 use crate::JsonValue;
 use indy2_vdr::{
     ContractConfig as ContractConfig_, ContractSpec as ContractSpec_, PingStatus as PingStatus_,
-    SignatureData as SignatureData_, Status as Status_,
+    QuorumConfig as QuorumConfig_, SignatureData as SignatureData_, Status as Status_,
     TransactionSignature as TransactionSignature_, TransactionType as TransactionType_,
 };
 
@@ -46,6 +46,14 @@ pub struct TransactionSignature {
     v: u64,
     r: Vec<u8>,
     s: Vec<u8>,
+}
+
+#[derive(uniffi::Record)]
+pub struct QuorumConfig {
+    pub nodes: Vec<String>,
+    pub request_retries: Option<u8>,
+    pub request_timeout: Option<u64>,
+    pub retry_interval: Option<u64>,
 }
 
 impl From<PingStatus_> for PingStatus {
@@ -108,6 +116,17 @@ impl Into<TransactionSignature_> for TransactionSignature {
             v: self.v,
             r: self.r,
             s: self.s,
+        }
+    }
+}
+
+impl Into<QuorumConfig_> for QuorumConfig {
+    fn into(self) -> QuorumConfig_ {
+        QuorumConfig_ {
+            nodes: self.nodes,
+            request_retries: self.request_retries,
+            request_timeout: self.request_timeout,
+            retry_interval: self.retry_interval,
         }
     }
 }

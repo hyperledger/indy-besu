@@ -20,7 +20,6 @@ basic_signer = ["secp256k1", "rand"]
 migration = []
 
 [dependencies]
-tokio = "1.34.0"
 log = "0.4"
 async-std = { version = "1.12.0", features = ["attributes", "tokio1"] }
 async-trait = "0.1.73"

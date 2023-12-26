@@ -144,7 +144,7 @@ pub fn parse_get_validators_result(
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{
+        client::client::test::{
             mock_client, CHAIN_ID, DEFAULT_NONCE, TRUSTEE_ACC, VALIDATOR_CONTROL_ADDRESS,
         },
         utils::init_env_logger,
@@ -179,6 +179,7 @@ pub mod test {
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
                 signature: RwLock::new(None),
+                hash: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -209,6 +210,7 @@ pub mod test {
                 chain_id: CHAIN_ID,
                 data: expected_data.into(),
                 signature: RwLock::new(None),
+                hash: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -233,6 +235,7 @@ pub mod test {
                 chain_id: CHAIN_ID,
                 data: encoded_method.into(),
                 signature: RwLock::new(None),
+                hash: None,
             };
 
             assert_eq!(expected_transaction, transaction);

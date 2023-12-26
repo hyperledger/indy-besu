@@ -1,6 +1,7 @@
 use indy2_vdr::{
     credential_definition_registry, Address, CredentialDefinition, CredentialDefinitionId,
 };
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -20,15 +21,16 @@ impl CredentialDefinitionRegistry {
         from: &str,
         cred_def: JsValue,
     ) -> Result<TransactionWrapper> {
+        let client = client.0.clone();
         let cred_def: CredentialDefinition = serde_wasm_bindgen::from_value(cred_def)?;
         let address = Address::from(from);
         let transaction =
             credential_definition_registry::build_create_credential_definition_transaction(
-                &client.0, &address, &cred_def,
+                &client, &address, &cred_def,
             )
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildResolveCredentialDefinitionTransaction)]
@@ -43,7 +45,7 @@ impl CredentialDefinitionRegistry {
             )
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = parseResolveCredentialDefinitionResult)]

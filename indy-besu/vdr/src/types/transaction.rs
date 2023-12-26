@@ -1,5 +1,5 @@
 use ethereum::{
-    LegacyTransaction, LegacyTransactionMessage, TransactionAction,
+    EnvelopedEncodable, LegacyTransaction, LegacyTransactionMessage, TransactionAction,
     TransactionSignature as EthTransactionSignature,
 };
 use ethereum_types::{H160, H256, U256};
@@ -29,7 +29,7 @@ impl Default for TransactionType {
 }
 
 /// Transaction object
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct Transaction {
     /// type of transaction: write/read
     /// depending on the transaction type different client methods will be executed to submit transaction
@@ -46,6 +46,8 @@ pub struct Transaction {
     pub data: Vec<u8>,
     /// transaction signature
     pub signature: RwLock<Option<TransactionSignature>>,
+    /// transaction hash
+    pub hash: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -81,11 +83,20 @@ impl Transaction {
             data,
             nonce,
             signature: RwLock::new(signature),
+            hash: None,
         }
     }
 
     pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
-        let eth_transaction: LegacyTransactionMessage = self.try_into()?;
+        let eth_transaction: LegacyTransactionMessage = LegacyTransactionMessage {
+            nonce: self.get_nonce()?,
+            gas_price: *GAS_PRICE,
+            gas_limit: *GAS_LIMIT,
+            action: TransactionAction::Call(self.get_to()?),
+            value: Default::default(),
+            input: self.data.clone(),
+            chain_id: Some(self.chain_id),
+        };
         let hash = eth_transaction.hash();
         Ok(hash.as_bytes().to_vec())
     }
@@ -99,6 +110,19 @@ impl Transaction {
         };
         let mut signature = self.signature.write().unwrap();
         *signature = Some(transaction_signature)
+    }
+
+    pub fn encode(&self) -> VdrResult<Vec<u8>> {
+        let transaction = LegacyTransaction {
+            nonce: self.get_nonce()?,
+            gas_price: *GAS_PRICE,
+            gas_limit: *GAS_LIMIT,
+            action: TransactionAction::Call(self.get_to()?),
+            value: Default::default(),
+            input: self.data.clone(),
+            signature: self.get_transaction_signature()?,
+        };
+        Ok(transaction.encode().to_vec())
     }
 
     fn get_to(&self) -> VdrResult<H160> {
@@ -140,38 +164,6 @@ impl Transaction {
             msg: "Transaction `nonce` is not set".to_string(),
         })?;
         Ok(signature)
-    }
-}
-
-impl TryInto<LegacyTransactionMessage> for &Transaction {
-    type Error = VdrError;
-
-    fn try_into(self) -> Result<LegacyTransactionMessage, Self::Error> {
-        Ok(LegacyTransactionMessage {
-            nonce: self.get_nonce()?,
-            gas_price: *GAS_PRICE,
-            gas_limit: *GAS_LIMIT,
-            action: TransactionAction::Call(self.get_to()?),
-            value: Default::default(),
-            input: self.data.clone(),
-            chain_id: Some(self.chain_id),
-        })
-    }
-}
-
-impl TryInto<LegacyTransaction> for &Transaction {
-    type Error = VdrError;
-
-    fn try_into(self) -> Result<LegacyTransaction, Self::Error> {
-        Ok(LegacyTransaction {
-            nonce: self.get_nonce()?,
-            gas_price: *GAS_PRICE,
-            gas_limit: *GAS_LIMIT,
-            action: TransactionAction::Call(self.get_to()?),
-            value: Default::default(),
-            input: self.data.clone(),
-            signature: self.get_transaction_signature()?,
-        })
     }
 }
 
@@ -282,6 +274,7 @@ impl TransactionBuilder {
             data,
             nonce,
             signature: RwLock::new(None),
+            hash: None,
         };
 
         trace!("Built transaction: {:?}", transaction);
@@ -351,5 +344,21 @@ impl TransactionParser {
         trace!("Decoded transaction output: {:?}", output);
 
         T::try_from(output)
+    }
+}
+
+#[cfg(test)]
+impl std::clone::Clone for Transaction {
+    fn clone(&self) -> Self {
+        Transaction {
+            type_: self.type_.clone(),
+            from: self.from.clone(),
+            to: self.to.clone(),
+            nonce: self.nonce.clone(),
+            chain_id: self.chain_id.clone(),
+            data: self.data.clone(),
+            signature: RwLock::new(self.signature.read().unwrap().clone()),
+            hash: self.hash.clone(),
+        }
     }
 }

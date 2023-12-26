@@ -23,10 +23,10 @@ impl LedgerClient {
     /// Create client interacting with ledger
     ///
     /// # Params
-    ///  - chain_id chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
-    ///  - param rpc_node: string - RPC node endpoint
-    ///  - param contract_configs: [ContractSpec] - specifications for contracts  deployed on the network
-    /// -  param: quorum_config: Option<QuorumConfig> - quorum configuration. Can be None if quorum is not needed
+    ///  - `chain_id` - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
+    ///  - `rpc_node` - string - RPC node endpoint
+    ///  - `contract_configs` - [ContractSpec] specifications for contracts  deployed on the network
+    ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum is not needed
     ///
     /// # Returns
     ///  client to use for building and sending transactions
@@ -78,15 +78,19 @@ impl LedgerClient {
     ///     Depending on the transaction type Write/Read ethereum methods will be used
     ///
     /// #Params
-    ///  transaction - transaction to submit
+    ///  `transaction` - transaction to submit
     ///
     /// #Returns
     ///  transaction execution result:
     ///    depending on the type it will be either result bytes or block hash
     pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
         let result = match transaction.type_ {
-            TransactionType::Read => self.client.call_transaction(transaction).await,
-            TransactionType::Write => self.client.submit_transaction(transaction).await,
+            TransactionType::Read => {
+                self.client
+                    .call_transaction(&transaction.to, &transaction.data)
+                    .await
+            }
+            TransactionType::Write => self.client.submit_transaction(&transaction.encode()?).await,
         }?;
 
         if let Some(quorum_handler) = &self.quorum_handler {
@@ -99,7 +103,7 @@ impl LedgerClient {
     /// Get receipt for the given block hash
     ///
     /// # Params
-    ///  transaction - transaction to submit
+    ///  `transaction` - transaction to submit
     ///
     /// # Returns
     ///  receipt for the given block
@@ -164,7 +168,6 @@ impl LedgerClient {
 pub mod test {
     use super::*;
     use async_trait::async_trait;
-    use ethereum_types::H256;
     use once_cell::sync::Lazy;
     use std::{env, fs, ops::Deref};
 
@@ -255,11 +258,11 @@ pub mod test {
             Ok([0, 0, 0, 0])
         }
 
-        async fn submit_transaction(&self, _transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        async fn submit_transaction(&self, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
             todo!()
         }
 
-        async fn call_transaction(&self, _transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        async fn call_transaction(&self, _to: &str, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
             todo!()
         }
 
@@ -271,10 +274,7 @@ pub mod test {
             todo!()
         }
 
-        async fn get_transaction(
-            &self,
-            _transaction_hash: H256,
-        ) -> VdrResult<Option<Web3Transaction>> {
+        async fn get_transaction(&self, _hash: &[u8]) -> VdrResult<Option<Transaction>> {
             todo!()
         }
     }
