@@ -528,7 +528,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy2_vdr_uniffi_checksum_method_transaction_set_signature() != 11161:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy2_vdr_uniffi_checksum_constructor_ledgerclient_new() != 30514:
+    if lib.uniffi_indy2_vdr_uniffi_checksum_constructor_ledgerclient_new() != 24727:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy2_vdr_uniffi_checksum_constructor_transaction_new() != 19150:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -549,6 +549,7 @@ _UniffiLib.uniffi_indy2_vdr_uniffi_fn_free_ledgerclient.argtypes = (
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_free_ledgerclient.restype = None
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_constructor_ledgerclient_new.argtypes = (
     ctypes.c_uint64,
+    _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -1235,17 +1236,20 @@ class LedgerClientProtocol(typing.Protocol):
 class LedgerClient:
 
     _pointer: ctypes.c_void_p
-    def __init__(self, chain_id: "int",node_address: "str",contract_configs: "typing.List[ContractConfig]"):
+    def __init__(self, chain_id: "int",node_address: "str",contract_configs: "typing.List[ContractConfig]",quorum_config: "typing.Optional[QuorumConfig]"):
         _UniffiConverterUInt64.check_lower(chain_id)
         
         _UniffiConverterString.check_lower(node_address)
         
         _UniffiConverterSequenceTypeContractConfig.check_lower(contract_configs)
         
+        _UniffiConverterOptionalTypeQuorumConfig.check_lower(quorum_config)
+        
         self._pointer = _rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy2_vdr_uniffi_fn_constructor_ledgerclient_new,
         _UniffiConverterUInt64.lower(chain_id),
         _UniffiConverterString.lower(node_address),
-        _UniffiConverterSequenceTypeContractConfig.lower(contract_configs))
+        _UniffiConverterSequenceTypeContractConfig.lower(contract_configs),
+        _UniffiConverterOptionalTypeQuorumConfig.lower(quorum_config))
 
     def __del__(self):
         # In case of partial initialization of instances.
@@ -1567,6 +1571,57 @@ class _UniffiConverterTypePingStatus(_UniffiConverterRustBuffer):
     @staticmethod
     def write(value, buf):
         _UniffiConverterTypeStatus.write(value.status, buf)
+
+
+class QuorumConfig:
+    nodes: "typing.List[str]"
+    request_retries: "typing.Optional[int]"
+    request_timeout: "typing.Optional[int]"
+    retry_interval: "typing.Optional[int]"
+    @typing.no_type_check
+    def __init__(self, nodes: "typing.List[str]", request_retries: "typing.Optional[int]", request_timeout: "typing.Optional[int]", retry_interval: "typing.Optional[int]"):
+        self.nodes = nodes
+        self.request_retries = request_retries
+        self.request_timeout = request_timeout
+        self.retry_interval = retry_interval
+
+    def __str__(self):
+        return "QuorumConfig(nodes={}, request_retries={}, request_timeout={}, retry_interval={})".format(self.nodes, self.request_retries, self.request_timeout, self.retry_interval)
+
+    def __eq__(self, other):
+        if self.nodes != other.nodes:
+            return False
+        if self.request_retries != other.request_retries:
+            return False
+        if self.request_timeout != other.request_timeout:
+            return False
+        if self.retry_interval != other.retry_interval:
+            return False
+        return True
+
+class _UniffiConverterTypeQuorumConfig(_UniffiConverterRustBuffer):
+    @staticmethod
+    def read(buf):
+        return QuorumConfig(
+            nodes=_UniffiConverterSequenceString.read(buf),
+            request_retries=_UniffiConverterOptionalUInt8.read(buf),
+            request_timeout=_UniffiConverterOptionalUInt64.read(buf),
+            retry_interval=_UniffiConverterOptionalUInt64.read(buf),
+        )
+
+    @staticmethod
+    def check_lower(value):
+        _UniffiConverterSequenceString.check_lower(value.nodes)
+        _UniffiConverterOptionalUInt8.check_lower(value.request_retries)
+        _UniffiConverterOptionalUInt64.check_lower(value.request_timeout)
+        _UniffiConverterOptionalUInt64.check_lower(value.retry_interval)
+
+    @staticmethod
+    def write(value, buf):
+        _UniffiConverterSequenceString.write(value.nodes, buf)
+        _UniffiConverterOptionalUInt8.write(value.request_retries, buf)
+        _UniffiConverterOptionalUInt64.write(value.request_timeout, buf)
+        _UniffiConverterOptionalUInt64.write(value.retry_interval, buf)
 
 
 class SignatureData:
@@ -1927,6 +1982,26 @@ class VdrError:  # type: ignore
         def __repr__(self):
             return "VdrError.CommonInvalidData({})".format(str(self))
     _UniffiTempVdrError.CommonInvalidData = CommonInvalidData # type: ignore
+    class QuorumNotReached(_UniffiTempVdrError):
+
+        def __init__(self, msg):
+            super().__init__(", ".join([
+                "msg={!r}".format(msg),
+            ]))
+            self.msg = msg
+        def __repr__(self):
+            return "VdrError.QuorumNotReached({})".format(str(self))
+    _UniffiTempVdrError.QuorumNotReached = QuorumNotReached # type: ignore
+    class GetTransactionError(_UniffiTempVdrError):
+
+        def __init__(self, msg):
+            super().__init__(", ".join([
+                "msg={!r}".format(msg),
+            ]))
+            self.msg = msg
+        def __repr__(self):
+            return "VdrError.GetTransactionError({})".format(str(self))
+    _UniffiTempVdrError.GetTransactionError = GetTransactionError # type: ignore
 
 VdrError = _UniffiTempVdrError # type: ignore
 del _UniffiTempVdrError
@@ -1992,6 +2067,14 @@ class _UniffiConverterTypeVdrError(_UniffiConverterRustBuffer):
             return VdrError.CommonInvalidData(
                 msg=_UniffiConverterString.read(buf),
             )
+        if variant == 16:
+            return VdrError.QuorumNotReached(
+                msg=_UniffiConverterString.read(buf),
+            )
+        if variant == 17:
+            return VdrError.GetTransactionError(
+                msg=_UniffiConverterString.read(buf),
+            )
         raise InternalError("Raw enum value doesn't match any cases")
 
     @staticmethod
@@ -2035,6 +2118,12 @@ class _UniffiConverterTypeVdrError(_UniffiConverterRustBuffer):
             _UniffiConverterString.check_lower(value.msg)
             return
         if isinstance(value, VdrError.CommonInvalidData):
+            _UniffiConverterString.check_lower(value.msg)
+            return
+        if isinstance(value, VdrError.QuorumNotReached):
+            _UniffiConverterString.check_lower(value.msg)
+            return
+        if isinstance(value, VdrError.GetTransactionError):
             _UniffiConverterString.check_lower(value.msg)
             return
 
@@ -2081,6 +2170,66 @@ class _UniffiConverterTypeVdrError(_UniffiConverterRustBuffer):
         if isinstance(value, VdrError.CommonInvalidData):
             buf.write_i32(15)
             _UniffiConverterString.write(value.msg, buf)
+        if isinstance(value, VdrError.QuorumNotReached):
+            buf.write_i32(16)
+            _UniffiConverterString.write(value.msg, buf)
+        if isinstance(value, VdrError.GetTransactionError):
+            buf.write_i32(17)
+            _UniffiConverterString.write(value.msg, buf)
+
+
+
+class _UniffiConverterOptionalUInt8(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiConverterUInt8.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiConverterUInt8.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiConverterUInt8.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+
+
+class _UniffiConverterOptionalUInt64(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiConverterUInt64.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiConverterUInt64.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiConverterUInt64.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
 
 
 
@@ -2133,6 +2282,33 @@ class _UniffiConverterOptionalTypeContractSpec(_UniffiConverterRustBuffer):
             return None
         elif flag == 1:
             return _UniffiConverterTypeContractSpec.read(buf)
+        else:
+            raise InternalError("Unexpected flag byte for optional type")
+
+
+
+class _UniffiConverterOptionalTypeQuorumConfig(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        if value is not None:
+            _UniffiConverterTypeQuorumConfig.check_lower(value)
+
+    @classmethod
+    def write(cls, value, buf):
+        if value is None:
+            buf.write_u8(0)
+            return
+
+        buf.write_u8(1)
+        _UniffiConverterTypeQuorumConfig.write(value, buf)
+
+    @classmethod
+    def read(cls, buf):
+        flag = buf.read_u8()
+        if flag == 0:
+            return None
+        elif flag == 1:
+            return _UniffiConverterTypeQuorumConfig.read(buf)
         else:
             raise InternalError("Unexpected flag byte for optional type")
 
@@ -2213,6 +2389,31 @@ class _UniffiConverterSequenceUInt64(_UniffiConverterRustBuffer):
 
         return [
             _UniffiConverterUInt64.read(buf) for i in range(count)
+        ]
+
+
+
+class _UniffiConverterSequenceString(_UniffiConverterRustBuffer):
+    @classmethod
+    def check_lower(cls, value):
+        for item in value:
+            _UniffiConverterString.check_lower(item)
+
+    @classmethod
+    def write(cls, value, buf):
+        items = len(value)
+        buf.write_i32(items)
+        for item in value:
+            _UniffiConverterString.write(item, buf)
+
+    @classmethod
+    def read(cls, buf):
+        count = buf.read_i32()
+        if count < 0:
+            raise InternalError("Unexpected negative sequence length")
+
+        return [
+            _UniffiConverterString.read(buf) for i in range(count)
         ]
 
 
@@ -2636,6 +2837,7 @@ __all__ = [
     "ContractConfig",
     "ContractSpec",
     "PingStatus",
+    "QuorumConfig",
     "SignatureData",
     "TransactionSignature",
     "build_add_validator_transaction",

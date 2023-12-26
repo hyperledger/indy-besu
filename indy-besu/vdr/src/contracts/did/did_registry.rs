@@ -190,7 +190,9 @@ pub fn parse_resolve_did_result(client: &LedgerClient, bytes: &[u8]) -> VdrResul
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{mock_client, CHAIN_ID, DEFAULT_NONCE, DID_REGISTRY_ADDRESS, TRUSTEE_ACC},
+        client::client::test::{
+            mock_client, CHAIN_ID, DEFAULT_NONCE, DID_REGISTRY_ADDRESS, TRUSTEE_ACC,
+        },
         contracts::did::types::did_doc::test::{did_doc, ISSUER_ID},
         utils::init_env_logger,
         DID,
@@ -217,7 +219,7 @@ pub mod test {
     mod build_create_did_transaction {
         use super::*;
         use crate::{
-            client::test::mock_client,
+            client::client::test::mock_client,
             contracts::{
                 Service, ServiceEndpoint, StringOrVector, VerificationMethod,
                 VerificationMethodOrReference,
@@ -324,6 +326,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
+                hash: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -534,6 +537,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
+                hash: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -564,6 +568,7 @@ pub mod test {
                     119, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
+                hash: None,
             };
             assert_eq!(expected_transaction, transaction);
         }

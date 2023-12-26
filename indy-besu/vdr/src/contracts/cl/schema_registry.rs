@@ -118,7 +118,7 @@ pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrRe
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{
+        client::client::test::{
             mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
         },
         contracts::{
@@ -205,6 +205,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
+                hash: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -240,6 +241,7 @@ pub mod test {
                     46, 48, 46, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
+                hash: None,
             };
             assert_eq!(expected_transaction, transaction);
         }

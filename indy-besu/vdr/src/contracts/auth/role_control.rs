@@ -217,7 +217,9 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<R
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{mock_client, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TRUSTEE_ACC},
+        client::client::test::{
+            mock_client, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TRUSTEE_ACC,
+        },
         utils::init_env_logger,
     };
     use std::sync::RwLock;
@@ -254,6 +256,7 @@ pub mod test {
                 chain_id: CHAIN_ID,
                 data: expected_data,
                 signature: RwLock::new(None),
+                hash: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -286,6 +289,7 @@ pub mod test {
                 chain_id: CHAIN_ID,
                 data: expected_data,
                 signature: RwLock::new(None),
+                hash: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -316,6 +320,7 @@ pub mod test {
                 chain_id: CHAIN_ID,
                 data: expected_data,
                 signature: RwLock::new(None),
+                hash: None,
             };
 
             assert_eq!(expected_transaction, transaction);
@@ -363,6 +368,7 @@ pub mod test {
                 chain_id: CHAIN_ID,
                 data: expected_data,
                 signature: RwLock::new(None),
+                hash: None,
             };
 
             assert_eq!(expected_transaction, transaction);

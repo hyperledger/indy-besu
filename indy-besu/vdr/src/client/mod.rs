@@ -1,18 +1,18 @@
-mod client;
-mod constants;
-mod implementation;
-mod quorum;
+pub mod client;
+pub mod constants;
+pub mod implementation;
+pub mod quorum;
 
 use crate::{
     error::VdrResult,
-    types::{Address, ContractOutput, ContractParam, PingStatus, Transaction},
+    types::{Address, ContractOutput, ContractParam, PingStatus},
+    Transaction,
 };
 use async_trait::async_trait;
 
-pub use client::*;
+pub use client::LedgerClient;
 pub use constants::*;
-pub use quorum::*;
-use web3::types::{Transaction as Web3Transaction, H256};
+pub use quorum::{QuorumConfig, QuorumHandler};
 
 #[cfg(test)]
 use mockall::automock;
@@ -38,7 +38,7 @@ pub trait Client: Sync + Send {
     ///
     /// # Returns
     /// hash of a block in which transaction included
-    async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>>;
+    async fn submit_transaction(&self, transaction: &[u8]) -> VdrResult<Vec<u8>>;
 
     /// Submit read transaction to the ledger
     ///
@@ -47,7 +47,7 @@ pub trait Client: Sync + Send {
     ///
     /// # Returns
     /// result data of transaction execution
-    async fn call_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>>;
+    async fn call_transaction(&self, to: &str, transaction: &[u8]) -> VdrResult<Vec<u8>>;
 
     /// Get the receipt for the given block hash
     ///
@@ -71,7 +71,7 @@ pub trait Client: Sync + Send {
     ///
     /// # Returns
     /// transaction for the requested hash
-    async fn get_transaction(&self, hash: H256) -> VdrResult<Option<Web3Transaction>>;
+    async fn get_transaction(&self, hash: &[u8]) -> VdrResult<Option<Transaction>>;
 }
 
 pub trait Contract: Sync + Send {

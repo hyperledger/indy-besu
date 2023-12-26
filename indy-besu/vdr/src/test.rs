@@ -1,5 +1,5 @@
 use crate::{
-    client::test::client,
+    client::client::test::client,
     contracts::{
         auth::Role,
         cl::{

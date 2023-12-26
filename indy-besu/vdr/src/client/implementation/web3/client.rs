@@ -1,11 +1,11 @@
 use crate::{
     client::Client,
     error::{VdrError, VdrResult},
-    types::{PingStatus, Transaction, TransactionType},
+    types::PingStatus,
+    Address, Transaction,
 };
 
 use async_trait::async_trait;
-use ethereum::{EnvelopedEncodable, LegacyTransaction};
 use log::{trace, warn};
 use serde_json::json;
 use std::{str::FromStr, time::Duration};
@@ -14,10 +14,7 @@ use std::{str::FromStr, time::Duration};
 use web3::{
     api::Eth,
     transports::Http,
-    types::{
-        Address as EthAddress, Bytes, CallRequest, Transaction as Web3Transaction, TransactionId,
-        H256,
-    },
+    types::{Address as EthAddress, Bytes, CallRequest, TransactionId, H256},
     Web3,
 };
 
@@ -25,10 +22,7 @@ use web3::{
 use web3_wasm::{
     api::Eth,
     transports::Http,
-    types::{
-        Address as EthAddress, Bytes, CallRequest, Transaction as Web3Transaction, TransactionId,
-        H256,
-    },
+    types::{Address as EthAddress, Bytes, CallRequest, TransactionId, H256},
     Web3,
 };
 
@@ -61,7 +55,7 @@ impl Web3Client {
 }
 
 #[cfg_attr(not(feature = "wasm"), async_trait)]
-#[cfg_attr(feature = "wasm", async_trait(?Send))]
+#[cfg_attr(feature = "wasm", async_trait(? Send))]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
         let account_address =
@@ -79,31 +73,16 @@ impl Client for Web3Client {
         Ok(nonce.0)
     }
 
-    async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+    async fn submit_transaction(&self, transaction: &[u8]) -> VdrResult<Vec<u8>> {
         trace!(
             "Submit transaction process has started. Transaction: {:?}",
             transaction
         );
 
-        if transaction.type_ != TransactionType::Write {
-            let vdr_error = VdrError::ClientInvalidTransaction {
-                msg: "Write transaction expected".to_string(),
-            };
-
-            warn!(
-                "Error: {} during submitting transaction: {:?}",
-                vdr_error, transaction
-            );
-
-            return Err(vdr_error);
-        }
-
-        let eth_transaction: LegacyTransaction = transaction.try_into()?;
-
         let receipt = self
             .client
             .send_raw_transaction_with_confirmation(
-                Bytes::from(eth_transaction.encode()),
+                Bytes::from(transaction),
                 Duration::from_millis(POLL_INTERVAL),
                 NUMBER_TX_CONFIRMATIONS,
             )
@@ -114,27 +93,15 @@ impl Client for Web3Client {
         Ok(receipt.transaction_hash.0.to_vec())
     }
 
-    async fn call_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
+    async fn call_transaction(&self, to: &str, transaction: &[u8]) -> VdrResult<Vec<u8>> {
         trace!(
             "Call transaction process has started. Transaction: {:?}",
             transaction
         );
 
-        if transaction.type_ != TransactionType::Read {
+        let address = EthAddress::from_str(to).map_err(|_| {
             let vdr_error = VdrError::ClientInvalidTransaction {
-                msg: "Read transaction expected".to_string(),
-            };
-
-            warn!(
-                "Error: {} during calling transaction: {:?}",
-                vdr_error, transaction
-            );
-
-            return Err(vdr_error);
-        }
-        let address = EthAddress::from_str(&transaction.to).map_err(|_| {
-            let vdr_error = VdrError::ClientInvalidTransaction {
-                msg: format!("Invalid transaction target address {:?}", transaction.to),
+                msg: format!("Invalid transaction target address {:?}", to),
             };
 
             warn!(
@@ -146,7 +113,7 @@ impl Client for Web3Client {
         })?;
         let request = CallRequest::builder()
             .to(address)
-            .data(Bytes(transaction.data.clone()))
+            .data(Bytes(transaction.to_vec()))
             .build();
         let response = self.client.eth().call(request, None).await?;
 
@@ -188,17 +155,32 @@ impl Client for Web3Client {
         ping_result
     }
 
-    async fn get_transaction(&self, transaction_hash: H256) -> VdrResult<Option<Web3Transaction>> {
-        match self
+    async fn get_transaction(&self, transaction_hash: &[u8]) -> VdrResult<Option<Transaction>> {
+        let transaction_id = TransactionId::Hash(H256::from_slice(transaction_hash));
+        let transaction = self
             .client
             .eth()
-            .transaction(TransactionId::Hash(transaction_hash))
+            .transaction(transaction_id)
             .await
-        {
-            Ok(transaction) => Ok(transaction),
-            Err(_) => Err(VdrError::GetTransactionError(
-                "Could not get transaction by hash".to_string(),
-            )),
-        }
+            .map_err(|_| VdrError::GetTransactionError {
+                msg: "Could not get transaction by hash".to_string(),
+            })?;
+
+        let transaction = transaction.map(|transaction| Transaction {
+            type_: Default::default(),
+            from: transaction
+                .from
+                .map(|from| Address::from(from.to_string().as_str())),
+            to: transaction
+                .to
+                .map(|from| Address::from(from.to_string().as_str()))
+                .unwrap_or_default(),
+            nonce: Some(transaction.nonce.0.to_vec()),
+            chain_id: 0,
+            data: transaction.input.0.to_vec(),
+            signature: Default::default(),
+            hash: Some(transaction.hash.as_bytes().to_vec()),
+        });
+        Ok(transaction)
     }
 }

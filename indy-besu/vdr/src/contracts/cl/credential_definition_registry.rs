@@ -126,7 +126,7 @@ pub fn parse_resolve_credential_definition_result(
 pub mod test {
     use super::*;
     use crate::{
-        client::test::{
+        client::client::test::{
             mock_client, CHAIN_ID, CRED_DEF_REGISTRY_ADDRESS, DEFAULT_NONCE, TRUSTEE_ACC,
         },
         contracts::{
@@ -210,6 +210,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
+                hash: None,
             };
             assert_eq!(expected_transaction, transaction);
         }
@@ -254,6 +255,7 @@ pub mod test {
                     100, 101, 102, 97, 117, 108, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
+                hash: None,
             };
             assert_eq!(expected_transaction, transaction);
         }

@@ -2,7 +2,7 @@ use crate::{
     ffi::{
         error::VdrResult,
         transaction::Transaction,
-        types::{ContractConfig, PingStatus},
+        types::{ContractConfig, PingStatus, QuorumConfig},
     },
     VdrError,
 };
@@ -20,12 +20,19 @@ impl LedgerClient {
         chain_id: u64,
         node_address: String,
         contract_configs: Vec<ContractConfig>,
+        quorum_config: Option<QuorumConfig>,
     ) -> VdrResult<LedgerClient> {
         let contract_configs: Vec<ContractConfig_> = contract_configs
             .into_iter()
             .map(ContractConfig::into)
             .collect();
-        let client = LedgerClient_::new(chain_id, &node_address, &contract_configs)?;
+        let quorum_config = quorum_config.map(QuorumConfig::into);
+        let client = LedgerClient_::new(
+            chain_id,
+            &node_address,
+            &contract_configs,
+            quorum_config.as_ref(),
+        )?;
         Ok(LedgerClient { client })
     }
 

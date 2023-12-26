@@ -1,4 +1,5 @@
 use indy2_vdr::{schema_registry, Address, Schema, SchemaId};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -24,7 +25,7 @@ impl SchemaRegistry {
             schema_registry::build_create_schema_transaction(&client.0, &address, &schema)
                 .await
                 .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildResolveSchemaTransaction)]
@@ -36,7 +37,7 @@ impl SchemaRegistry {
         let transaction = schema_registry::build_resolve_schema_transaction(&client.0, &id)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = parseResolveSchemaResult)]

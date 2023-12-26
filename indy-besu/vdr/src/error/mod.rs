@@ -8,8 +8,8 @@ use web3_wasm::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum VdrError {
-    #[error("Ledger: Quorum not reached: {}", _0)]
-    QuorumNotReached(String),
+    #[error("Ledger: Quorum not reached: {}", msg)]
+    QuorumNotReached { msg: String },
 
     #[error("Ledger Client: Node is unreachable")]
     ClientNodeUnreachable,
@@ -56,8 +56,8 @@ pub enum VdrError {
     #[error("Invalid data: {}", msg)]
     CommonInvalidData { msg: String },
 
-    #[error("Could not get transaction: {}", _0)]
-    GetTransactionError(String),
+    #[error("Could not get transaction: {}", msg)]
+    GetTransactionError { msg: String },
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;
