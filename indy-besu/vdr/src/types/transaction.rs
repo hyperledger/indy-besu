@@ -16,7 +16,7 @@ use crate::{
 
 /// Type of transaction: write/read
 /// depending on the transaction type different client methods will be executed to submit transaction
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum TransactionType {
     Read,
     Write,
@@ -29,16 +29,19 @@ impl Default for TransactionType {
 }
 
 /// Transaction object
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Transaction {
     /// type of transaction: write/read
     /// depending on the transaction type different client methods will be executed to submit transaction
+    #[serde(rename = "type")]
     pub type_: TransactionType,
     /// transaction sender account address
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<Address>,
     /// transaction recipient address
     pub to: Address,
     /// nonce - count of transaction sent by account
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<Vec<u64>>,
     /// chain id of the ledger
     pub chain_id: u64,
