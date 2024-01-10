@@ -114,8 +114,6 @@ impl QuorumHandler {
             };
         }
 
-        drop(sender);
-
         trace!("Finished eth_call task for transaction: {:?}", data);
     }
 
