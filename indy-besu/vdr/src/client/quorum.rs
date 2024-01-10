@@ -210,47 +210,52 @@ impl QuorumHandler {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::client::client::test::CLIENT_NODE_ADDRESSES;
-    use crate::client::MockClient;
-    use crate::utils::init_env_logger;
+    use crate::client::{client::test::CLIENT_NODE_ADDRESSES, MockClient};
     use mockall::predicate::eq;
+    use once_cell::sync::Lazy;
     use std::{thread, time};
+
+    impl Default for QuorumConfig {
+        fn default() -> Self {
+            QuorumConfig {
+                nodes: CLIENT_NODE_ADDRESSES
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                request_retries: Some(DEFAULT_REQUEST_RETRIES),
+                request_timeout: Some(DEFAULT_REQUEST_TIMEOUT),
+                retry_interval: Some(DEFAULT_RETRY_INTERVAL),
+            }
+        }
+    }
+
+    impl Default for QuorumHandler {
+        fn default() -> Self {
+            QuorumHandler {
+                clients: vec![],
+                request_retries: DEFAULT_REQUEST_RETRIES,
+                request_timeout: Duration::from_millis(DEFAULT_REQUEST_TIMEOUT),
+                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+            }
+        }
+    }
+
+    const TIMEOUT_TIME: u64 = 1000;
+    const RETRIES: u8 = 5;
 
     #[cfg(test)]
     mod write_quorum_test {
-
         use super::*;
 
-        impl Default for QuorumConfig {
-            fn default() -> Self {
-                QuorumConfig {
-                    nodes: CLIENT_NODE_ADDRESSES
-                        .into_iter()
-                        .map(|s| s.to_string())
-                        .collect(),
-                    request_retries: Some(DEFAULT_REQUEST_RETRIES),
-                    request_timeout: Some(DEFAULT_REQUEST_TIMEOUT),
-                    retry_interval: Some(DEFAULT_RETRY_INTERVAL),
-                }
-            }
-        }
+        static TXN_HASH: Lazy<Vec<u8>> = Lazy::new(|| vec![1; 32]);
 
-        fn mock_client(txn_hash: &[u8]) -> Arc<Box<dyn Client>> {
-            let expected_output = Some(Transaction {
-                hash: Some(txn_hash.to_vec()),
-                ..Default::default()
-            });
+        static WRITE_TRANSACTION: Lazy<Transaction> = Lazy::new(|| Transaction {
+            type_: TransactionType::Write,
+            hash: Some(TXN_HASH.clone()),
+            ..Transaction::default()
+        });
 
-            let mut mock_client = MockClient::new();
-            mock_client
-                .expect_get_transaction()
-                .with(eq(txn_hash.to_vec()))
-                .returning(move |_| Ok(expected_output.clone()));
-
-            Arc::new(Box::new(mock_client))
-        }
-
-        fn mock_client_custom_output(
+        fn mock_client(
             txn_hash: &[u8],
             expected_output: Option<Transaction>,
         ) -> Arc<Box<dyn Client>> {
@@ -280,17 +285,16 @@ pub mod test {
             Arc::new(Box::new(mock_client))
         }
 
-        fn mock_client_retries(txn_hash: &[u8], retries_num: usize) -> Arc<Box<dyn Client>> {
+        fn mock_client_retries(
+            txn_hash: &[u8],
+            expected_output: Option<Transaction>,
+            retries_num: u8,
+        ) -> Arc<Box<dyn Client>> {
             let mut mock_client = MockClient::new();
-            let expected_output = Some(Transaction {
-                hash: Some(txn_hash.to_vec()),
-                ..Default::default()
-            });
-
             mock_client
                 .expect_get_transaction()
                 .with(eq(txn_hash.to_vec()))
-                .times(retries_num - 1)
+                .times(retries_num as usize - 1)
                 .returning(move |_| Ok(None));
 
             mock_client
@@ -303,112 +307,69 @@ pub mod test {
 
         #[async_std::test]
         async fn test_quorum_check_positive_case() {
-            init_env_logger();
-            let txn_hash = vec![1; 32];
-            let transaction = Transaction {
-                type_: TransactionType::Write,
-                ..Transaction::default()
-            };
-            let client1 = mock_client(&txn_hash);
-            let client2 = mock_client(&txn_hash);
-            let clients = vec![client1, client2];
+            let client1 = mock_client(&TXN_HASH, Some(WRITE_TRANSACTION.clone()));
+            let client2 = mock_client(&TXN_HASH, Some(WRITE_TRANSACTION.clone()));
             let quorum = QuorumHandler {
-                clients,
-                request_retries: DEFAULT_REQUEST_RETRIES,
-                request_timeout: Duration::from_millis(DEFAULT_REQUEST_TIMEOUT),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2],
+                ..QuorumHandler::default()
             };
-
-            let result = quorum.check(&transaction, &txn_hash).await;
-
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), true);
+            assert!(quorum.check(&WRITE_TRANSACTION, &TXN_HASH).await.unwrap());
         }
 
         #[async_std::test]
         async fn test_quorum_check_failed_with_timeout() {
-            init_env_logger();
-            let timeout_time: u64 = 1000;
-            let transaction = Transaction {
-                type_: TransactionType::Write,
-                ..Transaction::default()
-            };
-            let txn_hash = [1; 32];
-            let client1 = mock_client_custom_output(&txn_hash, None);
-            let client2 = mock_client_sleep_before_return(&txn_hash, None, timeout_time + 3000);
-            let clients = vec![client1, client2];
+            let client1 = mock_client(&TXN_HASH, None);
+            let client2 = mock_client_sleep_before_return(&TXN_HASH, None, TIMEOUT_TIME + 3000);
             let quorum = QuorumHandler {
-                clients,
-
-                request_retries: DEFAULT_REQUEST_RETRIES,
-                request_timeout: Duration::from_millis(timeout_time),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2],
+                request_timeout: Duration::from_millis(TIMEOUT_TIME),
+                ..QuorumHandler::default()
             };
-
-            let result = quorum.check(&transaction, &txn_hash).await;
-
-            assert!(result.is_err());
+            let _err = quorum
+                .check(&WRITE_TRANSACTION, &TXN_HASH)
+                .await
+                .unwrap_err();
         }
 
         #[async_std::test]
         async fn test_quorum_check_not_reached() {
-            init_env_logger();
-            let transaction = Transaction {
-                type_: TransactionType::Write,
-                ..Transaction::default()
-            };
-            let txn_hash = vec![1; 32];
-            let client1: Arc<Box<dyn Client>> = mock_client(&txn_hash);
-            let client2 = mock_client_custom_output(
-                &txn_hash,
+            let client1: Arc<Box<dyn Client>> =
+                mock_client(&TXN_HASH, Some(WRITE_TRANSACTION.clone()));
+            let client2 = mock_client(
+                &TXN_HASH,
                 Some(Transaction {
                     hash: Some([2; 32].to_vec()),
                     ..Default::default()
                 }),
             );
-            let client3 = mock_client_custom_output(
-                &txn_hash,
+            let client3 = mock_client(
+                &TXN_HASH,
                 Some(Transaction {
                     hash: Some([3; 32].to_vec()),
                     ..Default::default()
                 }),
             );
-            let clients = vec![client1, client2, client3];
             let quorum = QuorumHandler {
-                clients,
-                request_retries: DEFAULT_REQUEST_RETRIES,
-                request_timeout: Duration::from_millis(DEFAULT_REQUEST_TIMEOUT),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2, client3],
+                ..QuorumHandler::default()
             };
 
-            let result = quorum.check(&transaction, &txn_hash).await;
-
-            assert!(result.is_err());
+            let _err = quorum
+                .check(&WRITE_TRANSACTION, &TXN_HASH)
+                .await
+                .unwrap_err();
         }
 
         #[async_std::test]
         async fn test_quorum_check_got_transaction_after_retries() {
-            init_env_logger();
-            let retries_num = 5;
-            let transaction = Transaction {
-                type_: TransactionType::Write,
-                ..Transaction::default()
-            };
-            let txn_hash = vec![1; 32];
-            let client1 = mock_client_retries(&txn_hash, retries_num);
-            let client2 = mock_client(&txn_hash);
-            let clients = vec![client1, client2];
+            let client1 = mock_client_retries(&TXN_HASH, Some(WRITE_TRANSACTION.clone()), RETRIES);
+            let client2 = mock_client(&TXN_HASH, Some(WRITE_TRANSACTION.clone()));
             let quorum = QuorumHandler {
-                clients,
-                request_retries: retries_num as u8,
-                request_timeout: Duration::from_millis(DEFAULT_REQUEST_TIMEOUT),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2],
+                request_retries: RETRIES,
+                ..QuorumHandler::default()
             };
-
-            let result = quorum.check(&transaction, &txn_hash).await;
-
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), true);
+            assert!(quorum.check(&WRITE_TRANSACTION, &TXN_HASH).await.unwrap());
         }
     }
 
@@ -416,7 +377,14 @@ pub mod test {
     mod read_quorum_test {
         use super::*;
 
-        fn mock_client_custom_output(
+        static READ_TRANSACTION: Lazy<Transaction> = Lazy::new(|| Transaction {
+            type_: TransactionType::Read,
+            ..Transaction::default()
+        });
+
+        static RESPONSE: Lazy<Vec<u8>> = Lazy::new(|| vec![1, 1, 1, 1]);
+
+        fn mock_client(
             transaction: Transaction,
             expected_output: VdrResult<Vec<u8>>,
         ) -> Arc<Box<dyn Client>> {
@@ -435,7 +403,7 @@ pub mod test {
         fn mock_client_sleep_before_return(
             transaction: Transaction,
             expected_output: VdrResult<Vec<u8>>,
-            sleep_time_sec: u8,
+            sleep_time_sec: u64,
         ) -> Arc<Box<dyn Client>> {
             let mut mock_client = MockClient::new();
             mock_client
@@ -445,7 +413,7 @@ pub mod test {
                     eq(transaction.data.to_vec()),
                 )
                 .returning(move |_, _| {
-                    thread::sleep(time::Duration::from_secs(sleep_time_sec.into()));
+                    thread::sleep(time::Duration::from_millis(sleep_time_sec.into()));
                     expected_output.clone()
                 });
 
@@ -455,7 +423,7 @@ pub mod test {
         fn mock_client_retries(
             transaction: Transaction,
             expected_output: VdrResult<Vec<u8>>,
-            retries_num: usize,
+            retries_num: u8,
         ) -> Arc<Box<dyn Client>> {
             let mut mock_client = MockClient::new();
 
@@ -465,7 +433,7 @@ pub mod test {
                     eq(transaction.to.deref().to_string()),
                     eq(transaction.data.to_vec()),
                 )
-                .times(retries_num - 1)
+                .times(retries_num as usize - 1)
                 .returning(move |_, _| {
                     Err(VdrError::ContractInvalidResponseData {
                         msg: "".to_string(),
@@ -485,98 +453,64 @@ pub mod test {
 
         #[async_std::test]
         async fn test_quorum_check_positive_case() {
-            init_env_logger();
-            let transaction = Transaction::default();
-            let expected_output = vec![1, 1, 1, 1];
-            let client1 =
-                mock_client_custom_output(transaction.clone(), Ok(expected_output.clone()));
-            let client2 =
-                mock_client_custom_output(transaction.clone(), Ok(expected_output.clone()));
-            let clients = vec![client1, client2];
+            let client1 = mock_client(READ_TRANSACTION.clone(), Ok(RESPONSE.clone()));
+            let client2 = mock_client(READ_TRANSACTION.clone(), Ok(RESPONSE.clone()));
             let quorum = QuorumHandler {
-                clients,
-                request_retries: DEFAULT_REQUEST_RETRIES,
-                request_timeout: Duration::from_millis(DEFAULT_REQUEST_TIMEOUT),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2],
+                ..QuorumHandler::default()
             };
-
-            let result = quorum.check(&transaction, &expected_output).await;
-
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), true);
+            assert!(quorum.check(&READ_TRANSACTION, &RESPONSE).await.unwrap());
         }
 
         #[async_std::test]
         async fn test_quorum_check_failed_with_timeout() {
-            init_env_logger();
-            let timeout_time: u64 = 1000;
             let err = Err(VdrError::ClientTransactionReverted {
                 msg: "Transaction reverted".to_string(),
             });
-            let transaction = Transaction::default();
-            let expected_output = vec![1, 1, 1, 1];
-            let client1 = mock_client_custom_output(transaction.clone(), err.clone());
-            let client2 = mock_client_sleep_before_return(transaction.clone(), err, 4);
-            let clients = vec![client1, client2];
+            let client1 = mock_client(READ_TRANSACTION.clone(), err.clone());
+            let client2 = mock_client_sleep_before_return(
+                READ_TRANSACTION.clone(),
+                err.clone(),
+                TIMEOUT_TIME + 3000,
+            );
             let quorum = QuorumHandler {
-                clients,
-                request_retries: DEFAULT_REQUEST_RETRIES,
-                request_timeout: Duration::from_millis(timeout_time),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2],
+                request_timeout: Duration::from_millis(TIMEOUT_TIME),
+                ..QuorumHandler::default()
             };
 
-            let result = quorum.check(&transaction, &expected_output).await;
-
-            assert!(result.is_err());
+            let _err = quorum
+                .check(&READ_TRANSACTION, &RESPONSE)
+                .await
+                .unwrap_err();
         }
 
         #[async_std::test]
         async fn test_quorum_check_not_reached() {
-            init_env_logger();
-            let transaction = Transaction::default();
-            let expected_output = vec![1, 1, 1, 1];
-            let client1 =
-                mock_client_custom_output(transaction.clone(), Ok(expected_output.clone()));
-            let client2 = mock_client_custom_output(transaction.clone(), Ok(vec![1, 1, 1, 2]));
-            let client3 = mock_client_custom_output(transaction.clone(), Ok(vec![1, 1, 1, 3]));
-            let clients = vec![client1, client2, client3];
+            let client1 = mock_client(READ_TRANSACTION.clone(), Ok(RESPONSE.clone()));
+            let client2 = mock_client(READ_TRANSACTION.clone(), Ok(vec![1, 1, 1, 2]));
+            let client3 = mock_client(READ_TRANSACTION.clone(), Ok(vec![1, 1, 1, 3]));
             let quorum = QuorumHandler {
-                clients,
-                request_retries: DEFAULT_REQUEST_RETRIES,
-                request_timeout: Duration::from_millis(DEFAULT_REQUEST_TIMEOUT),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2, client3],
+                ..QuorumHandler::default()
             };
-
-            let result = quorum.check(&transaction, &expected_output).await;
-
-            assert!(result.is_err());
+            let _err = quorum
+                .check(&READ_TRANSACTION, &RESPONSE)
+                .await
+                .unwrap_err();
         }
 
         #[async_std::test]
         async fn test_quorum_check_got_transaction_after_retries() {
-            init_env_logger();
-            let retries_num = 5;
-            let transaction = Transaction::default();
-            let expected_output = vec![1, 1, 1, 1];
-            let client1 = mock_client_retries(
-                transaction.clone(),
-                Ok(expected_output.clone()),
-                retries_num,
-            );
-            let client2 =
-                mock_client_custom_output(transaction.clone(), Ok(expected_output.clone()));
-            let clients = vec![client1, client2];
+            let client1 =
+                mock_client_retries(READ_TRANSACTION.clone(), Ok(RESPONSE.clone()), RETRIES);
+            let client2 = mock_client(READ_TRANSACTION.clone(), Ok(RESPONSE.clone()));
             let quorum = QuorumHandler {
-                clients,
-                request_retries: retries_num as u8,
-                request_timeout: Duration::from_millis(DEFAULT_REQUEST_TIMEOUT),
-                retry_interval: Duration::from_millis(DEFAULT_RETRY_INTERVAL),
+                clients: vec![client1, client2],
+                request_retries: RETRIES,
+                ..QuorumHandler::default()
             };
-
-            let result = quorum.check(&transaction, &expected_output).await;
-
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), true);
+            assert!(quorum.check(&READ_TRANSACTION, &RESPONSE).await.unwrap());
         }
     }
 }
