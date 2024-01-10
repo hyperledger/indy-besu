@@ -1,4 +1,5 @@
 use indy2_vdr::{role_control, Address, Role};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -26,7 +27,7 @@ impl RoleControl {
             role_control::build_assign_role_transaction(&client.0, &from, &role, &account)
                 .await
                 .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildRevokeRoleTransaction)]
@@ -43,7 +44,7 @@ impl RoleControl {
             role_control::build_revoke_role_transaction(&client.0, &from, &role, &account)
                 .await
                 .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildHasRoleTransaction)]
@@ -57,7 +58,7 @@ impl RoleControl {
         let transaction = role_control::build_has_role_transaction(&client.0, &role, &account)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildGetRoleTransaction)]
@@ -69,7 +70,7 @@ impl RoleControl {
         let transaction = role_control::build_get_role_transaction(&client.0, &account)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = parseHasRoleResult)]

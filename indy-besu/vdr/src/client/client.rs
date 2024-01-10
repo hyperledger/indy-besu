@@ -5,52 +5,62 @@ use log::{info, trace, warn};
 use crate::{
     client::{
         implementation::web3::{client::Web3Client, contract::Web3Contract},
-        Client, Contract,
+        Client, Contract, QuorumHandler,
     },
     error::{VdrError, VdrResult},
     types::{ContractConfig, ContractSpec, PingStatus, Transaction, TransactionType},
-    Address,
+    Address, QuorumConfig,
 };
 
 pub struct LedgerClient {
     chain_id: u64,
     client: Box<dyn Client>,
     contracts: HashMap<String, Box<dyn Contract>>,
+    quorum_handler: Option<QuorumHandler>,
 }
 
 impl LedgerClient {
     /// Create client interacting with ledger
     ///
     /// # Params
-    ///  - chain_id chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
-    ///  - param node_address: string - RPC node endpoint
-    ///  - param contract_specs: Vec<ContractSpec> - specifications for contracts  deployed on the network
+    ///  - `chain_id` - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
+    ///  - `rpc_node` - string - RPC node endpoint
+    ///  - `contract_configs` - [ContractSpec] specifications for contracts  deployed on the network
+    ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum is not needed
     ///
     /// # Returns
     ///  client to use for building and sending transactions
     pub fn new(
         chain_id: u64,
-        node_address: &str,
+        rpc_node: &str,
         contract_configs: &[ContractConfig],
+        quorum_config: Option<&QuorumConfig>,
     ) -> VdrResult<LedgerClient> {
         trace!(
             "Started creating new LedgerClient. Chain id: {}, node address: {}",
             chain_id,
-            node_address
+            rpc_node
         );
 
-        let client = Web3Client::new(node_address)?;
+        let client = Box::new(Web3Client::new(rpc_node)?);
+
         let contracts = Self::init_contracts(&client, contract_configs)?;
+
+        let quorum_handler = match quorum_config {
+            Some(quorum_config) => Some(QuorumHandler::new(quorum_config.clone())?),
+            None => None,
+        };
 
         let ledger_client = LedgerClient {
             chain_id,
-            client: Box::new(client),
+            client,
             contracts,
+            quorum_handler,
         };
 
         info!(
             "Created new LedgerClient. Chain id: {}, node address: {}",
-            chain_id, node_address
+            chain_id, rpc_node
         );
 
         Ok(ledger_client)
@@ -68,22 +78,32 @@ impl LedgerClient {
     ///     Depending on the transaction type Write/Read ethereum methods will be used
     ///
     /// #Params
-    ///  transaction - transaction to submit
+    ///  `transaction` - transaction to submit
     ///
     /// #Returns
     ///  transaction execution result:
     ///    depending on the type it will be either result bytes or block hash
     pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
-        match transaction.type_ {
-            TransactionType::Read => self.client.call_transaction(transaction).await,
-            TransactionType::Write => self.client.submit_transaction(transaction).await,
-        }
+        let result = match transaction.type_ {
+            TransactionType::Read => {
+                self.client
+                    .call_transaction(&transaction.to, &transaction.data)
+                    .await
+            }
+            TransactionType::Write => self.client.submit_transaction(&transaction.encode()?).await,
+        }?;
+
+        if let Some(quorum_handler) = &self.quorum_handler {
+            quorum_handler.check(transaction, &result).await?;
+        };
+
+        Ok(result)
     }
 
     /// Get receipt for the given block hash
     ///
     /// # Params
-    ///  transaction - transaction to submit
+    ///  `transaction` - transaction to submit
     ///
     /// # Returns
     ///  receipt for the given block
@@ -155,7 +175,6 @@ pub mod test {
     use std::{env, fs, ops::Deref};
 
     pub const CHAIN_ID: u64 = 1337;
-    pub const NODE_ADDRESS: &str = "http://127.0.0.1:8545";
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
     pub const DID_REGISTRY_SPEC_PATH: &str = "did/IndyDidRegistry.sol/IndyDidRegistry.json";
     pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
@@ -163,6 +182,13 @@ pub mod test {
         "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
     pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
+    pub const RPC_NODE_ADDRESS: &str = "http://127.0.0.1:8545";
+    pub const CLIENT_NODE_ADDRESSES: [&str; 4] = [
+        "http://127.0.0.1:21001",
+        "http://127.0.0.1:21002",
+        "http://127.0.0.1:21003",
+        "http://127.0.0.1:21004",
+    ];
     pub static DEFAULT_NONCE: Lazy<Vec<u64>> = Lazy::new(|| vec![0, 0, 0, 0]);
 
     pub static DID_REGISTRY_ADDRESS: Lazy<Address> =
@@ -225,7 +251,13 @@ pub mod test {
     }
 
     pub fn client() -> LedgerClient {
-        LedgerClient::new(CHAIN_ID, NODE_ADDRESS, &contracts()).unwrap()
+        LedgerClient::new(
+            CHAIN_ID,
+            RPC_NODE_ADDRESS,
+            &contracts(),
+            Some(&QuorumConfig::default()),
+        )
+        .unwrap()
     }
 
     pub struct MockClient {}
@@ -236,11 +268,11 @@ pub mod test {
             Ok([0, 0, 0, 0])
         }
 
-        async fn submit_transaction(&self, _transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        async fn submit_transaction(&self, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
             todo!()
         }
 
-        async fn call_transaction(&self, _transaction: &Transaction) -> VdrResult<Vec<u8>> {
+        async fn call_transaction(&self, _to: &str, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
             todo!()
         }
 
@@ -251,10 +283,20 @@ pub mod test {
         async fn ping(&self) -> VdrResult<PingStatus> {
             todo!()
         }
+
+        async fn get_transaction(&self, _hash: &[u8]) -> VdrResult<Option<Transaction>> {
+            todo!()
+        }
     }
 
     pub fn mock_client() -> LedgerClient {
-        let mut client = LedgerClient::new(CHAIN_ID, NODE_ADDRESS, &contracts()).unwrap();
+        let mut client = LedgerClient::new(
+            CHAIN_ID,
+            RPC_NODE_ADDRESS,
+            &contracts(),
+            Some(&QuorumConfig::default()),
+        )
+        .unwrap();
         client.client = Box::new(MockClient {});
         client
     }
@@ -282,7 +324,13 @@ pub mod test {
         #[async_std::test]
         async fn client_ping_wrong_node_test() {
             let wrong_node_address = "http://127.0.0.1:1111";
-            let client = LedgerClient::new(CHAIN_ID, wrong_node_address, &contracts()).unwrap();
+            let client = LedgerClient::new(
+                CHAIN_ID,
+                wrong_node_address,
+                &contracts(),
+                Some(&QuorumConfig::default()),
+            )
+            .unwrap();
             match client.ping().await.unwrap().status {
                 Status::Err { .. } => {}
                 Status::Ok => assert!(false, "Ping status expected to be `Err`."),

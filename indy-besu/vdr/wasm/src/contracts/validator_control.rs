@@ -1,4 +1,5 @@
 use indy2_vdr::{validator_control, Address};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -27,7 +28,7 @@ impl ValidatorControl {
         )
         .await
         .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildRemoveValidatorTransaction)]
@@ -45,7 +46,7 @@ impl ValidatorControl {
         )
         .await
         .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildGetValidatorsTransaction)]
@@ -55,7 +56,7 @@ impl ValidatorControl {
         let transaction = validator_control::build_get_validators_transaction(&client.0)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = parseGetValidatorsResult)]
