@@ -26,7 +26,7 @@ async def demo():
     contract_configs = [
         ContractConfig(did_contact_address, did_contact_spec_path, None)
     ]
-    client = LedgerClient(chain_id, node_address, contract_configs)
+    client = LedgerClient(chain_id, node_address, contract_configs, None)
     status = await client.ping()
     print('Status: ' + str(status))
 

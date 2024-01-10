@@ -38,5 +38,6 @@ pub use contracts::{
 pub use error::{VdrError, VdrResult};
 pub use types::*;
 
+pub use crate::client::QuorumConfig;
 #[cfg(feature = "basic_signer")]
 pub use signer::{BasicSigner, KeyPair};

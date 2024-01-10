@@ -1,11 +1,11 @@
 use indy2_vdr::{SignatureData, Transaction};
-use std::ops::Deref;
+use std::{ops::Deref, rc::Rc};
 use wasm_bindgen::prelude::*;
 
 use crate::error::Result;
 
 #[wasm_bindgen(js_name = Transaction)]
-pub struct TransactionWrapper(pub(crate) Transaction);
+pub struct TransactionWrapper(pub(crate) Rc<Transaction>);
 
 #[wasm_bindgen(js_class = Transaction)]
 impl TransactionWrapper {

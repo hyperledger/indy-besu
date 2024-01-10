@@ -24,7 +24,7 @@ async function main() {
             "spec": JSON.parse(fs.readFileSync(didRegistryConfig.specPath, 'utf8')),
         }
     ]
-    const client = new LedgerClient(chainId, nodeAddress, contractConfigs)
+    const client = new LedgerClient(chainId, nodeAddress, contractConfigs, null)
     const status = await client.ping()
     console.log('Status: ' + JSON.stringify(status, null, 2))
 

@@ -1,4 +1,5 @@
 use indy2_vdr::{did_registry, Address, DidDocument, DID};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -23,7 +24,7 @@ impl IndyDidRegistry {
         let transaction = did_registry::build_create_did_transaction(&client.0, &address, &did_doc)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildUpdateDidTransaction)]
@@ -37,7 +38,7 @@ impl IndyDidRegistry {
         let transaction = did_registry::build_update_did_transaction(&client.0, &address, &did_doc)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildDeactivateDidTransaction)]
@@ -51,7 +52,7 @@ impl IndyDidRegistry {
         let transaction = did_registry::build_deactivate_did_transaction(&client.0, &address, &did)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = buildResolveDidTransaction)]
@@ -63,7 +64,7 @@ impl IndyDidRegistry {
         let transaction = did_registry::build_resolve_did_transaction(&client.0, &did)
             .await
             .as_js()?;
-        Ok(TransactionWrapper(transaction))
+        Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
     #[wasm_bindgen(js_name = parseResolveDidResult)]

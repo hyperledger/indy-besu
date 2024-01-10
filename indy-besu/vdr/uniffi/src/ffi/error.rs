@@ -46,6 +46,12 @@ pub enum VdrError {
 
     #[error("Invalid data: {}", msg)]
     CommonInvalidData { msg: String },
+
+    #[error("Ledger: Quorum not reached: {}", msg)]
+    QuorumNotReached { msg: String },
+
+    #[error("Could not get transaction: {}", msg)]
+    GetTransactionError { msg: String },
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;
@@ -74,6 +80,8 @@ impl From<VdrError_> for VdrError {
             VdrError_::SignerMissingKey { msg } => VdrError::SignerMissingKey { msg },
             VdrError_::SignerUnexpectedError { msg } => VdrError::SignerUnexpectedError { msg },
             VdrError_::CommonInvalidData { msg } => VdrError::CommonInvalidData { msg },
+            VdrError_::QuorumNotReached { msg } => VdrError::QuorumNotReached { msg },
+            VdrError_::GetTransactionError { msg } => VdrError::GetTransactionError { msg },
         }
     }
 }
