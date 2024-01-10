@@ -2,14 +2,17 @@ use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
 };
-use std::ops::Deref;
+use std::{fmt, ops::Deref};
 
 use ethereum_types::Address as Address_;
 use log::trace;
-use serde_derive::{Deserialize, Serialize};
+use serde::{
+    de::{Error, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 use std::str::FromStr;
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Address {
     value: String,
 }
@@ -33,6 +36,41 @@ impl Deref for Address {
 
     fn deref(&self) -> &Self::Target {
         &self.value
+    }
+}
+
+impl Serialize for Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.value)
+    }
+}
+
+struct IAddressVisitor;
+
+impl<'de> Visitor<'de> for IAddressVisitor {
+    type Value = Address;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("string expected")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(Address::from(v))
+    }
+}
+
+impl<'de> Deserialize<'de> for Address {
+    fn deserialize<D>(deserializer: D) -> Result<Address, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(IAddressVisitor)
     }
 }
 
