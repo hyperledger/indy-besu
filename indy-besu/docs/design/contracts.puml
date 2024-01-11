@@ -1,0 +1,86 @@
+@startuml
+
+
+
+left to right direction
+
+package "Smart Contracts" {
+
+    package "Permissioning" {
+
+        component [Role Control]
+        note right of [Role Control]
+          Control roles assigned to ethereum accounts
+          - single role per account
+          - all contracts (except Ethereum Did Registry) depends on Role Control contract
+          - all state modifying contract methods are restricted to specific roles
+        end note
+
+        component [Account Control]
+        note right of [Account Control]
+          Control whether to accept write transactions
+          - only senders with 'trustee' role can deploy new contracts
+          - only senders with not-empty roles can write transactions
+        end note
+
+        component [Validator Control]
+        note right of [Validator Control]
+          Control the list of network validator nodes
+          - only steward can add/remove nodes
+        end note
+
+        component [Upgrade Control]
+        note right of [Upgrade Control]
+          Control versions of deployed contracts
+          - all contracts depends on Upgrade Control contract
+          - define common rules for contracts upgrade
+        end note
+    }
+
+    package "Identity" {
+
+       package "DID" {
+
+            component [Indy Did Registry]
+            note bottom of [Indy Did Registry]
+              Manage `indy2` DID method records
+              - did doc stored in the contract storage
+            end note
+
+            component [Ethereum Did Registry]
+            note bottom of [Ethereum Did Registry]
+              Manage `ethr` DID method records
+              - `did:ethr` spec implies that DID exist by default
+              - extended to control versioning
+            end note
+
+            component [Universal Did Resolver]
+            note bottom of [Universal Did Resolver]
+              Resolve Issuer DID from various DID registries
+              - used by CL contracts to verify did existence and owner
+            end note
+        }
+
+        package "CL" {
+
+            component [Schema Registry]
+            note bottom of [Schema Registry]
+              Store CL schemas
+            end note
+
+            component [Credential Definition Registry]
+            note top of [Credential Definition Registry]
+              Store CL Credential Definitions
+            end note
+        }
+    }
+
+    [Identity] --> [Role Control]
+    [Identity] --> [Upgrade Control]
+    [Universal Did Resolver] --> [Indy Did Registry]
+    [Universal Did Resolver] --> [Ethereum Did Registry]
+    [Schema Registry] --> [Universal Did Resolver]
+    [Credential Definition Registry] --> [Universal Did Resolver]
+}
+
+@enduml
