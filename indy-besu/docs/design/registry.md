@@ -78,3 +78,5 @@ The main question is whether we need to validate storing object or not?
 * Duplication:
   * Some fields must be passed as an independent parameters for doing obligatory state checks
     * Like issuer DID for schema and cred def 
+
+
