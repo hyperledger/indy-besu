@@ -81,10 +81,11 @@ fn build_endorse_did_transaction(
 
 ### DID Ethr registry
 
-`did:ethr` allows using Ethereum addresses as identifier without prior its registration on the network, so that DID
-assume to be written by default.
+`did:ethr` allows using Ethereum addresses as identifier without prior its registration on the network. 
 
-Endorsement is available to modify DID properties via the set of contract methods:
+So that DID assume to be written by default -> endorsement is not needed.
+
+Endorsement is needed to modify DID properties, what can be done using the set of existing contract methods:
 
 ```
 function setAttributeSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, bytes32 name, bytes memory value, uint validity)
@@ -97,6 +98,12 @@ function revokeDelegateSigned(address identity, uint8 sigV, bytes32 sigR, bytes3
 
 function changeOwnerSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, address newOwner)
 ```
+
+#### Contracts
+
+Should we extend DidEthrRegistry contract to add roles check? 
+
+> We already extended `DidEthrRegistry` to use UpgradeControl
 
 #### VDR
 

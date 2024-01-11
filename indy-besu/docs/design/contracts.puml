@@ -1,7 +1,5 @@
 @startuml
 
-
-
 left to right direction
 
 package "Smart Contracts" {
@@ -18,13 +16,15 @@ package "Smart Contracts" {
 
         component [Account Control]
         note right of [Account Control]
-          Control whether to accept write transactions
+          **Besu specific**
+          Top level control whether to accept write transactions
           - only senders with 'trustee' role can deploy new contracts
           - only senders with not-empty roles can write transactions
         end note
 
         component [Validator Control]
         note right of [Validator Control]
+          **Besu specific**
           Control the list of network validator nodes
           - only steward can add/remove nodes
         end note
@@ -32,6 +32,7 @@ package "Smart Contracts" {
         component [Upgrade Control]
         note right of [Upgrade Control]
           Control versions of deployed contracts
+          - UUPS proxy pattern
           - all contracts depends on Upgrade Control contract
           - define common rules for contracts upgrade
         end note
@@ -44,13 +45,18 @@ package "Smart Contracts" {
             component [Indy Did Registry]
             note bottom of [Indy Did Registry]
               Manage `indy2` DID method records
+              - legacy DID identifier
               - did doc stored in the contract storage
+              - many-to-one relationship with account
             end note
 
             component [Ethereum Did Registry]
             note bottom of [Ethereum Did Registry]
               Manage `ethr` DID method records
+              - DID identifier is an account address
+              - one-to-one relationship with account
               - `did:ethr` spec implies that DID exist by default
+              - uses events approach
               - extended to control versioning
             end note
 
