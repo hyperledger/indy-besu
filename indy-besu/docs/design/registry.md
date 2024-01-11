@@ -8,7 +8,7 @@ The main question is whether we need to validate storing object or not?
 #### Pros
 
 * Only mostly correct data written on the ledger
-  * Perform full validation is really difficult in solidity 
+  * byt we do only [part of the validation](#validation-we-do-for-the-moment) - perform the full validation is really difficult in solidity 
 
 #### Cons
 
@@ -27,9 +27,12 @@ The main question is whether we need to validate storing object or not?
           we have to restore its original form
 * Inferiority of the performed validation
 * Contract size is very big and exceed the limit for public network 
-  * Deployment limitation as contracts can be deployed only to gas free networks
+  * We had to change default contract size setting in the Besu config
+  * Deployment limitation, as contracts can be deployed only to gas free networks
 * Inefficient from the gas point of view
 * Finiteness as we can support only specific object versions and formats without upgrade
+  * For example, if new service type supported we need to update both: contract and VDR
+* Strong relationship with VDR library - it does conversion of formats 
 
 ##### Validation we do for the moment
 
@@ -78,5 +81,6 @@ The main question is whether we need to validate storing object or not?
 * Duplication:
   * Some fields must be passed as an independent parameters for doing obligatory state checks
     * Like issuer DID for schema and cred def 
-
+* Strong relationship with VDR library?
+  * VDR must perform the validation of sending data
 
