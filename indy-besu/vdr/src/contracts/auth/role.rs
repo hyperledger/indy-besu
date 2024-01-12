@@ -80,9 +80,9 @@ impl TryFrom<RoleIndex> for Role {
             1 => Ok(Role::Trustee),
             2 => Ok(Role::Endorser),
             3 => Ok(Role::Steward),
-            _ => Err(VdrError::ContractInvalidResponseData {
-                msg: "Invalid role provided".to_string(),
-            }),
+            _ => Err(VdrError::ContractInvalidResponseData(
+                "Invalid role provided".to_string(),
+            )),
         };
 
         trace!(

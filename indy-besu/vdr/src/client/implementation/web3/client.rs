@@ -58,10 +58,12 @@ impl Web3Client {
 #[cfg_attr(feature = "wasm", async_trait(? Send))]
 impl Client for Web3Client {
     async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
-        let account_address =
-            EthAddress::from_str(address).map_err(|_| VdrError::ClientInvalidTransaction {
-                msg: format!("Invalid transaction sender address {:?}", address),
-            })?;
+        let account_address = EthAddress::from_str(address.as_ref()).map_err(|_| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Invalid transaction sender address {:?}",
+                address
+            ))
+        })?;
 
         let nonce = self
             .client
@@ -100,9 +102,10 @@ impl Client for Web3Client {
         );
 
         let address = EthAddress::from_str(to).map_err(|_| {
-            let vdr_error = VdrError::ClientInvalidTransaction {
-                msg: format!("Invalid transaction target address {:?}", to),
-            };
+            let vdr_error = VdrError::ClientInvalidTransaction(format!(
+                "Invalid transaction target address {:?}",
+                to
+            ));
 
             warn!(
                 "Error: {} during calling transaction: {:?}",
@@ -129,9 +132,8 @@ impl Client for Web3Client {
             .transaction_receipt(H256::from_slice(hash))
             .await?
             .ok_or_else(|| {
-                let vdr_error = VdrError::ClientInvalidResponse {
-                    msg: "Missing transaction receipt".to_string(),
-                };
+                let vdr_error =
+                    VdrError::ClientInvalidResponse("Missing transaction receipt".to_string());
 
                 warn!("Error: {} getting receipt", vdr_error,);
 
@@ -162,8 +164,8 @@ impl Client for Web3Client {
             .eth()
             .transaction(transaction_id)
             .await
-            .map_err(|_| VdrError::GetTransactionError {
-                msg: "Could not get transaction by hash".to_string(),
+            .map_err(|_| {
+                VdrError::GetTransactionError("Could not get transaction by hash".to_string())
             })?;
 
         let transaction = transaction.map(|transaction| Transaction {

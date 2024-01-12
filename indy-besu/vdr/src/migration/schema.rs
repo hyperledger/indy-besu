@@ -25,9 +25,7 @@ impl SchemaId {
 
         let parts: Vec<&str> = id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema id".to_string(),
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema id".to_string());
 
             warn!(
                 "Error: {:?} during converting SchemaId from indy format",
@@ -37,9 +35,7 @@ impl SchemaId {
             vdr_error
         })?;
         let name = parts.get(2).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema name".to_string(),
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema name".to_string());
 
             warn!(
                 "Error: {:?} during converting SchemaId from indy format",
@@ -49,9 +45,7 @@ impl SchemaId {
             vdr_error
         })?;
         let version = parts.get(3).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema version".to_string(),
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema version".to_string());
 
             warn!(
                 "Error: {:?} during converting SchemaId from indy format",
@@ -79,9 +73,7 @@ impl Schema {
         trace!("Schema convert from Indy format: {} has started", schema);
 
         let indy_schema: IndySchemaFormat = serde_json::from_str(&schema).map_err(|_err| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema".to_string(),
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema".to_string());
 
             warn!(
                 "Error: {:?} during converting Schema from indy format",
@@ -114,9 +106,7 @@ impl TryFrom<IndySchemaFormat> for Schema {
 
         let parts: Vec<&str> = schema.id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy schema".to_string(),
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema".to_string());
 
             warn!(
                 "Error: {:?} during converting Schema from IndySchemaFormat",
@@ -155,7 +145,7 @@ impl Into<IndySchemaFormat> for Schema {
         let indy_schema = IndySchemaFormat {
             id: format!(
                 "{}:2:{}:{}",
-                self.issuer_id.value(),
+                self.issuer_id.as_ref(),
                 self.name,
                 self.version
             ),

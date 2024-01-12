@@ -60,28 +60,28 @@ impl From<VdrError_> for VdrError {
     fn from(error: VdrError_) -> Self {
         match error {
             VdrError_::ClientNodeUnreachable => VdrError::ClientNodeUnreachable,
-            VdrError_::ClientInvalidTransaction { msg } => {
+            VdrError_::ClientInvalidTransaction(msg) => {
                 VdrError::ClientInvalidTransaction { msg }
             }
-            VdrError_::ClientInvalidResponse { msg } => VdrError::ClientInvalidResponse { msg },
-            VdrError_::ClientTransactionReverted { msg } => {
+            VdrError_::ClientInvalidResponse(msg) => VdrError::ClientInvalidResponse { msg },
+            VdrError_::ClientTransactionReverted(msg) => {
                 VdrError::ClientTransactionReverted { msg }
             }
-            VdrError_::ClientUnexpectedError { msg } => VdrError::ClientUnexpectedError { msg },
-            VdrError_::ClientInvalidState { msg } => VdrError::ClientInvalidState { msg },
-            VdrError_::ContractInvalidName { msg } => VdrError::ContractInvalidName { msg },
-            VdrError_::ContractInvalidSpec { msg } => VdrError::ContractInvalidSpec { msg },
+            VdrError_::ClientUnexpectedError(msg) => VdrError::ClientUnexpectedError { msg },
+            VdrError_::ClientInvalidState(msg) => VdrError::ClientInvalidState { msg },
+            VdrError_::ContractInvalidName(msg) => VdrError::ContractInvalidName { msg },
+            VdrError_::ContractInvalidSpec(msg) => VdrError::ContractInvalidSpec { msg },
             VdrError_::ContractInvalidInputData => VdrError::ContractInvalidInputData,
-            VdrError_::ContractInvalidResponseData { msg } => {
+            VdrError_::ContractInvalidResponseData(msg) => {
                 VdrError::ContractInvalidResponseData { msg }
             }
             VdrError_::SignerInvalidPrivateKey => VdrError::SignerInvalidPrivateKey,
             VdrError_::SignerInvalidMessage => VdrError::SignerInvalidMessage,
-            VdrError_::SignerMissingKey { msg } => VdrError::SignerMissingKey { msg },
-            VdrError_::SignerUnexpectedError { msg } => VdrError::SignerUnexpectedError { msg },
-            VdrError_::CommonInvalidData { msg } => VdrError::CommonInvalidData { msg },
-            VdrError_::QuorumNotReached { msg } => VdrError::QuorumNotReached { msg },
-            VdrError_::GetTransactionError { msg } => VdrError::GetTransactionError { msg },
+            VdrError_::SignerMissingKey(msg) => VdrError::SignerMissingKey { msg },
+            VdrError_::SignerUnexpectedError(msg) => VdrError::SignerUnexpectedError { msg },
+            VdrError_::CommonInvalidData(msg) => VdrError::CommonInvalidData { msg },
+            VdrError_::QuorumNotReached(msg) => VdrError::QuorumNotReached { msg },
+            VdrError_::GetTransactionError(msg) => VdrError::GetTransactionError { msg },
         }
     }
 }

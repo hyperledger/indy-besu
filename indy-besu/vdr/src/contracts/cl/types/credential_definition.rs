@@ -3,7 +3,6 @@ use crate::{
     types::{ContractOutput, ContractParam},
     DID,
 };
-use std::ops::Deref;
 
 use crate::contracts::cl::types::{
     credential_definition_id::CredentialDefinitionId, schema_id::SchemaId,
@@ -44,9 +43,9 @@ impl From<CredentialDefinition> for ContractParam {
         );
 
         let cred_def_contract_param = ContractParam::Tuple(vec![
-            ContractParam::String(value.id.deref().to_string()),
-            ContractParam::String(value.issuer_id.deref().to_string()),
-            ContractParam::String(value.schema_id.deref().to_string()),
+            ContractParam::String(value.id.to_string()),
+            ContractParam::String(value.issuer_id.to_string()),
+            ContractParam::String(value.schema_id.to_string()),
             ContractParam::String(value.cred_def_type.to_string()),
             ContractParam::String(value.tag.to_string()),
             ContractParam::String(value.value.to_string()),
@@ -73,9 +72,9 @@ impl TryFrom<ContractOutput> for CredentialDefinition {
 
         let cred_def_value = serde_json::from_str::<serde_json::Value>(&value.get_string(5)?)
             .map_err(|_err| {
-                let vdr_error = VdrError::ContractInvalidResponseData {
-                    msg: "Unable get to credential definition value".to_string(),
-                };
+                let vdr_error = VdrError::ContractInvalidResponseData(
+                    "Unable get to credential definition value".to_string(),
+                );
 
                 warn!(
                     "Error: {} during CredentialDefinition convert from ContractOutput: {:?}",
@@ -172,7 +171,7 @@ pub mod test {
         schema_id: &SchemaId,
         tag: &str,
     ) -> CredentialDefinitionId {
-        CredentialDefinitionId::build(issuer_id, schema_id.deref(), tag)
+        CredentialDefinitionId::build(issuer_id, schema_id.as_ref(), tag)
     }
 
     fn credential_definition_value() -> serde_json::Value {
@@ -194,7 +193,7 @@ pub mod test {
         CredentialDefinition {
             id: credential_definition_id(issuer_id, schema_id, tag.as_str()),
             issuer_id: issuer_id.clone(),
-            schema_id: SchemaId::from(schema_id.deref()),
+            schema_id: SchemaId::from(schema_id.as_ref()),
             cred_def_type: CREDENTIAL_DEFINITION_TYPE.to_string(),
             tag: tag.to_string(),
             value: credential_definition_value(),
@@ -209,7 +208,6 @@ pub mod test {
                     &SchemaId::from(SCHEMA_ID),
                     CREDENTIAL_DEFINITION_TAG,
                 )
-                .deref()
                 .to_string(),
             ),
             ContractParam::String(ISSUER_ID.to_string()),
