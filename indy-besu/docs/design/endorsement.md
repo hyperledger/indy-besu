@@ -28,6 +28,8 @@ owner.
     * Step 2: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
         * `ecrecover` returns an account signed the message
 
+> Should we add and use some nonce to prevent reply attack?
+
 #### Contracts
 
 ```
