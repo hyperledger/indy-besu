@@ -7,9 +7,7 @@ use crate::{
         schema_id::SchemaId,
     },
     error::VdrResult,
-    types::{
-        Address, ContractParam, Transaction, TransactionBuilder, TransactionParser, TransactionType,
-    },
+    types::{Address, Transaction, TransactionBuilder, TransactionParser, TransactionType},
 };
 
 const CONTRACT_NAME: &str = "SchemaRegistry";
@@ -38,7 +36,7 @@ pub async fn build_create_schema_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_SCHEMA)
-        .add_param(schema.clone().into())
+        .add_param(schema.into())
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
@@ -72,7 +70,7 @@ pub async fn build_resolve_schema_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
-        .add_param(ContractParam::String(id.to_string()))
+        .add_param(id.into())
         .set_type(TransactionType::Read)
         .build(client)
         .await;

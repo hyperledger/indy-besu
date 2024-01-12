@@ -35,7 +35,7 @@ impl ToString for Address {
     }
 }
 
-impl TryInto<ContractParam> for Address {
+impl TryInto<ContractParam> for &Address {
     type Error = VdrError;
 
     fn try_into(self) -> Result<ContractParam, Self::Error> {
