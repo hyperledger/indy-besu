@@ -4,9 +4,8 @@ mod status;
 mod transaction;
 
 pub use address::Address;
-pub use contract::{ContractConfig, ContractOutput, ContractParam, ContractSpec};
+pub use contract::{ContractConfig, ContractSpec};
+pub(crate) use contract::{ContractOutput, ContractParam};
 pub use status::{PingStatus, Status};
-pub use transaction::{
-    SignatureData, Transaction, TransactionBuilder, TransactionParser, TransactionSignature,
-    TransactionType,
-};
+pub use transaction::{SignatureData, Transaction, TransactionSignature, TransactionType};
+pub(crate) use transaction::{TransactionBuilder, TransactionParser};
