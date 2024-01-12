@@ -87,7 +87,7 @@ impl LedgerClient {
         let result = match transaction.type_ {
             TransactionType::Read => {
                 self.client
-                    .call_transaction(&transaction.to, &transaction.data)
+                    .call_transaction(transaction.to.as_ref(), &transaction.data)
                     .await
             }
             TransactionType::Write => self.client.submit_transaction(&transaction.encode()?).await,
@@ -121,9 +121,7 @@ impl LedgerClient {
             .get(name)
             .map(|contract| contract.as_ref())
             .ok_or_else(|| {
-                let vdr_error = VdrError::ContractInvalidName {
-                    msg: name.to_string(),
-                };
+                let vdr_error = VdrError::ContractInvalidName(name.to_string());
 
                 warn!("Error during getting contract: {:?}", vdr_error);
 
@@ -145,14 +143,14 @@ impl LedgerClient {
                 (Some(spec_path) , None) => ContractSpec::from_file(spec_path)?,
                 (None , Some(spec)) => spec.clone(),
                 (Some(_), Some(_)) => {
-                    return Err(VdrError::ContractInvalidSpec {
-                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
-                    });
+                    return Err(VdrError::ContractInvalidSpec(
+                        "Either `spec_path` or `spec` must be provided".to_string(),
+                    ));
                 }
                 (None, None) => {
-                    return Err(VdrError::ContractInvalidSpec {
-                        msg: "Either `spec_path` or `spec` must be provided".to_string(),
-                    });
+                    return Err(VdrError::ContractInvalidSpec(
+                        "Either `spec_path` or `spec` must be provided".to_string(),
+                    ));
                 }
             };
 
@@ -169,7 +167,7 @@ pub mod test {
     use super::*;
     use async_trait::async_trait;
     use once_cell::sync::Lazy;
-    use std::{env, fs, ops::Deref};
+    use std::{env, fs};
 
     pub const CHAIN_ID: u64 = 1337;
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
@@ -213,27 +211,27 @@ pub mod test {
     fn contracts() -> Vec<ContractConfig> {
         vec![
             ContractConfig {
-                address: DID_REGISTRY_ADDRESS.deref().to_string(),
+                address: DID_REGISTRY_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: SCHEMA_REGISTRY_ADDRESS.deref().to_string(),
+                address: SCHEMA_REGISTRY_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: CRED_DEF_REGISTRY_ADDRESS.deref().to_string(),
+                address: CRED_DEF_REGISTRY_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: VALIDATOR_CONTROL_ADDRESS.deref().to_string(),
+                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
                 spec: None,
             },
             ContractConfig {
-                address: ROLE_CONTROL_ADDRESS.deref().to_string(),
+                address: ROLE_CONTROL_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(ROLE_CONTROL_PATH)),
                 spec: None,
             },

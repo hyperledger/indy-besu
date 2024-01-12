@@ -5,7 +5,7 @@ use secp256k1::{All, Message, PublicKey, Secp256k1, SecretKey};
 use std::collections::HashMap;
 
 use crate::types::{Address, SignatureData};
-use std::{ops::Deref, str::FromStr};
+use std::str::FromStr;
 use web3::signing::keccak256;
 
 pub struct KeyPair {
@@ -29,15 +29,13 @@ impl BasicSigner {
     pub fn create_key(&mut self, private_key: Option<&str>) -> VdrResult<(Address, Vec<u8>)> {
         let (account, key_pair) = self.create_account(private_key)?;
         let public_key_bytes = key_pair.public_key.serialize_uncompressed().to_vec();
-        self.keys.insert(account.deref().to_string(), key_pair);
+        self.keys.insert(account.to_string(), key_pair);
         Ok((account, public_key_bytes))
     }
 
     fn key_for_account(&self, account: &str) -> VdrResult<&KeyPair> {
         self.keys.get(account).ok_or_else(|| {
-            let vdr_error = VdrError::SignerMissingKey {
-                msg: account.to_string(),
-            };
+            let vdr_error = VdrError::SignerMissingKey(account.to_string());
 
             warn!(
                 "Error: {:?} during getting keys for account: {}",
@@ -84,7 +82,6 @@ impl BasicSigner {
 pub mod test {
     use super::*;
     use once_cell::sync::Lazy;
-    use std::ops::Deref;
 
     pub static TRUSTEE_ACC: Lazy<Address> =
         Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
@@ -108,7 +105,7 @@ pub mod test {
     #[test]
     fn add_key_test() {
         let basic_signer = basic_signer();
-        basic_signer.key_for_account(TRUSTEE_ACC.deref()).unwrap();
+        basic_signer.key_for_account(TRUSTEE_ACC.as_ref()).unwrap();
     }
 
     #[test]
@@ -118,7 +115,7 @@ pub mod test {
             43, 20, 70, 238, 250, 209, 10, 195, 87, 39, 219, 125, 26, 151, 3, 233, 70, 185, 237,
             52, 240, 127, 64, 8, 98, 136, 107, 144, 241, 122, 142, 64,
         ];
-        let signature = basic_signer.sign(&data, TRUSTEE_ACC.deref()).unwrap();
+        let signature = basic_signer.sign(&data, TRUSTEE_ACC.as_ref()).unwrap();
         let expected = vec![
             200, 178, 128, 72, 163, 176, 188, 177, 119, 110, 11, 2, 194, 50, 220, 215, 0, 161, 247,
             77, 43, 80, 139, 173, 141, 122, 58, 206, 72, 28, 63, 59, 9, 59, 95, 160, 244, 66, 209,
