@@ -140,7 +140,7 @@ impl TryFrom<IndyCredentialDefinitionFormat> for CredentialDefinition {
     }
 }
 
-impl Into<IndyCredentialDefinitionFormat> for CredentialDefinition {
+impl Into<IndyCredentialDefinitionFormat> for &CredentialDefinition {
     fn into(self) -> IndyCredentialDefinitionFormat {
         trace!(
             "CredentialDefinition: {:?} convert into IndyCredentialDefinitionFormat has started",

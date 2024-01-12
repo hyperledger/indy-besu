@@ -1,4 +1,4 @@
-use crate::DID;
+use crate::{types::ContractParam, DID};
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
@@ -23,6 +23,12 @@ impl SchemaId {
         trace!("Created new SchemaId: {:?}", schema_id);
 
         schema_id
+    }
+}
+
+impl From<&SchemaId> for ContractParam {
+    fn from(id: &SchemaId) -> Self {
+        ContractParam::String(id.to_string())
     }
 }
 

@@ -7,9 +7,7 @@ use crate::{
         credential_definition_id::CredentialDefinitionId,
     },
     error::VdrResult,
-    types::{
-        Address, ContractParam, Transaction, TransactionBuilder, TransactionParser, TransactionType,
-    },
+    types::{Address, Transaction, TransactionBuilder, TransactionParser, TransactionType},
 };
 
 const CONTRACT_NAME: &str = "CredentialDefinitionRegistry";
@@ -39,7 +37,7 @@ pub async fn build_create_credential_definition_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_CREDENTIAL_DEFINITION)
-        .add_param(credential_definition.clone().into())
+        .add_param(credential_definition.into())
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
@@ -74,7 +72,7 @@ pub async fn build_resolve_credential_definition_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
-        .add_param(ContractParam::String(id.to_string()))
+        .add_param(id.into())
         .set_type(TransactionType::Read)
         .build(client)
         .await;

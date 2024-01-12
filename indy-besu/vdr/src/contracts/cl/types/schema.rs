@@ -30,8 +30,8 @@ pub struct SchemaMetadata {
     pub created: u64,
 }
 
-impl From<Schema> for ContractParam {
-    fn from(value: Schema) -> Self {
+impl From<&Schema> for ContractParam {
+    fn from(value: &Schema) -> Self {
         trace!("Schema: {:?} convert into ContractParam has started", value);
 
         let schema_contract_param = ContractParam::Tuple(vec![
@@ -256,7 +256,7 @@ pub mod test {
 
         #[test]
         fn convert_schema_into_contract_param_test() {
-            let param: ContractParam = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME)).into();
+            let param: ContractParam = (&schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME))).into();
             assert_eq!(schema_param(), param);
         }
     }

@@ -4,9 +4,7 @@ use crate::{
     client::LedgerClient,
     contracts::did::types::did_doc::{DidDocument, DidDocumentWithMeta},
     error::VdrResult,
-    types::{
-        Address, ContractParam, Transaction, TransactionBuilder, TransactionParser, TransactionType,
-    },
+    types::{Address, Transaction, TransactionBuilder, TransactionParser, TransactionType},
     DID,
 };
 
@@ -38,7 +36,7 @@ pub async fn build_create_did_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_DID)
-        .add_param(did_doc.clone().into())
+        .add_param(did_doc.into())
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
@@ -74,7 +72,7 @@ pub async fn build_update_did_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_UPDATE_DID)
-        .add_param(did_doc.clone().into())
+        .add_param(did_doc.into())
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
@@ -110,7 +108,7 @@ pub async fn build_deactivate_did_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_DEACTIVATE_DID)
-        .add_param(ContractParam::String(did.to_string()))
+        .add_param(did.into())
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
@@ -144,7 +142,7 @@ pub async fn build_resolve_did_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_DID)
-        .add_param(ContractParam::String(did.to_string()))
+        .add_param(did.into())
         .set_type(TransactionType::Read)
         .build(client)
         .await;
