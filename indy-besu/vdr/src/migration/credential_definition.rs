@@ -28,9 +28,7 @@ impl CredentialDefinitionId {
 
         let parts: Vec<&str> = id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy cred def id".to_string(),
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def id".to_string());
 
             warn!(
                 "Error: {:?} during converting CredentialDefinitionId from indy format",
@@ -40,9 +38,8 @@ impl CredentialDefinitionId {
             vdr_error
         })?;
         let schema_id = parts.get(3).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy cred def schema id".to_string(),
-            };
+            let vdr_error =
+                VdrError::CommonInvalidData("Invalid indy cred def schema id".to_string());
 
             warn!(
                 "Error: {:?} during converting CredentialDefinitionId from indy format",
@@ -52,9 +49,7 @@ impl CredentialDefinitionId {
             vdr_error
         })?;
         let tag = parts.get(4).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy cred def tag".to_string(),
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def tag".to_string());
 
             warn!(
                 "Error: {:?} during converting CredentialDefinitionId from indy format",
@@ -85,11 +80,8 @@ impl CredentialDefinition {
         );
 
         let indy_cred_def: IndyCredentialDefinitionFormat =
-            serde_json::from_str(&credential_definition).map_err(|_err| {
-                VdrError::CommonInvalidData {
-                    msg: "Invalid indy cred def".to_string(),
-                }
-            })?;
+            serde_json::from_str(&credential_definition)
+                .map_err(|_err| VdrError::CommonInvalidData("Invalid indy cred def".to_string()))?;
         let besu_cred_def = CredentialDefinition::try_from(indy_cred_def);
 
         trace!(
@@ -113,18 +105,14 @@ impl TryFrom<IndyCredentialDefinitionFormat> for CredentialDefinition {
 
         let parts: Vec<&str> = cred_def.id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy cred def id".to_string()
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def id".to_string());
 
             warn!("Error: {:?} during converting CredentialDefinition from IndyCredentialDefinitionFormat", vdr_error);
 
             vdr_error
         })?;
         let schema_id_seq_no = parts.get(3).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: "Invalid indy cred def id".to_string()
-            };
+            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def id".to_string());
 
             warn!("Error: {:?} during converting CredentialDefinition from IndyCredentialDefinitionFormat", vdr_error);
 
@@ -137,7 +125,7 @@ impl TryFrom<IndyCredentialDefinitionFormat> for CredentialDefinition {
         let besu_cred_def = CredentialDefinition {
             id: CredentialDefinitionId::build(&issuer_id, schema_id_seq_no, &cred_def.tag),
             issuer_id,
-            schema_id: SchemaId::new(&schema_id.to_string()),
+            schema_id: SchemaId::from(schema_id.as_str()),
             cred_def_type: cred_def.type_.to_string(),
             tag: cred_def.tag.to_string(),
             value: cred_def.value.clone(),
@@ -162,12 +150,12 @@ impl Into<IndyCredentialDefinitionFormat> for CredentialDefinition {
         let indy_cred_def = IndyCredentialDefinitionFormat {
             id: format!(
                 "{}:3:{}:{}:{}",
-                self.issuer_id.value(),
+                self.issuer_id.as_ref(),
                 self.cred_def_type,
-                self.schema_id.value(),
+                self.schema_id.as_ref(),
                 self.tag
             ),
-            schema_id: self.schema_id.value().to_string(),
+            schema_id: self.schema_id.to_string(),
             type_: self.cred_def_type.to_string(),
             tag: self.tag.to_string(),
             value: self.value.clone(),

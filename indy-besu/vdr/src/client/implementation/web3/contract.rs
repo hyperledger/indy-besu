@@ -35,24 +35,20 @@ impl Web3Contract {
         trace!("Started creating new Web3Contract. Address: {:?}", address);
 
         let abi = serde_json::to_vec(&contract_spec.abi).map_err(|err| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: format!(
-                    "Unable to parse contract ABI from specification. Err: {:?}",
-                    err.to_string()
-                ),
-            };
+            let vdr_error = VdrError::CommonInvalidData(format!(
+                "Unable to parse contract ABI from specification. Err: {:?}",
+                err.to_string()
+            ));
 
             warn!("Error: {:?} during creating new Web3Contract", vdr_error);
 
             vdr_error
         })?;
         let parsed_address = EthAddress::from_str(address).map_err(|err| {
-            let vdr_error = VdrError::CommonInvalidData {
-                msg: format!(
-                    "Unable to parse contract address. Err: {:?}",
-                    err.to_string()
-                ),
-            };
+            let vdr_error = VdrError::CommonInvalidData(format!(
+                "Unable to parse contract address. Err: {:?}",
+                err.to_string()
+            ));
 
             warn!("Error: {:?} during creating new Web3Contract", vdr_error);
 

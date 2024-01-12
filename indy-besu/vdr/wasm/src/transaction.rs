@@ -1,5 +1,5 @@
 use indy2_vdr::{SignatureData, Transaction};
-use std::{ops::Deref, rc::Rc};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::error::Result;
@@ -10,7 +10,7 @@ pub struct TransactionWrapper(pub(crate) Rc<Transaction>);
 #[wasm_bindgen(js_class = Transaction)]
 impl TransactionWrapper {
     pub fn to(&self) -> Result<String> {
-        Ok(self.0.to.deref().to_string())
+        Ok(self.0.to.to_string())
     }
 
     #[wasm_bindgen(js_name = getSigningBytes)]

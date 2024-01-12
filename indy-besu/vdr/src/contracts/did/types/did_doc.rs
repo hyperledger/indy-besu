@@ -3,7 +3,6 @@ use crate::{
     types::{ContractOutput, ContractParam},
     Address,
 };
-use std::ops::Deref;
 
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
@@ -28,11 +27,15 @@ impl From<&str> for DID {
     }
 }
 
-impl Deref for DID {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
+impl AsRef<str> for DID {
+    fn as_ref(&self) -> &str {
         &self.0
+    }
+}
+
+impl ToString for DID {
+    fn to_string(&self) -> String {
+        self.0.to_string()
     }
 }
 
@@ -147,9 +150,10 @@ impl TryFrom<&str> for VerificationKeyType {
                 Ok(VerificationKeyType::EcdsaSecp256k1VerificationKey2019)
             }
             _type => Err({
-                let vdr_error = VdrError::CommonInvalidData {
-                    msg: format!("Unexpected verification key type {}", _type),
-                };
+                let vdr_error = VdrError::CommonInvalidData(format!(
+                    "Unexpected verification key type {}",
+                    _type
+                ));
 
                 warn!(
                     "Error: {} during converting VerificationKeyType from String: {} ",
@@ -272,9 +276,10 @@ impl TryFrom<ContractOutput> for VerificationMethod {
         } else {
             Some(
                 serde_json::from_str::<Value>(&public_key_jwk).map_err(|err| {
-                    let vdr_error = VdrError::CommonInvalidData {
-                        msg: format!("Unable to parse JWK key. Err: {:?}", err),
-                    };
+                    let vdr_error = VdrError::CommonInvalidData(format!(
+                        "Unable to parse JWK key. Err: {:?}",
+                        err
+                    ));
 
                     warn!(
                         "Error: {:?} during parsing JWK key: {}",
@@ -503,7 +508,7 @@ impl From<DidDocument> for ContractParam {
         );
 
         let context: ContractParam = value.context.into();
-        let id = ContractParam::String(value.id.deref().to_string());
+        let id = ContractParam::String(value.id.to_string());
         let controller: ContractParam = value.controller.into();
         let verification_method: ContractParam = ContractParam::Array(
             value

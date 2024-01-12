@@ -1,12 +1,9 @@
 use crate::DID;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
-use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct SchemaId {
-    value: String,
-}
+pub struct SchemaId(String);
 
 impl SchemaId {
     const ID_PATH: &'static str = "anoncreds/v0/SCHEMA";
@@ -15,7 +12,7 @@ impl SchemaId {
         let schema_id = SchemaId::from(
             format!(
                 "{}/{}/{}/{}",
-                issuer_id.deref(),
+                issuer_id.as_ref(),
                 Self::ID_PATH,
                 name,
                 version
@@ -31,20 +28,18 @@ impl SchemaId {
 
 impl From<&str> for SchemaId {
     fn from(id: &str) -> Self {
-        let schema_id = SchemaId {
-            value: id.to_string(),
-        };
-
-        trace!("Created new SchemaId: {:?}", schema_id);
-
-        schema_id
+        SchemaId(id.to_string())
     }
 }
 
-impl Deref for SchemaId {
-    type Target = str;
+impl AsRef<str> for SchemaId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
 
-    fn deref(&self) -> &Self::Target {
-        &self.value
+impl ToString for SchemaId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
     }
 }
