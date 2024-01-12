@@ -1,4 +1,4 @@
-# DID Registry
+# Indy DID Registry
 
 ## Storage format
 

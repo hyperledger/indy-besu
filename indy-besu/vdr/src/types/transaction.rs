@@ -196,53 +196,53 @@ impl TransactionBuilder {
     }
 
     pub fn set_contract(mut self, contract: &str) -> TransactionBuilder {
-        self.contract = contract.to_string();
-
         trace!(
             "Set contract: {} to TransactionBuilder: {:?}",
             contract,
             self
         );
 
+        self.contract = contract.to_string();
+
         self
     }
 
     pub fn set_method(mut self, method: &str) -> TransactionBuilder {
-        self.method = method.to_string();
-
         trace!("Set method: {} to TransactionBuilder: {:?}", method, self);
+
+        self.method = method.to_string();
 
         self
     }
 
     pub fn add_param(mut self, param: ContractParam) -> TransactionBuilder {
-        self.params.push(param.clone());
-
         trace!(
-            "Added ContractParam: {:?} to TransactionBuilder: {:?}",
+            "Add ContractParam: {:?} to TransactionBuilder: {:?}",
             param,
             self
         );
+
+        self.params.push(param);
 
         self
     }
 
     pub fn set_type(mut self, type_: TransactionType) -> TransactionBuilder {
-        self.type_ = type_.clone();
-
         trace!(
             "Set TransactionType: {:?} to TransactionBuilder: {:?}",
             type_,
             self
         );
 
+        self.type_ = type_;
+
         self
     }
 
     pub fn set_from(mut self, from: &Address) -> TransactionBuilder {
-        self.from = Some(from.clone());
-
         trace!("Set from: {:?} to TransactionBuilder: {:?}", from, self);
+
+        self.from = Some(from.clone());
 
         self
     }
