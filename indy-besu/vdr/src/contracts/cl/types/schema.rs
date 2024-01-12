@@ -2,7 +2,6 @@ use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
 };
-use std::ops::Deref;
 
 use crate::{contracts::cl::types::schema_id::SchemaId, DID};
 use log::trace;
@@ -36,8 +35,8 @@ impl From<Schema> for ContractParam {
         trace!("Schema: {:?} convert into ContractParam has started", value);
 
         let schema_contract_param = ContractParam::Tuple(vec![
-            ContractParam::String(value.id.deref().to_string()),
-            ContractParam::String(value.issuer_id.deref().to_string()),
+            ContractParam::String(value.id.to_string()),
+            ContractParam::String(value.issuer_id.to_string()),
             ContractParam::String(value.name.to_string()),
             ContractParam::String(value.version.to_string()),
             ContractParam::Array(
@@ -241,11 +240,7 @@ pub mod test {
 
     fn schema_param() -> ContractParam {
         ContractParam::Tuple(vec![
-            ContractParam::String(
-                schema_id(&DID::from(ISSUER_ID), SCHEMA_NAME)
-                    .deref()
-                    .to_string(),
-            ),
+            ContractParam::String(schema_id(&DID::from(ISSUER_ID), SCHEMA_NAME).to_string()),
             ContractParam::String(ISSUER_ID.to_string()),
             ContractParam::String(SCHEMA_NAME.to_string()),
             ContractParam::String(SCHEMA_VERSION.to_string()),

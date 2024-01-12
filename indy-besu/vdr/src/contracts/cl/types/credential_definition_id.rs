@@ -1,12 +1,9 @@
 use crate::DID;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
-use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct CredentialDefinitionId {
-    value: String,
-}
+pub struct CredentialDefinitionId(String);
 
 impl CredentialDefinitionId {
     const ID_PATH: &'static str = "anoncreds/v0/CLAIM_DEF";
@@ -15,7 +12,7 @@ impl CredentialDefinitionId {
         let cred_def_id = CredentialDefinitionId::from(
             format!(
                 "{}/{}/{}/{}",
-                issuer_id.deref(),
+                issuer_id.as_ref(),
                 Self::ID_PATH,
                 schema_id,
                 tag
@@ -31,20 +28,18 @@ impl CredentialDefinitionId {
 
 impl From<&str> for CredentialDefinitionId {
     fn from(id: &str) -> Self {
-        let cred_def_id = CredentialDefinitionId {
-            value: id.to_string(),
-        };
-
-        trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
-
-        cred_def_id
+        CredentialDefinitionId(id.to_string())
     }
 }
 
-impl Deref for CredentialDefinitionId {
-    type Target = str;
+impl AsRef<str> for CredentialDefinitionId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
 
-    fn deref(&self) -> &Self::Target {
-        &self.value
+impl ToString for CredentialDefinitionId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
     }
 }

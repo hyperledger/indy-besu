@@ -1,5 +1,4 @@
 use log::{debug, info};
-use std::ops::Deref;
 
 use crate::{
     client::LedgerClient,
@@ -73,7 +72,7 @@ pub async fn build_resolve_schema_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
-        .add_param(ContractParam::String(String::from(id.deref())))
+        .add_param(ContractParam::String(id.to_string()))
         .set_type(TransactionType::Read)
         .build(client)
         .await;
@@ -142,7 +141,7 @@ pub mod test {
             .unwrap();
 
         let sign_bytes = transaction.get_signing_bytes().unwrap();
-        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.deref()).unwrap();
+        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
         transaction.set_signature(signature);
 
         client.submit_transaction(&transaction).await.unwrap();

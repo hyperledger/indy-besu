@@ -1,5 +1,4 @@
 use log::{debug, info};
-use std::ops::Deref;
 
 use crate::{
     client::LedgerClient,
@@ -75,7 +74,7 @@ pub async fn build_resolve_credential_definition_transaction(
     let transaction = TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
-        .add_param(ContractParam::String(String::from(id.deref())))
+        .add_param(ContractParam::String(id.to_string()))
         .set_type(TransactionType::Read)
         .build(client)
         .await;

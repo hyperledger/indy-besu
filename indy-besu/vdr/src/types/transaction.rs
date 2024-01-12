@@ -126,8 +126,11 @@ impl Transaction {
     }
 
     fn get_to(&self) -> VdrResult<H160> {
-        H160::from_str(&self.to).map_err(|_| VdrError::ClientInvalidTransaction {
-            msg: format!("Invalid transaction target address {:?}", self.to),
+        H160::from_str(self.to.as_ref()).map_err(|_| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Invalid transaction target address {:?}",
+                self.to
+            ))
         })
     }
 
@@ -135,14 +138,12 @@ impl Transaction {
         let nonce: [u64; 4] = self
             .nonce
             .as_ref()
-            .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                msg: "Transaction `nonce` is not set".to_string(),
+            .ok_or_else(|| {
+                VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
             })?
             .clone()
             .try_into()
-            .map_err(|_| VdrError::CommonInvalidData {
-                msg: "Invalid nonce provided".to_string(),
-            })?;
+            .map_err(|_| VdrError::CommonInvalidData("Invalid nonce provided".to_string()))?;
         Ok(U256(nonce))
     }
 
@@ -150,9 +151,7 @@ impl Transaction {
         let signature = self.signature.read().unwrap();
         let signature = signature
             .as_ref()
-            .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                msg: "Missing signature".to_string(),
-            })?
+            .ok_or_else(|| VdrError::ClientInvalidTransaction("Missing signature".to_string()))?
             .clone();
 
         let signature = EthTransactionSignature::new(
@@ -160,8 +159,8 @@ impl Transaction {
             H256::from_slice(&signature.r),
             H256::from_slice(&signature.s),
         )
-        .ok_or_else(|| VdrError::ClientInvalidTransaction {
-            msg: "Transaction `nonce` is not set".to_string(),
+        .ok_or_else(|| {
+            VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
         })?;
         Ok(signature)
     }
@@ -253,12 +252,11 @@ impl TransactionBuilder {
         let data = contract.encode_input(&self.method, &self.params)?;
         let nonce = match self.type_ {
             TransactionType::Write => {
-                let from =
-                    self.from
-                        .as_ref()
-                        .ok_or_else(|| VdrError::ClientInvalidTransaction {
-                            msg: "Transaction `sender` is not set".to_string(),
-                        })?;
+                let from = self.from.as_ref().ok_or_else(|| {
+                    VdrError::ClientInvalidTransaction(
+                        "Transaction `sender` is not set".to_string(),
+                    )
+                })?;
 
                 let nonce = client.get_transaction_count(from).await?;
                 Some(nonce.to_vec())
@@ -320,9 +318,8 @@ impl TransactionParser {
         bytes: &[u8],
     ) -> VdrResult<T> {
         if bytes.is_empty() {
-            let vdr_error = VdrError::ContractInvalidResponseData {
-                msg: "Empty response bytes".to_string(),
-            };
+            let vdr_error =
+                VdrError::ContractInvalidResponseData("Empty response bytes".to_string());
 
             warn!("Error: {:?} during transaction output parse", vdr_error);
 
@@ -332,9 +329,8 @@ impl TransactionParser {
         let output = contract.decode_output(&self.method, bytes)?;
 
         if output.is_empty() {
-            let vdr_error = VdrError::ContractInvalidResponseData {
-                msg: "Unable to parse response".to_string(),
-            };
+            let vdr_error =
+                VdrError::ContractInvalidResponseData("Unable to parse response".to_string());
 
             warn!("Error: {:?} during transaction output parse", vdr_error);
 

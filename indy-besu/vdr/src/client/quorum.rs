@@ -1,4 +1,4 @@
-use std::{ops::Deref, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use futures::{
     channel::{
@@ -169,7 +169,7 @@ impl QuorumHandler {
                     sender,
                     client,
                     type_,
-                    to.deref().to_string(),
+                    to.to_string(),
                     transaction_data,
                     request_retries,
                     request_timeout,
@@ -183,7 +183,7 @@ impl QuorumHandler {
                     sender.clone(),
                     client.clone(),
                     type_,
-                    to.deref().to_string(),
+                    to.to_string(),
                     transaction_data,
                     self.request_retries,
                     self.request_timeout,
@@ -200,9 +200,10 @@ impl QuorumHandler {
             Ok(quorum_reached)
         } else {
             trace!("Quorum failed for transaction: {:?}", transaction);
-            Err(VdrError::QuorumNotReached {
-                msg: format!("Quorum not reached for transaction: {:?}", transaction),
-            })
+            Err(VdrError::QuorumNotReached(format!(
+                "Quorum not reached for transaction: {:?}",
+                transaction
+            )))
         }
     }
 }
@@ -392,7 +393,7 @@ pub mod test {
             mock_client
                 .expect_call_transaction()
                 .with(
-                    eq(transaction.to.deref().to_string()),
+                    eq(transaction.to.to_string()),
                     eq(transaction.data.to_vec()),
                 )
                 .returning(move |_, _| expected_output.clone());
@@ -409,7 +410,7 @@ pub mod test {
             mock_client
                 .expect_call_transaction()
                 .with(
-                    eq(transaction.to.deref().to_string()),
+                    eq(transaction.to.to_string()),
                     eq(transaction.data.to_vec()),
                 )
                 .returning(move |_, _| {
@@ -430,20 +431,16 @@ pub mod test {
             mock_client
                 .expect_call_transaction()
                 .with(
-                    eq(transaction.to.deref().to_string()),
+                    eq(transaction.to.to_string()),
                     eq(transaction.data.to_vec()),
                 )
                 .times(retries_num as usize - 1)
-                .returning(move |_, _| {
-                    Err(VdrError::ContractInvalidResponseData {
-                        msg: "".to_string(),
-                    })
-                });
+                .returning(move |_, _| Err(VdrError::ContractInvalidResponseData("".to_string())));
 
             mock_client
                 .expect_call_transaction()
                 .with(
-                    eq(transaction.to.deref().to_string()),
+                    eq(transaction.to.to_string()),
                     eq(transaction.data.to_vec()),
                 )
                 .returning(move |_, _| expected_output.clone());
@@ -464,9 +461,9 @@ pub mod test {
 
         #[async_std::test]
         async fn test_quorum_check_failed_with_timeout() {
-            let err = Err(VdrError::ClientTransactionReverted {
-                msg: "Transaction reverted".to_string(),
-            });
+            let err = Err(VdrError::ClientTransactionReverted(
+                "Transaction reverted".to_string(),
+            ));
             let client1 = mock_client(READ_TRANSACTION.clone(), err.clone());
             let client2 = mock_client_sleep_before_return(
                 READ_TRANSACTION.clone(),

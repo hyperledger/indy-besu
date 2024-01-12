@@ -1,6 +1,5 @@
 use log::{trace, warn};
 use serde_json::Value;
-use std::ops::Deref;
 
 use crate::{
     contracts::{
@@ -41,7 +40,7 @@ impl DidDocumentBuilder {
     pub fn set_id(mut self, id: &DID) -> DidDocumentBuilder {
         self.id = id.to_owned();
 
-        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.deref(), self);
+        trace!("Set id: {} to DidDocumentBuilder: {:?}", id.as_ref(), self);
 
         self
     }
@@ -67,13 +66,13 @@ impl DidDocumentBuilder {
     ) -> DidDocumentBuilder {
         let id = format!(
             "{}:KEY-{}",
-            self.id.deref(),
+            self.id.as_ref(),
             self.verification_method.len() + 1
         );
         let verification_method = VerificationMethod {
             id,
             type_,
-            controller: controller.deref().to_string(),
+            controller: controller.to_string(),
             public_key_multibase,
             public_key_jwk,
         };
@@ -94,9 +93,7 @@ impl DidDocumentBuilder {
             .get(index)
             .ok_or_else(|| {
                 let vdr_error =
-                    VdrError::CommonInvalidData {
-                        msg: "Missing verification method".to_string()
-                    };
+                    VdrError::CommonInvalidData("Missing verification method".to_string());
 
                 warn!(
                     "Error: {} during getting verification method by index: {} from DidDocumentBuilder: {:?}",
@@ -226,9 +223,9 @@ impl DidDocumentBuilder {
             .get(index)
             .ok_or_else(|| {
                 let vdr_error =
-                    VdrError::CommonInvalidData {
-                        msg: "Missing verification method".to_string()
-                    };
+                    VdrError::CommonInvalidData(
+                        "Missing verification method".to_string()
+                    );
 
                 warn!(
                 "Error: {} during getting verification method by index: {} from DidDocumentBuilder: {:?}",

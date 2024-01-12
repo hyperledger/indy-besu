@@ -17,7 +17,6 @@ use crate::{
     types::{Address, Transaction},
     LedgerClient,
 };
-use std::ops::Deref;
 
 async fn sign_and_submit_transaction(
     client: &LedgerClient,
@@ -25,7 +24,7 @@ async fn sign_and_submit_transaction(
     signer: &BasicSigner,
 ) -> String {
     let sign_bytes = transaction.get_signing_bytes().unwrap();
-    let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.deref()).unwrap();
+    let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
     transaction.set_signature(signature);
     let block_hash = client.submit_transaction(&transaction).await.unwrap();
     client.get_receipt(&block_hash).await.unwrap()
@@ -204,7 +203,7 @@ mod role {
         .unwrap();
 
         let sign_bytes = transaction.get_signing_bytes().unwrap();
-        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.deref()).unwrap();
+        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
         transaction.set_signature(signature);
 
         let block_hash = client.submit_transaction(&transaction).await.unwrap();
