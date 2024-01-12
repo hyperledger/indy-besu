@@ -1,4 +1,4 @@
-use crate::DID;
+use crate::{types::ContractParam, DID};
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 
@@ -23,6 +23,12 @@ impl CredentialDefinitionId {
         trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
 
         cred_def_id
+    }
+}
+
+impl From<&CredentialDefinitionId> for ContractParam {
+    fn from(id: &CredentialDefinitionId) -> Self {
+        ContractParam::String(id.to_string())
     }
 }
 

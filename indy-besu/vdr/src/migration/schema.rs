@@ -135,7 +135,7 @@ impl TryFrom<IndySchemaFormat> for Schema {
     }
 }
 
-impl Into<IndySchemaFormat> for Schema {
+impl Into<IndySchemaFormat> for &Schema {
     fn into(self) -> IndySchemaFormat {
         trace!(
             "Schema: {:?} convert into IndySchemaFormat has started",

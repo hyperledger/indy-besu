@@ -39,6 +39,12 @@ impl ToString for DID {
     }
 }
 
+impl From<&DID> for ContractParam {
+    fn from(id: &DID) -> Self {
+        ContractParam::String(id.to_string())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocumentWithMeta {
@@ -230,8 +236,8 @@ impl Default for StringOrVector {
     }
 }
 
-impl From<VerificationMethod> for ContractParam {
-    fn from(value: VerificationMethod) -> Self {
+impl From<&VerificationMethod> for ContractParam {
+    fn from(value: &VerificationMethod) -> Self {
         trace!(
             "VerificationMethod: {:?} convert into ContractParam has started",
             value
@@ -239,14 +245,15 @@ impl From<VerificationMethod> for ContractParam {
 
         let public_key_jwk = value
             .public_key_jwk
+            .as_ref()
             .map(|public_key_jwk| json!(public_key_jwk).to_string())
             .unwrap_or_default();
-        let public_key_multibase = value.public_key_multibase.unwrap_or_default();
+        let public_key_multibase = value.public_key_multibase.clone().unwrap_or_default();
 
         let ver_method_contract_param = ContractParam::Tuple(vec![
             ContractParam::String(value.id.to_string()),
             ContractParam::String(value.type_.to_string()),
-            ContractParam::String(value.controller),
+            ContractParam::String(value.controller.to_string()),
             ContractParam::String(public_key_jwk),
             ContractParam::String(public_key_multibase),
         ]);
@@ -333,16 +340,16 @@ impl VerificationMethod {
     }
 }
 
-impl From<VerificationMethodOrReference> for ContractParam {
-    fn from(value: VerificationMethodOrReference) -> Self {
+impl From<&VerificationMethodOrReference> for ContractParam {
+    fn from(value: &VerificationMethodOrReference) -> Self {
         trace!(
             "VerificationMethodOrReference: {:?} convert into ContractParam has started",
             value
         );
 
         let token = match value {
-            VerificationMethodOrReference::String(reference) => ContractParam::Tuple(vec![
-                ContractParam::String(reference),
+            VerificationMethodOrReference::String(ref reference) => ContractParam::Tuple(vec![
+                ContractParam::String(reference.to_string()),
                 VerificationMethod::empty(),
             ]),
             VerificationMethodOrReference::VerificationMethod(verification_method) => {
@@ -390,8 +397,8 @@ impl TryFrom<ContractOutput> for VerificationMethodOrReference {
     }
 }
 
-impl From<StringOrVector> for ContractParam {
-    fn from(value: StringOrVector) -> Self {
+impl From<&StringOrVector> for ContractParam {
+    fn from(value: &StringOrVector) -> Self {
         trace!(
             "StringOrVector convert into ContractParam: {:?} has started",
             value
@@ -419,20 +426,20 @@ impl From<StringOrVector> for ContractParam {
     }
 }
 
-impl From<Service> for ContractParam {
-    fn from(value: Service) -> Self {
+impl From<&Service> for ContractParam {
+    fn from(value: &Service) -> Self {
         trace!(
             "Service: {:?} convert into ContractParam has started",
             value
         );
 
         let (endpoint, accept, routing_keys) = match value.service_endpoint {
-            ServiceEndpoint::String(value) => (
-                ContractParam::String(value),
+            ServiceEndpoint::String(ref value) => (
+                ContractParam::String(value.to_string()),
                 ContractParam::Array(vec![]),
                 ContractParam::Array(vec![]),
             ),
-            ServiceEndpoint::Object(value) => (
+            ServiceEndpoint::Object(ref value) => (
                 ContractParam::String(value.uri.to_string()),
                 ContractParam::Array(
                     value
@@ -500,63 +507,64 @@ impl TryFrom<ContractOutput> for Service {
     }
 }
 
-impl From<DidDocument> for ContractParam {
-    fn from(value: DidDocument) -> Self {
+impl From<&DidDocument> for ContractParam {
+    fn from(value: &DidDocument) -> Self {
         trace!(
             "DidDocument: {:?} convert into ContractParam has started",
             value
         );
 
-        let context: ContractParam = value.context.into();
+        let context: ContractParam = (&value.context).into();
         let id = ContractParam::String(value.id.to_string());
-        let controller: ContractParam = value.controller.into();
+        let controller: ContractParam = (&value.controller).into();
         let verification_method: ContractParam = ContractParam::Array(
             value
                 .verification_method
-                .into_iter()
-                .map(VerificationMethod::into)
+                .iter()
+                .map(ContractParam::from)
                 .collect(),
         );
         let authentication: ContractParam = ContractParam::Array(
             value
                 .authentication
-                .into_iter()
-                .map(VerificationMethodOrReference::into)
+                .iter()
+                .map(ContractParam::from)
                 .collect(),
         );
         let assertion_method: ContractParam = ContractParam::Array(
             value
                 .assertion_method
-                .into_iter()
-                .map(VerificationMethodOrReference::into)
+                .iter()
+                .map(ContractParam::from)
                 .collect(),
         );
         let capability_invocation: ContractParam = ContractParam::Array(
             value
                 .capability_invocation
-                .into_iter()
-                .map(VerificationMethodOrReference::into)
+                .iter()
+                .map(ContractParam::from)
                 .collect(),
         );
         let capability_delegation: ContractParam = ContractParam::Array(
             value
                 .capability_delegation
-                .into_iter()
-                .map(VerificationMethodOrReference::into)
+                .iter()
+                .map(ContractParam::from)
                 .collect(),
         );
         let key_agreement: ContractParam = ContractParam::Array(
             value
                 .key_agreement
-                .into_iter()
-                .map(VerificationMethodOrReference::into)
+                .iter()
+                .map(ContractParam::from)
                 .collect(),
         );
         let service: ContractParam =
-            ContractParam::Array(value.service.into_iter().map(Service::into).collect());
+            ContractParam::Array(value.service.iter().map(ContractParam::from).collect());
         let also_known_as: ContractParam = ContractParam::Array(
             value
                 .also_known_as
+                .clone()
                 .unwrap_or_default()
                 .into_iter()
                 .map(ContractParam::String)
@@ -831,25 +839,25 @@ pub mod test {
 
         #[test]
         fn convert_did_doc_into_contract_param_test() {
-            let param: ContractParam = did_doc(Some(ISSUER_ID)).into();
+            let param: ContractParam = (&did_doc(Some(ISSUER_ID))).into();
             assert_eq!(did_doc_param(), param);
         }
 
         #[test]
         fn convert_verification_method_into_contract_param_test() {
-            let param: ContractParam = verification_method(ISSUER_ID).into();
+            let param: ContractParam = (&verification_method(ISSUER_ID)).into();
             assert_eq!(verification_method_param(), param);
         }
 
         #[test]
         fn convert_verification_relationship_into_contract_param_test() {
-            let param: ContractParam = verification_relationship(ISSUER_ID).into();
+            let param: ContractParam = (&verification_relationship(ISSUER_ID)).into();
             assert_eq!(verification_relationship_param(), param);
         }
 
         #[test]
         fn convert_service_into_contract_param_test() {
-            let param: ContractParam = service(ISSUER_ID).into();
+            let param: ContractParam = (&service(ISSUER_ID)).into();
             assert_eq!(service_param(), param);
         }
     }

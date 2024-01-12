@@ -35,8 +35,8 @@ pub struct CredentialDefinitionMetadata {
     pub created: u64,
 }
 
-impl From<CredentialDefinition> for ContractParam {
-    fn from(value: CredentialDefinition) -> Self {
+impl From<&CredentialDefinition> for ContractParam {
+    fn from(value: &CredentialDefinition) -> Self {
         trace!(
             "CredentialDefinition: {:?} convert into ContractParam has started",
             value
@@ -223,12 +223,12 @@ pub mod test {
 
         #[test]
         fn convert_cred_def_into_contract_param_test() {
-            let param: ContractParam = credential_definition(
+            let param: ContractParam = (&credential_definition(
                 &DID::from(ISSUER_ID),
                 &SchemaId::from(SCHEMA_ID),
                 Some(CREDENTIAL_DEFINITION_TAG),
-            )
-            .into();
+            ))
+                .into();
             assert_eq!(cred_def_param(), param);
         }
     }
