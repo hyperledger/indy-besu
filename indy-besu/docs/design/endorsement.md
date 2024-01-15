@@ -10,10 +10,12 @@ owner.
 
 * Author steps:
     * Step 1: Author prepares a DID Document object
-    * Step 2: Author convert DID Document into contracts representation (which will be stored on the ledger) and encodes
+    * Step 2: Author queries `nonce` from the ledger
+    * Step 3: Author convert DID Document into contracts representation (which will be stored on the ledger) and encodes
       it into bytes using `abi.encodePacked` (available in solidity as well)
-    * Step 3: Author performs EcDSA signing using his ethereum identity account keys
-    * Step 4: Author passes DID Document and Signature to Endorser
+    * Step 4: Author performs EcDSA signing using his ethereum identity account keys of concatenated nonce and did
+      document bytes and next hashing of the result value: `keccak256(abi.encodePacked(nonce, didDocument))`
+    * Step 5: Author passes DID Document and Signature to Endorser
 * Endorser steps:
     * Step 1: Endorser builds transaction to endorse
       DID: `endorseDid(address sender, address identity, DidDocument didDocument, bytes32 identitySignature)`
@@ -24,8 +26,9 @@ owner.
 * Ethereum:
     * Checks the validity of the transaction level signature (Endorser's signature)
 * Contract:
-    * Step 1: Encodes DID Document into bytes using `abi.encodePacked`
-    * Step 2: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
+    * Step 1: Get current nonce value of identity
+    * Step 2: Calculate the hash signed data: `keccak256(abi.encodePacked(nonce, didDocument))`
+    * Step 3: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
         * `ecrecover` returns an account signed the message
 
 > Should we add and use some nonce to prevent reply attack?
@@ -33,6 +36,8 @@ owner.
 #### Contracts
 
 ```
+mapping(address => uint) public nonce;
+
 // identity - ethereum address of DID owner
 // document - did document
 // identitySignature - identity owner signatures (EcDSA and optionally ED25519) ower serialized DID Document
@@ -44,11 +49,12 @@ function endorseDid(address identity, DidDocument didDocument, bytes32 identityS
     
     // calculate the hash of DiDocument 
     // this hash will be checked agains signatures to verify ownership 
-    bytes32 hash = abi.encodePacked(didDocument);
+    bytes32 hash = keccak256(abi.encodePacked(nonce[identity], didDocument));
     
     // verify EcDSA identity owner signature ower DID + DidDocument
     checkEcDsaSignature(identity, hash, identitySignature);
     
+    nonce[identity]++;
     record[didDocument.did].didDocument = didDocument      
     record[didDocument.did].metadata.owner = identity      
     record[didDocument.did].metadata.sender = msg.sender      
@@ -83,7 +89,7 @@ fn build_endorse_did_transaction(
 
 ### DID Ethr registry
 
-`did:ethr` allows using Ethereum addresses as identifier without prior its registration on the network. 
+`did:ethr` allows using Ethereum addresses as identifier without prior its registration on the network.
 
 So that DID assume to be written by default -> endorsement is not needed.
 
@@ -103,7 +109,7 @@ function changeOwnerSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 s
 
 #### Contracts
 
-Should we extend DidEthrRegistry contract to add roles check? 
+Should we extend DidEthrRegistry contract to add roles check?
 
 > We already extended `DidEthrRegistry` to use UpgradeControl
 
@@ -118,11 +124,13 @@ TO BE defined later.
 **Schema endorsing**
 
 * Author steps:
-    * Step 1: Author prepares a valid Schema (schema contains `issuerID` referencing to DID entry)
-    * Step 2: Author convert Schema into contracts representation (which will be stored on the ledger) and encodes it
-      into bytes using `abi.encodePacked` (available in solidity as well)
-        * Step 3: Author performs EcDSA signing using his ethereum identity account keys
-        * Step 4: Author passes Schema and Signature to Endorser
+    * Step 1: Author prepares a Schema object
+    * Step 2: Author queries `nonce` from the ledger
+    * Step 3: Author convert Schema into contracts representation (which will be stored on the ledger) and encodes
+      it into bytes using `abi.encodePacked` (available in solidity as well)
+    * Step 4: Author performs EcDSA signing using his ethereum identity account keys of concatenated nonce and did
+      document bytes and next hashing of the result value: `keccak256(abi.encodePacked(nonce, schema))`
+    * Step 5: Author passes Schema and Signature to Endorser
 * Endorser steps:
     * Step 1: Endorser builds transaction to endorse
       DID: `endorseSchema(address sender, Schema schema, bytes32 identitySignature)`
@@ -133,9 +141,11 @@ TO BE defined later.
 * Ethereum:
     * Checks the validity of the transaction level signature (Endorser's signature)
 * Contract:
-    * Step 1: Encodes DID Document into bytes using `abi.encodePacked`
-    * Step 2: Resolve identity owner for the schema `issuerId`
-    * Step 3: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
+    * Step 1: Resolve identity owner for the schema `issuerId`
+    * Step 2: Get current nonce value of identity
+    * Step 3: Calculate the hash signed data: `keccak256(abi.encodePacked(nonce, schema))`
+    * Step 4: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
+        * `ecrecover` returns an account signed the message
 
 Credential Definition endorsing process is the same as for Schema.
 
@@ -145,32 +155,35 @@ Credential Definition endorsing process is the same as for Schema.
 // schema - CL schema
 // identitySignature - signature ower serialized Schema of the schema issuer identity owner
 function endorseSchema(Schema schema, EcDsaSignature identitySignature) {
-    bytes32 hash = abi.encodePacked(schema);
-
     // resolver owner of issuerDID
     DidMetadata issuerDidMeta = didResolver.resolveMetadata(schema.issuerId)
-    if (msg.sender == identity) {
+    
+    if (msg.sender == issuerDidMeta.owner) {
         revert InvalidmethodExecution;
     }
     
+    bytes32 hash = keccak256(abi.encodePacked(nonce[issuerDidMeta.owner], schema));
+    
     checkEcDsaSignature(issuerDidMeta.owner, hash, identitySignature);
 
+    nonce[issuerDidMeta.owner]++;
     _schemas[schema.id].schema = schema;
 }
 
 // credDef - CL credential definition
 // identitySignature - signature ower serialized credDef of the cred def issuer identity owner
 function endorseCredentialDefinition(CredentialDefinition credDef, EcDsaSignature identitySignature) {
-    bytes32 hash = abi.encodePacked(credDef);
-
     // resolver owner of issuerDID
     DidMetadata issuerDidMeta = didResolver.resolveMetadata(credDef.issuerId)
     if (msg.sender == identity) {
         revert InvalidmethodExecution;
     }
     
+    bytes32 hash = keccak256(abi.encodePacked(nonce[issuerDidMeta.owner], credDef));
+
     checkEcDsaSignature(issuerDidMeta.owner, hash, identitySignature);
     
+    nonce[issuerDidMeta.owner]++;
     _credDefs[credDef.id].credDef = credDef;
 }
 ```
