@@ -1,0 +1,71 @@
+@startuml
+
+package "Ethereum Network" {
+    package "Node" {
+        package "Deployed Contracts" {
+            component [Role Control]
+            component [Account Control]
+            component [Validator Control]
+            component [Upgrade Control]
+            component [Indy Did Registry]
+            component [Ethereum Did Registry]
+            component [Universal Did Resolver]
+            component [Schema Registry]
+            component [Credential Definition Registry]
+        }
+    }
+}
+
+together {
+
+    package "VDR Library" {
+
+        component Migration
+        note top of [Migration]
+          Helpers for migration from legacy Indy network
+        end note
+
+        component Transaction
+        note top of [Transaction]
+          Transaction to execute a contract method
+          - builders
+          - response parser
+          - retrieve bytes to sign
+          - set signature
+        end note
+
+        component Client
+        note top of [Client]
+          Interact with a network node
+          - ping network
+          - submit transaction
+          - retrieve transaction receipt
+        end note
+    }
+
+    node Signer
+    note top of [Signer]
+      Sign transaction bytes
+      Provided by a third party component
+    end note
+
+}
+
+package "VDR foreign language bindings" {
+    component Python
+    component NodeJS
+    component WASM
+}
+
+interface HTTP
+interface CAPI
+
+[Client] --> HTTP : submit transactions
+HTTP -- [Node]
+
+[Python] --> [CAPI]
+[NodeJS] --> [CAPI]
+[WASM] --> [CAPI]
+[CAPI] -- [VDR Library]
+
+@enduml
