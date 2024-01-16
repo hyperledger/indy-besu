@@ -39,14 +39,14 @@ pub async fn build_add_validator_transaction(
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await;
+        .await?;
 
     info!(
         "{} txn build has finished. Result: {:?}",
         METHOD_ADD_VALIDATOR, transaction
     );
 
-    transaction
+    Ok(transaction)
 }
 
 /// Build transaction to execute ValidatorControl.removeValidator contract method to remove an existing Validator
@@ -75,14 +75,14 @@ pub async fn build_remove_validator_transaction(
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await;
+        .await?;
 
     info!(
         "{} txn build has finished. Result: {:?}",
         METHOD_REMOVE_VALIDATOR, transaction
     );
 
-    transaction
+    Ok(transaction)
 }
 
 /// Build transaction to execute ValidatorControl.getValidators contract method to get existing validators
@@ -100,14 +100,14 @@ pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResul
         .set_method(METHOD_GET_VALIDATORS)
         .set_type(TransactionType::Read)
         .build(client)
-        .await;
+        .await?;
 
     info!(
         "{} txn build has finished. Result: {:?}",
         METHOD_GET_VALIDATORS, transaction
     );
 
-    transaction
+    Ok(transaction)
 }
 
 /// Parse the result of execution ValidatorControl.getValidators contract method to get existing validators
@@ -130,14 +130,14 @@ pub fn parse_get_validators_result(
     let result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_VALIDATORS)
-        .parse::<ValidatorAddresses>(client, bytes);
+        .parse::<ValidatorAddresses>(client, bytes)?;
 
     info!(
         "{} result parse has finished. Result: {:?}",
         METHOD_GET_VALIDATORS, result
     );
 
-    result
+    Ok(result)
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 import { Contract } from '../utils/contract'
-import { DidDocument, DidDocumentStorage, mapDidDocument, mapDidMetadata } from './types'
+import { DidRecord, mapDidRecord } from './types'
 
 export class IndyDidRegistry extends Contract {
   public static readonly defaultAddress = '0x0000000000000000000000000000000000003333'
@@ -8,26 +8,23 @@ export class IndyDidRegistry extends Contract {
     super(IndyDidRegistry.name, sender)
   }
 
-  public async createDid(didDocument: DidDocument) {
-    const tx = await this.instance.createDid(didDocument)
+  public async createDid(identity: string, did: string, document: string) {
+    const tx = await this.instance.createDid(identity, did, document)
     return tx.wait()
   }
 
-  public async updateDid(didDocument: DidDocument) {
-    const tx = await this.instance.updateDid(didDocument)
+  public async updateDid(did: string, document: string) {
+    const tx = await this.instance.updateDid(did, document)
     return tx.wait()
   }
 
-  public async deactivateDid(id: string) {
-    const tx = await this.instance.deactivateDid(id)
+  public async deactivateDid(did: string) {
+    const tx = await this.instance.deactivateDid(did)
     return tx.wait()
   }
 
-  public async resolveDid(id: string): Promise<DidDocumentStorage> {
-    const didDocumentStorage = await this.instance.resolveDid(id)
-    return {
-      document: mapDidDocument(didDocumentStorage.document),
-      metadata: mapDidMetadata(didDocumentStorage.metadata),
-    }
+  public async resolveDid(did: string): Promise<DidRecord> {
+    const didRecord = await this.instance.resolveDid(did)
+    return mapDidRecord(didRecord)
   }
 }

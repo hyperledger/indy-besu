@@ -5,7 +5,7 @@ import { DidNotFound, IncorrectDid } from "../did/DidErrors.sol";
 import { DidMetadata } from "../did/DidTypes.sol";
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { Errors } from "../utils/Errors.sol";
-import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound, SenderIsNotIssuerDidOwner } from "./ClErrors.sol";
+import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound, UnauthorizedSender } from "./ClErrors.sol";
 
 contract CLRegistry {
     /**
@@ -14,13 +14,13 @@ contract CLRegistry {
     UniversalDidResolverInterface internal _didResolver;
 
     /**
-     * @dev Check that the Issuer DID exist, controlled by sender, and active.
+     * @dev Check that the Issuer DID exist, authorized for sender, and active.
      * @param id The Issuer's DID.
      */
     modifier _validIssuer(string memory id) {
         try _didResolver.resolveMetadata(id) returns (DidMetadata memory metadata) {
-            if (msg.sender != metadata.creator) {
-                revert SenderIsNotIssuerDidOwner(msg.sender, metadata.creator);
+            if (msg.sender != metadata.owner && msg.sender != metadata.sender) {
+                revert UnauthorizedSender(msg.sender);
             }
             if (metadata.deactivated) revert IssuerHasBeenDeactivated(id);
         } catch (bytes memory reason) {

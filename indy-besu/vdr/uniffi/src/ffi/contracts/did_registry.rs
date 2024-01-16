@@ -10,13 +10,21 @@ use serde_json::json;
 pub async fn build_create_did_transaction(
     client: &LedgerClient,
     from: &str,
+    identity: &str,
+    did: &str,
     did_doc: &str,
 ) -> VdrResult<Transaction> {
     let did_doc = serde_json::from_str(did_doc).map_err(|err| VdrError::CommonInvalidData {
         msg: format!("Unable to parse DID DDocument. Err: {:?}", err),
     })?;
     let transaction =
-        did_registry::build_create_did_transaction(&client.client, &Address::from(from), &did_doc)
+        did_registry::build_create_did_transaction(
+            &client.client,
+            &Address::from(from),
+            &Address::from(identity),
+            &DID::from(did),
+            &did_doc,
+        )
             .await?;
     Ok(Transaction { transaction })
 }
@@ -25,13 +33,19 @@ pub async fn build_create_did_transaction(
 pub async fn build_update_did_transaction(
     client: &LedgerClient,
     from: &str,
+    did: &str,
     did_doc: &str,
 ) -> VdrResult<Transaction> {
     let did_doc = serde_json::from_str(did_doc).map_err(|err| VdrError::CommonInvalidData {
         msg: format!("Unable to parse DID DDocument. Err: {:?}", err),
     })?;
     let transaction =
-        did_registry::build_update_did_transaction(&client.client, &Address::from(from), &did_doc)
+        did_registry::build_update_did_transaction(
+            &client.client,
+            &Address::from(from),
+            &DID::from(did),
+            &did_doc
+        )
             .await?;
     Ok(Transaction { transaction })
 }
@@ -47,7 +61,7 @@ pub async fn build_deactivate_did_transaction(
         &Address::from(from),
         &DID::from(did),
     )
-    .await?;
+        .await?;
     Ok(Transaction { transaction })
 }
 

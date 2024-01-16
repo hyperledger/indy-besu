@@ -3,20 +3,20 @@ use crate::{
     types::{ContractOutput, ContractParam},
 };
 
-use crate::{contracts::cl::types::schema_id::SchemaId, DID};
+use crate::contracts::did::types::did::DID;
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::json;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SchemaWithMeta {
+pub struct SchemaRecord {
     pub schema: Schema,
     pub metadata: SchemaMetadata,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Schema {
-    pub id: SchemaId,
     #[serde(rename = "issuerId")]
     pub issuer_id: DID,
     pub name: String,
@@ -34,19 +34,7 @@ impl From<&Schema> for ContractParam {
     fn from(value: &Schema) -> Self {
         trace!("Schema: {:?} convert into ContractParam has started", value);
 
-        let schema_contract_param = ContractParam::Tuple(vec![
-            ContractParam::String(value.id.to_string()),
-            ContractParam::String(value.issuer_id.to_string()),
-            ContractParam::String(value.name.to_string()),
-            ContractParam::String(value.version.to_string()),
-            ContractParam::Array(
-                value
-                    .attr_names
-                    .iter()
-                    .map(|attr_name| ContractParam::String(attr_name.to_string()))
-                    .collect(),
-            ),
-        ]);
+        let schema_contract_param = ContractParam::String(json!(value).to_string());
 
         trace!(
             "Schema: {:?} convert into ContractParam has finished. Result: {:?}",
@@ -58,22 +46,21 @@ impl From<&Schema> for ContractParam {
     }
 }
 
-impl TryFrom<ContractOutput> for Schema {
+impl TryFrom<&ContractOutput> for Schema {
     type Error = VdrError;
 
-    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
+    fn try_from(value: &ContractOutput) -> Result<Self, Self::Error> {
         trace!(
             "Schema convert from ContractOutput: {:?} has started",
             value
         );
 
-        let schema = Schema {
-            id: SchemaId::from(value.get_string(0)?.as_str()),
-            issuer_id: DID::from(value.get_string(1)?.as_str()),
-            name: value.get_string(2)?,
-            version: value.get_string(3)?,
-            attr_names: value.get_string_array(4)?,
-        };
+        let schema = serde_json::from_str(&value.get_string(0)?).map_err(|err| {
+            VdrError::ContractInvalidResponseData(format!(
+                "Unable to parse Schema from the response. Err: {:?}",
+                err
+            ))
+        })?;
 
         trace!(
             "Schema convert from ContractOutput: {:?} has finished. Result: {:?}",
@@ -109,7 +96,7 @@ impl TryFrom<ContractOutput> for SchemaMetadata {
     }
 }
 
-impl TryFrom<ContractOutput> for SchemaWithMeta {
+impl TryFrom<ContractOutput> for SchemaRecord {
     type Error = VdrError;
 
     fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
@@ -119,11 +106,11 @@ impl TryFrom<ContractOutput> for SchemaWithMeta {
         );
 
         let output_tuple = value.get_tuple(0)?;
-        let schema = output_tuple.get_tuple(0)?;
+        let schema = Schema::try_from(&output_tuple)?;
         let metadata = output_tuple.get_tuple(1)?;
 
-        let schema_with_meta = SchemaWithMeta {
-            schema: Schema::try_from(schema)?,
+        let schema_with_meta = SchemaRecord {
+            schema,
             metadata: SchemaMetadata::try_from(metadata)?,
         };
 
@@ -211,7 +198,10 @@ pub mod migration {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{contracts::did::did_doc::test::ISSUER_ID, utils::rand_string};
+    use crate::{
+        contracts::{cl::types::schema_id::SchemaId, did::types::did_doc::test::ISSUER_ID},
+        utils::rand_string,
+    };
 
     pub const SCHEMA_ID: &str =
         "did:indy2:testnet:3LpjszkgTmE3qThge25FZw/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0";
@@ -224,10 +214,10 @@ pub mod test {
         SchemaId::build(issuer_id, name, SCHEMA_VERSION)
     }
 
-    pub fn schema(issuer_id: &DID, name: Option<&str>) -> Schema {
+    pub fn schema(issuer_id: &DID, name: Option<&str>) -> (SchemaId, Schema) {
         let name = name.map(String::from).unwrap_or_else(rand_string);
-        Schema {
-            id: schema_id(issuer_id, name.as_str()),
+        let id = schema_id(issuer_id, name.as_str());
+        let schema = Schema {
             issuer_id: issuer_id.clone(),
             name,
             version: SCHEMA_VERSION.to_string(),
@@ -235,20 +225,13 @@ pub mod test {
                 SCHEMA_ATTRIBUTE_FIRST_NAME.to_string(),
                 SCHEMA_ATTRIBUTE_LAST_NAME.to_string(),
             ],
-        }
+        };
+        (id, schema)
     }
 
     fn schema_param() -> ContractParam {
-        ContractParam::Tuple(vec![
-            ContractParam::String(schema_id(&DID::from(ISSUER_ID), SCHEMA_NAME).to_string()),
-            ContractParam::String(ISSUER_ID.to_string()),
-            ContractParam::String(SCHEMA_NAME.to_string()),
-            ContractParam::String(SCHEMA_VERSION.to_string()),
-            ContractParam::Array(vec![
-                ContractParam::String(SCHEMA_ATTRIBUTE_FIRST_NAME.to_string()),
-                ContractParam::String(SCHEMA_ATTRIBUTE_LAST_NAME.to_string()),
-            ]),
-        ])
+        let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+        ContractParam::String(json!(schema).to_string())
     }
 
     mod convert_into_contract_param {
@@ -256,7 +239,8 @@ pub mod test {
 
         #[test]
         fn convert_schema_into_contract_param_test() {
-            let param: ContractParam = (&schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME))).into();
+            let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+            let param: ContractParam = (&schema).into();
             assert_eq!(schema_param(), param);
         }
     }
@@ -266,9 +250,10 @@ pub mod test {
 
         #[test]
         fn convert_contract_output_into_schema() {
-            let data = ContractOutput::new(schema_param().into_tuple().unwrap());
-            let converted = Schema::try_from(data).unwrap();
-            assert_eq!(schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME)), converted);
+            let data = ContractOutput::new(vec![schema_param()]);
+            let converted = Schema::try_from(&data).unwrap();
+            let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+            assert_eq!(schema, converted);
         }
     }
 }

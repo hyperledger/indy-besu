@@ -49,7 +49,7 @@ impl LedgerClient {
   ///  - `chain_id` - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
   ///  - `rpc_node` - string - RPC node endpoint
   ///  - `contract_configs` - [ContractSpec] specifications for contracts  deployed on the network
-  ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum is not needed
+  ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum check is not needed
   ///
   /// # Returns
   ///  client to use for building and sending transactions
@@ -57,6 +57,7 @@ impl LedgerClient {
     chain_id: u64,
     node_address: String,
     contract_configs: Vec<ContractConfig>,
+    quorum_config: Option<&QuorumConfig>,
   ) -> LedgerClient {
     unimpltemented!()
   }
@@ -193,15 +194,17 @@ struct Transaction {
   /// transaction sender account address
   from: Option<Address>,
   /// transaction recipient address
-  to: String,
+  to: Address,
   /// nonce - count of transaction sent by account
-  nonce: Option<[u64; 4]>,
+  nonce: Option<Vec<u64>>,
   /// chain id of the ledger
   chain_id: u64,
   /// transaction payload
   data: Vec<u8>,
   /// transaction signature
   signature: Option<TransactionSignature>,
+  /// transaction hash
+  hash: Option<Vec<u8>>,
 }
 
 impl Transaction {
@@ -249,16 +252,18 @@ struct BuildTxnOptions {}
 /// #Params
 ///  param: client: LedgerClient - Ledger client
 ///  param: from: string - sender account address
+///  param: identity: string - DID owner account address
+///  param: did: string - DID to be created
 ///  param: did_document: DidDocument - DID Document matching to the specification: https://www.w3.org/TR/did-core/
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_create_did_transaction(
     client: LedgerClient,
     from: String,
-    did_document: DidDoc,
-    options: Option<BuildTxnOptions>,
+    identity: String,
+    did: String,
+    did_document: &DidDocument,
 ) -> Transaction {
     unimplemented!();
 }
@@ -272,16 +277,16 @@ fn indy_vdr_build_create_did_transaction(
 /// #Params
 ///  param: client: LedgerClient - Ledger client
 ///  param: from: string - sender account address
+///  param: did: string - DID to be created
 ///  param: did_document: DidDocument - DID Document matching to the specification: https://www.w3.org/TR/did-core/
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_update_did_transaction(
     client: LedgerClient,
     from: String,
-    did_document: DidDoc,
-    options: Option<BuildTxnOptions>,
+    did: String,
+    did_document: DidDocument,
 ) -> Transaction;
 ```
 
@@ -294,7 +299,6 @@ fn indy_vdr_build_update_did_transaction(
 ///  param: client: LedgerClient - Ledger client
 ///  param: from: string - sender account address
 ///  param: did: string - did to deactivate
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
@@ -302,7 +306,6 @@ fn indy_vdr_build_deactivate_did_transaction(
     client: LedgerClient,
     from: String,
     did: String,
-    options: Option<BuildTxnOptions>,
 ) -> Transaction;
 ```
 
@@ -313,15 +316,13 @@ fn indy_vdr_build_deactivate_did_transaction(
 ///
 /// #Params
 ///  param: client: Ledger - client (Ethereum client - for example web3::Http)
-///  param: did - DID to resolve
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
+///  param: did: string - DID to resolve
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_resolve_did_transaction(
     client: LedgerClient,
     did: String,
-    options: Option<BuildTransactionOptions>,
 ) -> Transaction;
 ```
 
@@ -350,16 +351,16 @@ fn indy_vdr_parse_resolve_did_response(
 /// #Params
 ///  param: client: Ledger - client (Ethereum client - for example web3::Http)
 ///  param: from: string - sender account address
-///  param: schema - Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
+///  param: id: string - id of schema to be created
+///  param: schema: Schema - Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_create_schema_transaction(
     client: LedgerClient,
     from: String,
+    id: String,
     schema: Schema,
-    options: Option<BuildTxnOptions>,
 ) -> Transaction;
 ```
 
@@ -370,15 +371,13 @@ fn indy_vdr_build_create_schema_transaction(
 ///
 /// #Params
 ///  param: client: Ledger - client (Ethereum client - for example web3::Http)
-///  param: id - id of Schema to resolve
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
+///  param: id: string - id of Schema to resolve
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_resolve_schema_transaction(
     client: LedgerClient,
     id: String,
-    options: Option<BuildTransactionOptions>,
 ) -> Transaction;
 ```
 
@@ -407,16 +406,16 @@ fn indy_vdr_parse_resolve_schema_response(
 /// #Params
 ///  param: client: Ledger - client (Ethereum client - for example web3::Http)
 ///  param: from: string - sender account address
+///  param: id: string - id of credential definition to be created
 ///  param: cred_def - Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition 
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_create_credential_definition_transaction(
     client: LedgerClient,
     from: String,
+    id: String,
     cred_def: CredentialDefinition,
-    options: Option<BuildTxnOptions>,
 ) -> Transaction;
 ```
 
@@ -427,15 +426,13 @@ fn indy_vdr_build_create_credential_definition_transaction(
 ///
 /// #Params
 ///  param: client: Ledger - client (Ethereum client - for example web3::Http)
-///  param: id - id of Credential Definition to resolve
-///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
+///  param: id: string - id of Credential Definition to resolve
 ///
 /// #Returns
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_resolve_credential_definition_transaction(
     client: LedgerClient,
     id: String,
-    options: Option<BuildTransactionOptions>,
 ) -> Transaction;
 ```
 
@@ -474,8 +471,7 @@ fn indy_vdr_build_assign_role_transaction(
     client: LedgerClient,
     from: String,
     to: String,
-    role: String,
-    options: Option<BuildTxnOptions>,
+    role: u8,
 ) -> Transaction;
 ```
 
@@ -495,9 +491,9 @@ fn indy_vdr_build_assign_role_transaction(
 ///   transaction: Transaction - prepared transaction object 
 fn indy_vdr_build_revoke_role_transaction(
     client: LedgerClient,
-    from: String,
+    from:String,
     to: String,
-    role: String,
+    role: u8,
     options: Option<BuildTxnOptions>,
 ) -> Transaction;
 ```

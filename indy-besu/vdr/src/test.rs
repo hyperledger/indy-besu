@@ -1,13 +1,17 @@
 use crate::{
-    client::client::test::client,
+    client::client::test::{client, IDENTITY_ACC},
     contracts::{
         auth::Role,
         cl::{
-            schema_registry::test::create_schema,
+            schema_registry,
             types::{credential_definition::test::credential_definition, schema::test::schema},
-            CredentialDefinition, Schema,
+            CredentialDefinition, Schema, SchemaId,
         },
-        did::{did_registry::test::create_did, types::did_doc::test::did_doc, DidDocument},
+        did::{
+            did_registry,
+            types::{did::DID, did_doc::test::did_doc},
+            DidDocument,
+        },
     },
     error::VdrResult,
     signer::basic_signer::{
@@ -17,6 +21,45 @@ use crate::{
     types::{Address, Transaction},
     LedgerClient,
 };
+
+async fn create_did(client: &LedgerClient, signer: &crate::BasicSigner) -> DidDocument {
+    let did_doc = did_doc(None);
+    let transaction = did_registry::build_create_did_transaction(
+        &client,
+        &TRUSTEE_ACC,
+        &IDENTITY_ACC,
+        &did_doc.id,
+        &did_doc,
+    )
+    .await
+    .unwrap();
+
+    let sign_bytes = transaction.get_signing_bytes().unwrap();
+    let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
+    transaction.set_signature(signature);
+
+    client.submit_transaction(&transaction).await.unwrap();
+    did_doc
+}
+
+pub async fn create_schema(
+    client: &LedgerClient,
+    issuer_id: &DID,
+    signer: &crate::BasicSigner,
+) -> (SchemaId, Schema) {
+    let (id, schema) = schema(issuer_id, None);
+    let transaction =
+        schema_registry::build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+            .await
+            .unwrap();
+
+    let sign_bytes = transaction.get_signing_bytes().unwrap();
+    let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
+    transaction.set_signature(signature);
+
+    client.submit_transaction(&transaction).await.unwrap();
+    (id, schema)
+}
 
 async fn sign_and_submit_transaction(
     client: &LedgerClient,
@@ -32,17 +75,22 @@ async fn sign_and_submit_transaction(
 
 mod did {
     use super::*;
-    use crate::did_registry;
+    use crate::{client::client::test::IDENTITY_ACC, did_registry};
 
     pub(crate) async fn build_and_submit_create_did_doc_transaction(
         client: &LedgerClient,
         did_doc: &DidDocument,
         signer: &BasicSigner,
     ) -> String {
-        let transaction =
-            did_registry::build_create_did_transaction(&client, &TRUSTEE_ACC, did_doc)
-                .await
-                .unwrap();
+        let transaction = did_registry::build_create_did_transaction(
+            &client,
+            &TRUSTEE_ACC,
+            &IDENTITY_ACC,
+            &did_doc.id,
+            did_doc,
+        )
+        .await
+        .unwrap();
         sign_and_submit_transaction(client, transaction, signer).await
     }
 
@@ -70,15 +118,16 @@ mod did {
 
 mod schema {
     use super::*;
-    use crate::schema_registry;
+    use crate::{schema_registry, SchemaId};
 
     pub(crate) async fn build_and_submit_create_schema_transaction(
         client: &LedgerClient,
+        id: &SchemaId,
         schema: &Schema,
         signer: &BasicSigner,
     ) -> String {
         let transaction =
-            schema_registry::build_create_schema_transaction(&client, &TRUSTEE_ACC, schema)
+            schema_registry::build_create_schema_transaction(&client, &TRUSTEE_ACC, id, schema)
                 .await
                 .unwrap();
         sign_and_submit_transaction(client, transaction, signer).await
@@ -93,12 +142,13 @@ mod schema {
         let did_doc = create_did(&client, &signer).await;
 
         // write
-        let schema = schema(&did_doc.id, None);
-        let receipt = build_and_submit_create_schema_transaction(&client, &schema, &signer).await;
+        let (schema_id, schema) = schema(&did_doc.id, None);
+        let receipt =
+            build_and_submit_create_schema_transaction(&client, &schema_id, &schema, &signer).await;
         println!("Receipt: {}", receipt);
 
         // read
-        let transaction = schema_registry::build_resolve_schema_transaction(&client, &schema.id)
+        let transaction = schema_registry::build_resolve_schema_transaction(&client, &schema_id)
             .await
             .unwrap();
         let result = client.submit_transaction(&transaction).await.unwrap();
@@ -112,10 +162,11 @@ mod schema {
 
 mod credential_definition {
     use super::*;
-    use crate::credential_definition_registry;
+    use crate::{credential_definition_registry, CredentialDefinitionId};
 
     pub(crate) async fn build_and_submit_create_cred_def_transaction(
         client: &LedgerClient,
+        id: &CredentialDefinitionId,
         cred_def: &CredentialDefinition,
         signer: &BasicSigner,
     ) -> String {
@@ -123,6 +174,7 @@ mod credential_definition {
             credential_definition_registry::build_create_credential_definition_transaction(
                 &client,
                 &TRUSTEE_ACC,
+                id,
                 cred_def,
             )
             .await
@@ -137,20 +189,25 @@ mod credential_definition {
 
         // create DID Document and Schema
         let did_doc = create_did(&client, &signer).await;
-        let schema = create_schema(&client, &did_doc.id, &signer).await;
+        let (schema_id, _) = create_schema(&client, &did_doc.id, &signer).await;
 
         // write
-        let credential_definition = credential_definition(&did_doc.id, &schema.id, None);
-        let receipt =
-            build_and_submit_create_cred_def_transaction(&client, &credential_definition, &signer)
-                .await;
+        let (credential_definition_id, credential_definition) =
+            credential_definition(&did_doc.id, &schema_id, None);
+        let receipt = build_and_submit_create_cred_def_transaction(
+            &client,
+            &credential_definition_id,
+            &credential_definition,
+            &signer,
+        )
+        .await;
         println!("Receipt: {}", receipt);
 
         // read
         let transaction =
             credential_definition_registry::build_resolve_credential_definition_transaction(
                 &client,
-                &credential_definition.id,
+                &credential_definition_id,
             )
             .await
             .unwrap();
