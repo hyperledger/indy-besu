@@ -1,6 +1,8 @@
-use crate::error::{VdrError, VdrResult};
+use crate::{
+    error::{VdrError, VdrResult},
+    Address,
+};
 
-use crate::Address;
 use ethabi::Token;
 use log::{trace, warn};
 use serde::{Deserialize, Serialize};

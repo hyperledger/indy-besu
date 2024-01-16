@@ -1,0 +1,107 @@
+@startuml
+
+skinparam BoxPadding 20
+
+box "Node"
+participant "Contracts" as C
+endbox
+
+box "Trustee" #LightYellow
+actor "Agent" as T
+participant "VDR" as TV
+participant "Wallet" as TW
+endbox
+
+box "Endorser"
+actor "Agent" as E
+participant "VDR" as EV
+participant "Wallet" as EW
+endbox
+
+box "Faber" #LightYellow
+actor "Agent" as F
+participant "VDR" as FV
+participant "Wallet" as FW
+endbox
+
+== Setup actors ==
+
+E->EW: Create account (with seed)
+E->EV: Init client (node address and contracts ABI)
+T->TW: Create account (with seed)
+T->TV: Init client (node address and contracts ABI)
+F->FW: Create account
+F->FV: Init client (node address and contracts ABI)
+
+== Assign role ==
+
+E-->T: Pass Account address
+T->TV: Build transaction to assign Endorser role
+T->TV: Get bytes to sign
+T->TW: Sign transaction
+T->TV: Set transaction signature
+T->TV: Submit transaction
+TV->C: Send transaction
+C-->C: Execute RoleControl.assignRole contract
+
+== Create Indy Did ==
+
+E->EV: Build Did Document
+E->EV: Build and sign transaction to create Did
+E->EV: Submit transaction
+EV->C: Send transaction
+C-->C: Execute IndyDidRegistry.createDid contract
+
+== Create Ethr Did ==
+
+note across
+  DID is an account address and not require writing on the ledger
+end note
+
+E->EV: Build and sign transaction to add DID attribute (Service)
+E->EV: Submit transaction
+EV->C: Send transaction
+C-->C: Execute EthrExtDidRegistry.setAttribute contract
+
+== Endorse Indy Did ==
+
+F->FV: Build Did Document
+F->FV: Encode Did Document
+F->FW: EdDSA sign did document bytes
+F-->E: Pass Did Document, Signature
+E->EV: Build and sign transaction to endorse Did
+E->EV: Submit transaction
+EV->C: Send transaction
+C-->C: Execute IndyDidRegistry.endorseDid contract
+
+== Endorse Ethr Did ==
+
+note across
+  Not needed as DID imply to be written by default
+  Owner can add resource without endorsement need
+end note
+
+== Create Schema (any DID method) ==
+
+E->EV: Build Schema
+E->EV: Build and sign transaction to create Schema
+E->EV: Submit transaction
+EV->C: Send transaction
+C-->C: Execute SchemaRegistry.createSchema contract
+C-->C: Resolve and verify issuerDid ownership
+
+== Endorse Schema (any DID method) ==
+
+F->FV: Build Schema
+F->FV: Encode Schema
+F->FW: EdDSA sign Schema bytes
+F-->E: Pass Schema, Signature
+E->EV: Build and sign transaction to endorse Schema
+E->EV: Submit transaction
+EV->C: Send transaction
+C-->C: Execute SchemaRegistry.endorseSchema contract
+C-->C: Resolve and verify issuerDid ownership
+
+==  ==
+
+@enduml
