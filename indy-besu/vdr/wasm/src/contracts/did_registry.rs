@@ -17,11 +17,15 @@ impl IndyDidRegistry {
     pub async fn build_create_did_transaction(
         client: &LedgerClientWrapper,
         from: &str,
+        identity: &str,
+        did: &str,
         did_doc: JsValue,
     ) -> Result<TransactionWrapper> {
         let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
         let address = Address::from(from);
-        let transaction = did_registry::build_create_did_transaction(&client.0, &address, &did_doc)
+        let identity = Address::from(identity);
+        let did = DID::from(did);
+        let transaction = did_registry::build_create_did_transaction(&client.0, &address, &identity, &did, &did_doc)
             .await
             .as_js()?;
         Ok(TransactionWrapper(Rc::new(transaction)))
@@ -31,11 +35,13 @@ impl IndyDidRegistry {
     pub async fn build_update_did_transaction(
         client: &LedgerClientWrapper,
         from: &str,
+        did: &str,
         did_doc: JsValue,
     ) -> Result<TransactionWrapper> {
         let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
         let address = Address::from(from);
-        let transaction = did_registry::build_update_did_transaction(&client.0, &address, &did_doc)
+        let did = DID::from(did);
+        let transaction = did_registry::build_update_did_transaction(&client.0, &address, &did, &did_doc)
             .await
             .as_js()?;
         Ok(TransactionWrapper(Rc::new(transaction)))

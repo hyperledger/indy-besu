@@ -51,6 +51,7 @@ Contract name: **ValidatorControl**
 
 * Method: `getValidators`
     * Description: Transaction to get the list of current validator nodes.
+    * Parameters: None
     * Restrictions: None
     * Format
         ```
@@ -65,7 +66,9 @@ Contract name: **ValidatorControl**
 ### Add Validator
 
 * Method: `addValidator`
-    * Description: Transaction to add a new validator node into validator's list. Sender will be set as an owner of the validator node. 
+    * Description: Transaction to add a new validator node into validator's list. Sender will be set as an owner of the validator node.
+    * Parameters:
+        * `newValidator` - The address of the validator node to add
     * Restrictions:
     * Sender must have STEWARD role assigned
     * Sender must not have existing validator 
@@ -74,13 +77,13 @@ Contract name: **ValidatorControl**
     * Format
         ```
         ValidatorControl.addValidator(
-        address newValidator
+          address newValidator
         )
         ```
     * Example:
         ```
         ValidatorControl.addValidator(
-        "0x98c1334496614aed49d2e81526d089f7264fed9c"
+          "0x98c1334496614aed49d2e81526d089f7264fed9c"
         )
         ```
     * Raised Event:
@@ -90,6 +93,8 @@ Contract name: **ValidatorControl**
 
 * Method: `removeValidator`
     * Description: Transaction to remove validator node from validator's list.
+    * Parameters:
+        * `newValidator` - The address of the validator node to remove
     * Restrictions:
         * Sender must have STEWARD role assigned
         * Should leave at least one validator after deletion
@@ -97,13 +102,13 @@ Contract name: **ValidatorControl**
     * Format
         ```
         ValidatorControl.removeValidator(
-        address validator
+          address validator
         )
         ```
     * Example:
         ```
         ValidatorControl.removeValidator(
-        "0x98c1334496614aed49d2e81526d089f7264fed9c"
+          "0x98c1334496614aed49d2e81526d089f7264fed9c"
         )
         ```
     * Raised Event:

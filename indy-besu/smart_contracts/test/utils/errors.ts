@@ -11,7 +11,7 @@ export namespace ClErrors {
   export const IssuerNotFound = 'IssuerNotFound'
   export const IssuerHasBeenDeactivated = 'IssuerHasBeenDeactivated'
   export const InvalidIssuerId = 'InvalidIssuerId'
-  export const SenderIsNotIssuerDidOwner = 'SenderIsNotIssuerDidOwner'
+  export const UnauthorizedSender = 'UnauthorizedSender'
 
   // Schema errors
   export const InvalidSchemaId = 'InvalidSchemaId'
@@ -32,7 +32,7 @@ export namespace DidError {
   export const DidAlreadyExist = 'DidAlreadyExist'
   export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'
   export const IncorrectDid = 'IncorrectDid'
-  export const SenderIsNotCreator = 'SenderIsNotCreator'
+  export const UnauthorizedSender = 'UnauthorizedSender'
 }
 
 export namespace ProxyError {

@@ -8,7 +8,7 @@ import {
   TestableCredentialDefinitionRegistry,
   TestableSchemaRegistry,
 } from '../utils/contract-helpers'
-import { ClErrors, Errors } from '../utils/errors'
+import { ClErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('CredentialDefinitionRegistry', function () {
@@ -30,162 +30,128 @@ describe('CredentialDefinitionRegistry', function () {
     didRegistryInit.connect(testAccountsInit.trustee.account)
     schemaRegistryInit.connect(testAccountsInit.trustee.account)
     credentialDefinitionRegistryInit.connect(testAccountsInit.trustee.account)
-    await createDid(didRegistryInit, issuerId)
-    const schema = await createSchema(schemaRegistryInit, issuerId)
+    await createDid(didRegistryInit, testAccountsInit.trustee.account.address, issuerId)
+    const { id } = await createSchema(schemaRegistryInit, issuerId)
 
     didRegistry = didRegistryInit
     testAccounts = testAccountsInit
     schemaRegistry = schemaRegistryInit
     credentialDefinitionRegistry = credentialDefinitionRegistryInit
-    schemaId = schema.id
+    schemaId = id
   })
 
   describe('Add/Resolve Credential Definition', function () {
     it('Should create and resolve Credential Definition', async function () {
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId })
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
 
-      await credentialDefinitionRegistry.createCredentialDefinition(credDef)
-      const result = await credentialDefinitionRegistry.resolveCredentialDefinition(credDef.id)
+      await credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, schemaId, credDef)
+      const result = await credentialDefinitionRegistry.resolveCredentialDefinition(id)
 
       expect(result.credDef).to.be.deep.equal(credDef)
     })
 
     it('Should fail if resolving Credential Definition does not exist', async function () {
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId })
+      const { id } = createCredentialDefinitionObject({ issuerId, schemaId })
 
-      await expect(credentialDefinitionRegistry.resolveCredentialDefinition(credDef.id))
+      await expect(credentialDefinitionRegistry.resolveCredentialDefinition(id))
         .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.CredentialDefinitionNotFound)
-        .withArgs(credDef.id)
+        .withArgs(id)
     })
 
     it('Should fail if Credential Definition is being already exists', async function () {
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId })
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
 
-      await credentialDefinitionRegistry.createCredentialDefinition(credDef)
+      await credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, schemaId, credDef)
 
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, schemaId, credDef))
         .to.be.revertedWithCustomError(
           credentialDefinitionRegistry.baseInstance,
           ClErrors.CredentialDefinitionAlreadyExist,
         )
-        .withArgs(credDef.id)
+        .withArgs(id)
     })
 
     it('Should fail if Credential Definition is being created with non-existing Issuer', async function () {
-      const credDef = createCredentialDefinitionObject({
-        issuerId: 'did:indy2:mainnet:GEzcdDLhCpGCYRHW82kjHd',
-        schemaId,
-      })
+      const unknownIssuerId = 'did:indy2:mainnet:GEzcdDLhCpGCYRHW82kjHd'
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId: unknownIssuerId, schemaId })
 
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, unknownIssuerId, schemaId, credDef))
         .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.IssuerNotFound)
-        .withArgs(credDef.issuerId)
+        .withArgs(unknownIssuerId)
     })
 
     it('Should fail if Credential Definition is being created with inactive Issuer', async function () {
       didRegistry.deactivateDid(issuerId)
 
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId })
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
 
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, schemaId, credDef))
         .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.IssuerHasBeenDeactivated)
-        .withArgs(credDef.issuerId)
+        .withArgs(issuerId)
     })
 
     it('Should fail if Credential Definition is being created with non-existing Schema', async function () {
-      const credDef = createCredentialDefinitionObject({
-        issuerId,
-        schemaId: 'did:indy2:mainnet:SEp33q43PsdP7nDATyySSH/anoncreds/v0/SCHEMA/Test/1.0.0',
-      })
+      const unknownSchemaId = 'did:indy2:mainnet:SEp33q43PsdP7nDATyySSH/anoncreds/v0/SCHEMA/Test/1.0.0'
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId: unknownSchemaId })
 
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, unknownSchemaId, credDef))
         .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.SchemaNotFound)
-        .withArgs(credDef.schemaId)
-    })
-
-    it('Should fail if Credential Definition is being created with unsupported type', async function () {
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId, credDefType: 'CL2' })
-
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-        .to.be.revertedWithCustomError(
-          credentialDefinitionRegistry.baseInstance,
-          ClErrors.UnsupportedCredentialDefinitionType,
-        )
-        .withArgs(credDef.credDefType)
-    })
-
-    it('Should fail if Credential Definition is being created with empty tag', async function () {
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId, tag: '' })
-
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, Errors.FieldRequired)
-        .withArgs('tag')
-    })
-
-    it('Should fail if Credential Definition is being created with empty value', async function () {
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId, value: '' })
-
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, Errors.FieldRequired)
-        .withArgs('value')
+        .withArgs(unknownSchemaId)
     })
 
     it('Should fail if Credential Definition is being created with not owned Issuer DID', async function () {
       const issuerId2 = 'did:indy2:mainnet:SEp33q43PsdP7nDATyyDDA'
-      const credDef = createCredentialDefinitionObject({ issuerId, schemaId })
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
 
       didRegistry.connect(testAccounts.trustee2.account)
       credentialDefinitionRegistry.connect(testAccounts.trustee2.account)
 
-      await createDid(didRegistry, issuerId2)
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.SenderIsNotIssuerDidOwner)
-        .withArgs(testAccounts.trustee2.account.address, testAccounts.trustee.account.address)
+      await createDid(didRegistry, testAccounts.trustee2.account.address, issuerId2)
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, schemaId, credDef))
+        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.UnauthorizedSender)
+        .withArgs(testAccounts.trustee2.account.address)
     })
 
-    // FIXME: for ledger migration purpose we disabled checking id validity for credential definition
-    //  as it can contain schema id represented as seq_no
-    // it('Should fail if Credential Definition is being with invalid ID', async function () {
-    //   const { credentialDefinitionRegistry, schemaId } = await loadFixture(deployCredDefContractFixture)
-    //
-    //   const credDef = createCredentialDefinitionObject({ issuerId, schemaId })
-    //   credDef.id = 'Gs6cQcvrtWoZKsbBhD3dQJ:3:CL:140384:mctc'
-    //
-    //   await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-    //     .to.be.revertedWithCustomError(
-    //       credentialDefinitionRegistry.baseInstance,
-    //       ClErrors.InvalidCredentialDefinitionId,
-    //     )
-    //     .withArgs(credDef.id)
-    // })
+    it('Should fail if Credential Definition is being with invalid ID', async function () {
+      const { credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
+      const id = 'Gs6cQcvrtWoZKsbBhD3dQJ:3:CL:140384:mctc'
+
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, schemaId, credDef))
+        .to.be.revertedWithCustomError(
+          credentialDefinitionRegistry.baseInstance,
+          ClErrors.InvalidCredentialDefinitionId,
+        )
+        .withArgs(id)
+    })
   })
 
   describe('Add/Resolve Credential Definition with did:ethr Issuer', function () {
     it('Should create and resolve Credential Definition', async function () {
       const ethrIssuerId = `did:ethr:${testAccounts.trustee.account.address}`
-      const credDef = createCredentialDefinitionObject({ issuerId: ethrIssuerId, schemaId })
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId: ethrIssuerId, schemaId })
 
-      await credentialDefinitionRegistry.createCredentialDefinition(credDef)
-      const result = await credentialDefinitionRegistry.resolveCredentialDefinition(credDef.id)
+      await credentialDefinitionRegistry.createCredentialDefinition(id, ethrIssuerId, schemaId, credDef)
+      const result = await credentialDefinitionRegistry.resolveCredentialDefinition(id)
 
       expect(result.credDef).to.be.deep.equal(credDef)
     })
 
     it('Should fail if Credential Definition is being created with not owned Issuer DID', async function () {
       const ethrIssuerId = `did:ethr:${testAccounts.trustee2.account.address}`
-      const credDef = createCredentialDefinitionObject({ issuerId: ethrIssuerId, schemaId })
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId: ethrIssuerId, schemaId })
 
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.SenderIsNotIssuerDidOwner)
-        .withArgs(testAccounts.trustee.account.address, testAccounts.trustee2.account.address)
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, ethrIssuerId, schemaId, credDef))
+        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.UnauthorizedSender)
+        .withArgs(testAccounts.trustee.account.address)
     })
 
     it('Should fail if Credential Definition is being created with invalid Issuer ID', async function () {
-      const credDef = createCredentialDefinitionObject({ issuerId: 'did:ethr:ab$ddfgh354345', schemaId })
+      const invalidIssuerId = 'did:ethr:ab$ddfgh354345'
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId: invalidIssuerId, schemaId })
 
-      await expect(credentialDefinitionRegistry.createCredentialDefinition(credDef))
+      await expect(credentialDefinitionRegistry.createCredentialDefinition(id, invalidIssuerId, schemaId, credDef))
         .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.InvalidIssuerId)
-        .withArgs(credDef.issuerId)
+        .withArgs(invalidIssuerId)
     })
   })
 })

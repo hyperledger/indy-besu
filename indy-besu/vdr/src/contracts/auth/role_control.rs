@@ -41,14 +41,14 @@ pub async fn build_assign_role_transaction(
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await;
+        .await?;
 
     info!(
         "{} txn build has finished. Result: {:?}",
         METHOD_ASSIGN_ROLE, transaction
     );
 
-    transaction
+    Ok(transaction)
 }
 
 /// Build transaction to execute RoleControl.revokeRole contract method to revoke a role from an account
@@ -80,14 +80,14 @@ pub async fn build_revoke_role_transaction(
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await;
+        .await?;
 
     info!(
         "{} txn build has finished. Result: {:?}",
         METHOD_REVOKE_ROLE, transaction
     );
 
-    transaction
+    Ok(transaction)
 }
 
 /// Build transaction to execute RoleControl.hasRole contract method to check an account has a role
@@ -116,14 +116,14 @@ pub async fn build_has_role_transaction(
         .add_param(account.try_into()?)
         .set_type(TransactionType::Read)
         .build(client)
-        .await;
+        .await?;
 
     info!(
         "{} txn build has finished. Result {:?}",
         METHOD_HAS_ROLE, transaction
     );
 
-    transaction
+    Ok(transaction)
 }
 
 /// Build transaction to execute RoleControl.getRole contract method to get account's role
@@ -149,14 +149,14 @@ pub async fn build_get_role_transaction(
         .add_param(account.try_into()?)
         .set_type(TransactionType::Read)
         .build(client)
-        .await;
+        .await?;
 
     info!(
         "{} txn build has finished. Result: {:?}",
         METHOD_GET_ROLE, transaction
     );
 
-    transaction
+    Ok(transaction)
 }
 
 /// Parse the result of execution RoleControl.HasRole contract method to check an account has a role
@@ -173,17 +173,17 @@ pub fn parse_has_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<b
         METHOD_HAS_ROLE, bytes
     );
 
-    let parse_result = TransactionParser::new()
+    let has_result = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_HAS_ROLE)
-        .parse::<HasRole>(client, bytes);
+        .parse::<HasRole>(client, bytes)?;
 
     info!(
         "{} result parse has finished. Result: {:?}",
-        METHOD_HAS_ROLE, parse_result
+        METHOD_HAS_ROLE, has_result
     );
 
-    parse_result
+    Ok(has_result)
 }
 
 /// Parse the result of execution RoleControl.GetRole contract method to get account's role
@@ -200,17 +200,17 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<R
         METHOD_GET_ROLE, bytes
     );
 
-    let parse_result = TransactionParser::new()
+    let role = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_ROLE)
-        .parse::<Role>(client, bytes);
+        .parse::<Role>(client, bytes)?;
 
     info!(
         "{} result parse has finished. Result: {:?}",
-        METHOD_GET_ROLE, parse_result
+        METHOD_GET_ROLE, role
     );
 
-    parse_result
+    Ok(role)
 }
 
 #[cfg(test)]

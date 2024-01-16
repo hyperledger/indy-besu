@@ -26,7 +26,7 @@ impl LedgerClient {
     ///  - `chain_id` - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
     ///  - `rpc_node` - string - RPC node endpoint
     ///  - `contract_configs` - [ContractSpec] specifications for contracts  deployed on the network
-    ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum is not needed
+    ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum check is not needed
     ///
     /// # Returns
     ///  client to use for building and sending transactions
@@ -206,6 +206,9 @@ pub mod test {
 
     pub static TRUSTEE_ACC: Lazy<Address> =
         Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
+
+    pub static IDENTITY_ACC: Lazy<Address> =
+        Lazy::new(|| Address::from("0xb9059400dcd05158ffd8ca092937989dd27b3bdc"));
 
     fn build_contract_path(contract_path: &str) -> String {
         let mut cur_dir = env::current_dir().unwrap();

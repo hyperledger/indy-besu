@@ -19,14 +19,16 @@ impl CredentialDefinitionRegistry {
     pub async fn build_create_credential_definition_transaction(
         client: &LedgerClientWrapper,
         from: &str,
+        id: &str,
         cred_def: JsValue,
     ) -> Result<TransactionWrapper> {
         let client = client.0.clone();
         let cred_def: CredentialDefinition = serde_wasm_bindgen::from_value(cred_def)?;
         let address = Address::from(from);
+        let id = CredentialDefinitionId::from(id);
         let transaction =
             credential_definition_registry::build_create_credential_definition_transaction(
-                &client, &address, &cred_def,
+                &client, &address, &id, &cred_def,
             )
             .await
             .as_js()?;
