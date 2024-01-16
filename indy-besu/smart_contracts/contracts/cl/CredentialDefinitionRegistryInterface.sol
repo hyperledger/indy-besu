@@ -23,7 +23,7 @@ interface CredentialDefinitionRegistryInterface {
      * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.
      * - `IssuerHasBeenDeactivated`: Raised if the associated issuer is not active.
      * - `InvalidCredentialDefinitionId`: Raised if the Credential Definition ID syntax is invalid.
-     * - `UnauthorizedSender`: Raised when an issuer DID specified in CredentialDefinition is not owned by sender
+     * - `UnauthorizedIssuer`: Raised when an issuer DID specified in CredentialDefinition is not owned by sender
      *
      * @param id        Id of credential definition to be created.
      * @param issuerId  Id of credential definition issuer.

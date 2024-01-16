@@ -5,7 +5,7 @@ import { DidNotFound, IncorrectDid } from "../did/DidErrors.sol";
 import { DidMetadata } from "../did/DidTypes.sol";
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { Errors } from "../utils/Errors.sol";
-import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound, UnauthorizedSender } from "./ClErrors.sol";
+import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound, UnauthorizedIssuer } from "./ClErrors.sol";
 
 contract CLRegistry {
     /**
@@ -20,7 +20,7 @@ contract CLRegistry {
     modifier _validIssuer(string memory id) {
         try _didResolver.resolveMetadata(id) returns (DidMetadata memory metadata) {
             if (msg.sender != metadata.owner && msg.sender != metadata.sender) {
-                revert UnauthorizedSender(msg.sender);
+                revert UnauthorizedIssuer(msg.sender);
             }
             if (metadata.deactivated) revert IssuerHasBeenDeactivated(id);
         } catch (bytes memory reason) {

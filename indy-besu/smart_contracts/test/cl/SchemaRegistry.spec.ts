@@ -92,7 +92,7 @@ describe('SchemaRegistry', function () {
 
       await createDid(didRegistry, testAccounts.trustee2.account.address, issuerId2)
       await expect(schemaRegistry.createSchema(id, issuerId, schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedSender)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
         .withArgs(testAccounts.trustee2.account.address)
     })
   })
@@ -115,7 +115,7 @@ describe('SchemaRegistry', function () {
       const { id, schema } = createSchemaObject({ issuerId: ethrIssuerId })
 
       await expect(schemaRegistry.createSchema(id, ethrIssuerId, schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedSender)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
         .withArgs(testAccounts.trustee.account.address)
     })
 

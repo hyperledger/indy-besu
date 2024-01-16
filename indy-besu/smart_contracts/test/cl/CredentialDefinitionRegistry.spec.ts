@@ -108,7 +108,7 @@ describe('CredentialDefinitionRegistry', function () {
 
       await createDid(didRegistry, testAccounts.trustee2.account.address, issuerId2)
       await expect(credentialDefinitionRegistry.createCredentialDefinition(id, issuerId, schemaId, credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.UnauthorizedSender)
+        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
         .withArgs(testAccounts.trustee2.account.address)
     })
 
@@ -141,7 +141,7 @@ describe('CredentialDefinitionRegistry', function () {
       const { id, credDef } = createCredentialDefinitionObject({ issuerId: ethrIssuerId, schemaId })
 
       await expect(credentialDefinitionRegistry.createCredentialDefinition(id, ethrIssuerId, schemaId, credDef))
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.UnauthorizedSender)
+        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
         .withArgs(testAccounts.trustee.account.address)
     })
 

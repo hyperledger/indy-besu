@@ -63,4 +63,4 @@ error CredentialDefinitionNotFound(string id);
  * @notice Error that occurs when issuer DID of Schema or CredentialDefinition is not owned by sender.
  * @param sender Sender account address.
  */
-error UnauthorizedSender(address sender);
+error UnauthorizedIssuer(address sender);

@@ -21,7 +21,7 @@ interface SchemaRegistryInterface {
      * - `SchemaAlreadyExist`: Raised if Schema with provided ID already exist.
      * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.
      * - `IssuerHasBeenDeactivated`: Raised if the associated issuer is not active.
-     * - `UnauthorizedSender`: Raised when an issuer DID specified in Schema is not owned by sender
+     * - `UnauthorizedIssuer`: Raised when an issuer DID specified in Schema is not owned by sender
      *
      * @param id        Id of schema to be created.
      * @param issuerId  Id of schema issuer.
