@@ -11,7 +11,7 @@ export namespace ClErrors {
   export const IssuerNotFound = 'IssuerNotFound'
   export const IssuerHasBeenDeactivated = 'IssuerHasBeenDeactivated'
   export const InvalidIssuerId = 'InvalidIssuerId'
-  export const UnauthorizedSender = 'UnauthorizedSender'
+  export const UnauthorizedIssuer = 'UnauthorizedIssuer'
 
   // Schema errors
   export const InvalidSchemaId = 'InvalidSchemaId'
