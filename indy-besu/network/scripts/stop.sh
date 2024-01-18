@@ -23,4 +23,4 @@ echo "Stopping network"
 echo "----------------------------------"
 
 
-docker compose --profile services stop
+docker compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services stop

@@ -27,8 +27,8 @@ echo "Localnet"
 echo "*************************************"
 echo "Stop and remove network..."
 
-docker compose --profile services down -v
-docker compose --profile services rm -sfv
+docker compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services down -v
+docker compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services rm -sfv
 
 rm ${LOCK_FILE}
 echo "Lock file ${LOCK_FILE} removed"

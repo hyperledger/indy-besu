@@ -6,3 +6,8 @@ logs
 .idea
 vdr/out
 vdr/target
+
+# Blockscout
+blockscout-db-data
+redis-data
+stats-db-data
