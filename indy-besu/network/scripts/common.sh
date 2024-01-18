@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Blockscout docker compose config file location
+BLOCKSCOUT_DOCKER_CONFIG=/$(dirname $(dirname $(readlink -f "$0")))/infra/blockscout/blockscout.yml
+
 # checks that this script didn't run manually
 me=`basename "$0"`
 if [ "$me" = ".common.sh" ];then

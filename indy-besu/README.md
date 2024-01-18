@@ -53,6 +53,14 @@ See [design document](./docs/README.md) covering the main ledger aspects.
     ```bash
     ./network/scripts/run.sh
     ```
+* **Start the network with Blocksout explorer: - run all services inside the docker containers**
+    ```bash
+    ./network/scripts/run.sh --blockscout
+    ```
+    or
+    ```bash
+    ./network/scripts/run.sh -b
+    ```
 
 * **Stop the network: run the entire network, and you can resume where it left off with `./resume.sh`**
     ```bash

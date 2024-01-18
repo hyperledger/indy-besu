@@ -22,5 +22,8 @@ echo "*************************************"
 echo "Resuming network..."
 echo "----------------------------------"
 
-docker compose --profile services start
-
+if [ -z `docker-compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG ps -a -q proxy` ]; then
+  docker compose --profile services start
+else
+  docker-compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services start
+fi

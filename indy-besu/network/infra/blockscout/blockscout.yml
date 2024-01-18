@@ -1,0 +1,83 @@
+version: '3.9'
+
+services:
+  redis_db:
+    extends:
+      file: ./network/infra/blockscout/services/redis.yml
+      service: redis_db
+
+  db-init:
+    extends:
+      file: ./network/infra/blockscout/services/db.yml
+      service: db-init
+
+  db:
+    extends:
+      file: ./network/infra/blockscout/services/db.yml
+      service: db
+
+  backend:
+    volumes:
+      - ./network/config/besu/genesis.json:/opt/besu/genesis.json
+    depends_on:
+      - db
+      - redis_db
+    extends:
+      file: ./network/infra/blockscout/services/backend.yml
+      service: backend
+    links:
+      - db:database
+    environment:
+        NETWORK: 'Indy-Besu'
+        ETHEREUM_JSONRPC_VARIANT: 'besu'
+        ETHEREUM_JSONRPC_HTTP_URL: http://host.docker.internal:8545/
+        ETHEREUM_JSONRPC_TRACE_URL: http://host.docker.internal:8545/
+        ETHEREUM_JSONRPC_WS_URL: ws://host.docker.internal:8546/
+        CHAIN_ID: '1337'
+        EMISSION_FORMAT: 'POA'
+        CHAIN_SPEC_PATH: '/opt/besu/genesis.json'
+
+  visualizer:
+    extends:
+      file: ./network/infra/blockscout/services/visualizer.yml
+      service: visualizer
+
+  sig-provider:
+    extends:
+      file: ./network/infra/blockscout/services/sig-provider.yml
+      service: sig-provider
+
+  frontend:
+    depends_on:
+      - backend
+    extends:
+      file: ./network/infra/blockscout/services/frontend.yml
+      service: frontend
+
+  stats-db-init:
+    extends:
+      file: ./network/infra/blockscout/services/stats.yml
+      service: stats-db-init
+
+  stats-db:
+    depends_on:
+      - backend
+    extends:
+      file: ./network/infra/blockscout/services/stats.yml
+      service: stats-db
+
+  stats:
+    depends_on:
+      - stats-db
+    extends:
+      file: ./network/infra/blockscout/services/stats.yml
+      service: stats
+
+  proxy:
+    depends_on:
+      - backend
+      - frontend
+      - stats
+    extends:
+      file: ./network/infra/blockscout/services/nginx.yml
+      service: proxy
