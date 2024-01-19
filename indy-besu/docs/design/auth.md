@@ -55,6 +55,9 @@ Contract name: **RoleControl**
 
 * Method: `hasRole`
   * Description: Transaction to check if an account has requested role assigned.
+  * Parameters:
+    * `role` - The role to check against
+    * `account` - The address of the account whose role assignment is being checked
   * Restrictions: None
   * Format
       ```
@@ -70,12 +73,14 @@ Contract name: **RoleControl**
         "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"
       )
       ```
-  * Raised Event: None
+  * Raised Event: `None`
 
 #### Get account role
 
 * Method: `getRole`
-  * Description: Transaction to get the role assigned to an account 
+  * Description: Transaction to get the role assigned to an account
+  * Parameters:
+      * `account` - The address of the account to obtain role
   * Restrictions: None
   * Format:
       ```
@@ -89,12 +94,15 @@ Contract name: **RoleControl**
         "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"
       )
       ```
-  * Raised Event: None
+  * Raised Event: `None`
 
 #### Assign role to an account 
 
 * Method: `assignRole`
   * Description: Transaction to assign role to an account
+  * Parameters:
+      * `role` - The role to be assigned to the account
+      * `account` - The address of the account to which the role will be assigned
   * Restrictions: 
     * Sender must have assigned role owning the target role - for example be default TRUSTEE owns ENDORSER role. In order to assign ENDORSER role to an account sender must have TRUSTEE role.  
   * Format:
@@ -111,12 +119,15 @@ Contract name: **RoleControl**
         "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"
       )
   * Raised Event: 
-    * RoleAssigned(ROLE, account, sender)
+    * `RoleAssigned(ROLE, account, sender)`
 
 #### Revoke role from an account 
 
 * Method: `revokeRole`
   * Description: Transaction to revive role from an account
+  * Parameters:
+      * `role` - The role to be revoked from the account
+      * `account` - The address of the account to which the role will be revoked
   * Restrictions: 
     * Sender must have assigned role owning the target role - for example be default TRUSTEE owns ENDORSER role. In order to revoke ENDORSER role to an account sender must have TRUSTEE role.  
   * Format:
@@ -133,7 +144,7 @@ Contract name: **RoleControl**
         "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"
       )
   * Raised Event: 
-    * RoleRevoked(ROLE, account, sender)
+    * `RoleRevoked(ROLE, account, sender)`
 
 
 

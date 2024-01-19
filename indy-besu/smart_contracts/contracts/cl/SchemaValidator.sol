@@ -1,50 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { FieldRequired } from "../utils/Errors.sol";
-import { StringUtils } from "../utils/StringUtils.sol";
 import { InvalidSchemaId } from "./ClErrors.sol";
-import { Schema } from "./SchemaTypes.sol";
 
-using StringUtils for string;
+import { toSlice } from "@dk1a/solidity-stringutils/src/StrSlice.sol";
+
+using { toSlice } for string;
 
 library SchemaValidator {
     string private constant _DELIMITER = "/";
     string private constant _SCHEMA_ID_MIDDLE_PART = "/anoncreds/v0/SCHEMA/";
 
     /**
-     * @dev Validates the Schema syntax
+     * @dev Validates the Schema ID syntax
      */
-    function requireValidId(Schema memory self) internal pure {
-        string memory schemaId = string.concat(
-            self.issuerId,
-            _SCHEMA_ID_MIDDLE_PART,
-            self.name,
-            _DELIMITER,
-            self.version
-        );
+    function validateIdSyntax(string memory self, string calldata issuerId) internal pure {
+        string memory schemaId = string.concat(issuerId, _SCHEMA_ID_MIDDLE_PART);
 
-        if (!schemaId.equals(self.id)) revert InvalidSchemaId(self.id);
-    }
-
-    /**
-     * @dev Validates that the Schema name is provided
-     */
-    function requireName(Schema memory self) internal pure {
-        if (self.name.isEmpty()) revert FieldRequired("name");
-    }
-
-    /**
-     * @dev Validates that the Schema version is provided
-     */
-    function requireVersion(Schema memory self) internal pure {
-        if (self.version.isEmpty()) revert FieldRequired("version");
-    }
-
-    /**
-     * @dev Validates that the Schema attributes are provided
-     */
-    function requireAttributes(Schema memory self) internal pure {
-        if (self.attrNames.length == 0) revert FieldRequired("attributes");
+        if (!self.toSlice().startsWith(schemaId.toSlice())) revert InvalidSchemaId(self);
     }
 }

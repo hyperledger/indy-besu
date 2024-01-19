@@ -6,17 +6,17 @@ import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
 import { SchemaAlreadyExist, SchemaNotFound } from "./ClErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
-import { Schema, SchemaWithMetadata } from "./SchemaTypes.sol";
+import { SchemaRecord } from "./SchemaTypes.sol";
 import { SchemaValidator } from "./SchemaValidator.sol";
 import { CLRegistry } from "./CLRegistry.sol";
 
-using SchemaValidator for Schema;
+using SchemaValidator for string;
 
 contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLRegistry {
     /**
      * Mapping Schema ID to its Schema Details and Metadata.
      */
-    mapping(string id => SchemaWithMetadata schemaWithMetadata) private _schemas;
+    mapping(string id => SchemaRecord SchemaRecord) private _schemas;
 
     /**
      * Checks the uniqueness of the Schema ID
@@ -41,23 +41,22 @@ contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLReg
 
     /// @inheritdoc SchemaRegistryInterface
     function createSchema(
-        Schema calldata schema
-    ) public virtual _uniqueSchemaId(schema.id) _validIssuer(schema.issuerId) {
-        schema.requireValidId();
-        schema.requireName();
-        schema.requireVersion();
-        schema.requireAttributes();
+        string calldata id,
+        string calldata issuerId,
+        string calldata schema
+    ) public virtual _uniqueSchemaId(id) _validIssuer(issuerId) {
+        id.validateIdSyntax(issuerId);
 
-        _schemas[schema.id].schema = schema;
-        _schemas[schema.id].metadata.created = block.timestamp;
+        _schemas[id].schema = schema;
+        _schemas[id].metadata.created = block.timestamp;
 
-        emit SchemaCreated(schema.id, msg.sender);
+        emit SchemaCreated(id);
     }
 
     /// @inheritdoc SchemaRegistryInterface
     function resolveSchema(
         string calldata id
-    ) public view virtual _schemaExist(id) returns (SchemaWithMetadata memory schemaWithMetadata) {
+    ) public view virtual _schemaExist(id) returns (SchemaRecord memory schemaRecord) {
         return _schemas[id];
     }
 }

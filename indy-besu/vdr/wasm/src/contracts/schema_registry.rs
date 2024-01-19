@@ -17,12 +17,14 @@ impl SchemaRegistry {
     pub async fn build_create_schema_transaction(
         client: &LedgerClientWrapper,
         from: &str,
+        id: &str,
         schema: JsValue,
     ) -> Result<TransactionWrapper> {
         let schema: Schema = serde_wasm_bindgen::from_value(schema)?;
         let address = Address::from(from);
+        let id = SchemaId::from(id);
         let transaction =
-            schema_registry::build_create_schema_transaction(&client.0, &address, &schema)
+            schema_registry::build_create_schema_transaction(&client.0, &address, &id, &schema)
                 .await
                 .as_js()?;
         Ok(TransactionWrapper(Rc::new(transaction)))

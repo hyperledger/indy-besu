@@ -14,6 +14,7 @@ const didRegistryConfig = {
 }
 
 const account = '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5'
+const identity = '0xb9059400dcd05158ffd8ca092937989dd27b3bdc'
 const secret = Uint8Array.from([ 139, 187, 177, 179, 69, 175, 86, 181, 96, 165, 178, 11, 212, 176, 237, 28, 216, 204, 153, 88, 161, 98, 98, 188, 117, 17, 132, 83, 203, 84, 109, 247 ])
 
 async function main() {
@@ -52,7 +53,7 @@ async function main() {
         "service": []
     }
     console.log('DID Document: ' + JSON.stringify(didDoc, null, 2))
-    let transaction = await IndyDidRegistry.buildCreateDidTransaction(client, account, didDoc)
+    let transaction = await IndyDidRegistry.buildCreateDidTransaction(client, account, identity, did, didDoc)
     const bytesToSign = transaction.getSigningBytes()
     const signature = secp256k1.ecdsaSign(bytesToSign, secret)
     transaction.setSignature({

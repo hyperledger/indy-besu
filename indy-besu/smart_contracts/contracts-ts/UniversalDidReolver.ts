@@ -1,5 +1,5 @@
 import { Contract } from '../utils'
-import { DidDocument, DidMetadata, mapDidDocument, mapDidMetadata } from './types'
+import { DidMetadata, mapDidMetadata } from './types'
 
 export class UniversalDidResolver extends Contract {
   public static readonly defaultAddress = '0x000000000000000000000000000000000019999'
@@ -8,9 +8,8 @@ export class UniversalDidResolver extends Contract {
     super(UniversalDidResolver.name, sender)
   }
 
-  public async resolveDocument(id: string): Promise<DidDocument> {
-    const document = await this.instance.resolveDocument(id)
-    return mapDidDocument(document)
+  public async resolveDocument(id: string): Promise<string> {
+    return this.instance.resolveDocument(id)
   }
 
   public async resolveMetadata(id: string): Promise<DidMetadata> {

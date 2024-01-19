@@ -3,16 +3,16 @@ pragma solidity ^0.8.20;
 
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
-import { DidAlreadyExist, DidHasBeenDeactivated, DidNotFound, SenderIsNotCreator } from "./DidErrors.sol";
+import { DidAlreadyExist, DidHasBeenDeactivated, DidNotFound, UnauthorizedSender } from "./DidErrors.sol";
 import { IndyDidRegistryInterface } from "./IndyDidRegistryInterface.sol";
-import { DidDocument, DidDocumentStorage } from "./DidTypes.sol";
+import { DidRecord } from "./DidTypes.sol";
 import { IndyDidValidator } from "./IndyDidValidator.sol";
 
 contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
     /**
-     * @dev Mapping DID to its corresponding DID Document.
+     * @dev Mapping DID to its corresponding DID Document/Metadata.
      */
-    mapping(string did => DidDocumentStorage didDocumentStorage) private _dids;
+    mapping(string did => DidRecord didRecord) private _dids;
 
     /**
      * Checks that DID already exists
@@ -39,11 +39,12 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
     }
 
     /**
-     * Checks that method was called by did creator
+     * Checks that method was called either by did owner or sender
      */
-    modifier _senderIsCreator(string memory did) {
-        if (msg.sender != _dids[did].metadata.creator)
-            revert SenderIsNotCreator(msg.sender, _dids[did].metadata.creator);
+    modifier _senderIsAuthorized(string memory did) {
+        // FIXME: once we add strict role and endorsement, the check here should be either owner or Trustee
+        if (msg.sender != _dids[did].metadata.owner && msg.sender != _dids[did].metadata.sender)
+            revert UnauthorizedSender(msg.sender);
         _;
     }
 
@@ -52,42 +53,38 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
     }
 
     /// @inheritdoc IndyDidRegistryInterface
-    function createDid(DidDocument calldata document) public _didNotExist(document.id) {
-        IndyDidValidator.validateDidDocumentFormat(document);
-        IndyDidValidator.validateAuthenticationKeys(document);
+    function createDid(address identity, string calldata did, string calldata document) public _didNotExist(did) {
+        IndyDidValidator.validateDidSyntax(did);
 
-        _dids[document.id].document = document;
-        _dids[document.id].metadata.creator = msg.sender;
-        _dids[document.id].metadata.created = block.timestamp;
-        _dids[document.id].metadata.updated = block.timestamp;
+        _dids[did].document = document;
+        _dids[did].metadata.owner = identity;
+        _dids[did].metadata.sender = msg.sender;
+        _dids[did].metadata.created = block.timestamp;
+        _dids[did].metadata.updated = block.timestamp;
 
-        emit DIDCreated(document.id);
+        emit DIDCreated(did);
     }
 
     /// @inheritdoc IndyDidRegistryInterface
     function updateDid(
-        DidDocument calldata document
-    ) public _didExist(document.id) _didIsActive(document.id) _senderIsCreator(document.id) {
-        IndyDidValidator.validateDidDocumentFormat(document);
-        IndyDidValidator.validateAuthenticationKeys(document);
+        string calldata did,
+        string calldata document
+    ) public _didExist(did) _didIsActive(did) _senderIsAuthorized(did) {
+        _dids[did].document = document;
+        _dids[did].metadata.updated = block.timestamp;
 
-        _dids[document.id].document = document;
-        _dids[document.id].metadata.updated = block.timestamp;
-
-        emit DIDUpdated(document.id);
+        emit DIDUpdated(did);
     }
 
     /// @inheritdoc IndyDidRegistryInterface
-    function deactivateDid(string calldata id) public _didExist(id) _didIsActive(id) _senderIsCreator(id) {
-        _dids[id].metadata.deactivated = true;
+    function deactivateDid(string calldata did) public _didExist(did) _didIsActive(did) _senderIsAuthorized(did) {
+        _dids[did].metadata.deactivated = true;
 
-        emit DIDDeactivated(id);
+        emit DIDDeactivated(did);
     }
 
     /// @inheritdoc IndyDidRegistryInterface
-    function resolveDid(
-        string calldata id
-    ) public view virtual _didExist(id) returns (DidDocumentStorage memory didDocumentStorage) {
-        return _dids[id];
+    function resolveDid(string calldata did) public view virtual _didExist(did) returns (DidRecord memory didRecord) {
+        return _dids[did];
     }
 }

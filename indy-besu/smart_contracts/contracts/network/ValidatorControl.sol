@@ -5,9 +5,9 @@ import { Unauthorized } from "../auth/AuthErrors.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
-import { ValidatorSmartContractInterface } from "./ValidatorSmartContractInterface.sol";
+import { ValidatorControlInterface } from "./ValidatorControlInterface.sol";
 
-contract ValidatorControl is ValidatorSmartContractInterface, ControlledUpgradeable {
+contract ValidatorControl is ValidatorControlInterface, ControlledUpgradeable {
     /**
      * @dev Type describing initial validator details.
      */
@@ -78,19 +78,7 @@ contract ValidatorControl is ValidatorSmartContractInterface, ControlledUpgradea
         _initializeUpgradeControl(upgradeControlAddress);
     }
 
-    /**
-     * @dev Adds a new validator to the list.
-     *
-     * Restrictions:
-     * - Only accounts with the steward role are permitted to call this method; otherwise, will revert with an `Unauthorized` error.
-     * - The validator address must be non-zero; otherwise, will revert with an `InvalidValidatorAddress` error.
-     * - The total number of validators must not exceed 256; otherwise, will revert with an `ExceedsValidatorLimit` error.
-     * - The validator must not already exist in the list; otherwise, will revert with an `ValidatorAlreadyExists` error.
-     * - The sender of the transaction must not have an active validator; otherwise, will revert with a `SenderHasActiveValidator` error.
-     *
-     * Events:
-     * - On successful validator creation, will emit a `ValidatorAdded` event.
-     */
+    /// @inheritdoc ValidatorControlInterface
     function addValidator(address newValidator) public _senderIsSteward _nonZeroValidatorAddress(newValidator) {
         if (_validators.length >= _MAX_VALIDATORS) revert ExceedsValidatorLimit(_MAX_VALIDATORS);
 
@@ -108,6 +96,7 @@ contract ValidatorControl is ValidatorSmartContractInterface, ControlledUpgradea
         emit ValidatorAdded(newValidator, msg.sender, uint8(_validators.length));
     }
 
+    /// @inheritdoc ValidatorControlInterface
     /**
      * @dev Remove an existing validator from the list.
      *
@@ -144,7 +133,7 @@ contract ValidatorControl is ValidatorSmartContractInterface, ControlledUpgradea
         emit ValidatorRemoved(validatorRemoved, msg.sender, uint8(_validators.length));
     }
 
-    /// @inheritdoc ValidatorSmartContractInterface
+    /// @inheritdoc ValidatorControlInterface
     function getValidators() public view override returns (address[] memory) {
         return _validators;
     }

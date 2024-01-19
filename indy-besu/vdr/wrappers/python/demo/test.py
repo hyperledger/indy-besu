@@ -17,6 +17,7 @@ did_contact_address = '0x0000000000000000000000000000000000003333'
 did_contact_spec_path = '/Users/indy-besu/smart_contracts/artifacts/contracts/did/IndyDidRegistry.sol/IndyDidRegistry.json'
 # Account address to use for sending transactions
 account = '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5'
+identity = '0xb9059400dcd05158ffd8ca092937989dd27b3bdc'
 # Account private key
 account_key = '8bbbb1b345af56b560a5b20bd4b0ed1cd8cc9958a16262bc75118453cb546df7'
 
@@ -56,7 +57,7 @@ async def demo():
 
     print('DID Document: ' + json.dumps(did_doc))
 
-    transaction = await build_create_did_transaction(client, account, json.dumps(did_doc))
+    transaction = await build_create_did_transaction(client, account, identity, did, json.dumps(did_doc))
     bytes_to_sign = transaction.get_signing_bytes()
 
     signature = keys.PrivateKey(bytearray.fromhex(account_key)).sign_msg_hash(bytes_to_sign)

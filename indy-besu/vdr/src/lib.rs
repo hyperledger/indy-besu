@@ -28,7 +28,8 @@ pub use contracts::{
     did::{
         did_registry,
         types::{
-            did_doc::{DidDocument, VerificationKeyType, DID},
+            did::DID,
+            did_doc::{DidDocument, VerificationKeyType},
             did_doc_builder::DidDocumentBuilder,
         },
     },
