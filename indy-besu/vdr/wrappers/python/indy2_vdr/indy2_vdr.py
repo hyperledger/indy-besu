@@ -480,11 +480,11 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_assign_role_transaction() != 10839:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_create_credential_definition_transaction() != 3632:
+    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_create_credential_definition_transaction() != 40098:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_create_did_transaction() != 15910:
+    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_create_did_transaction() != 45601:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_create_schema_transaction() != 19691:
+    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_create_schema_transaction() != 284:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_deactivate_did_transaction() != 15981:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -504,7 +504,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_revoke_role_transaction() != 25022:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_update_did_transaction() != 47083:
+    if lib.uniffi_indy2_vdr_uniffi_checksum_func_build_update_did_transaction() != 11590:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy2_vdr_uniffi_checksum_func_parse_get_role_result() != 16295:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -618,16 +618,20 @@ _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_credential_definition_tr
     ctypes.c_void_p,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
+    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_credential_definition_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_did_transaction.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_did_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_schema_transaction.argtypes = (
     ctypes.c_void_p,
+    _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
@@ -683,6 +687,7 @@ _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_revoke_role_transaction.argtype
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_revoke_role_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_update_did_transaction.argtypes = (
     ctypes.c_void_p,
+    _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
 )
@@ -2511,10 +2516,12 @@ def build_assign_role_transaction(client: "LedgerClient",_from: "str",role: "int
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_credential_definition_transaction(client: "LedgerClient",_from: "str",credential_definition: "str"):
+def build_create_credential_definition_transaction(client: "LedgerClient",_from: "str",id: "str",credential_definition: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(id)
     
     _UniffiConverterString.check_lower(credential_definition)
     
@@ -2522,6 +2529,7 @@ def build_create_credential_definition_transaction(client: "LedgerClient",_from:
         _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_credential_definition_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(credential_definition)),
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_complete_pointer,
@@ -2532,10 +2540,14 @@ def build_create_credential_definition_transaction(client: "LedgerClient",_from:
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_did_transaction(client: "LedgerClient",_from: "str",did_doc: "str"):
+def build_create_did_transaction(client: "LedgerClient",_from: "str",identity: "str",did: "str",did_doc: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(identity)
+    
+    _UniffiConverterString.check_lower(did)
     
     _UniffiConverterString.check_lower(did_doc)
     
@@ -2543,6 +2555,8 @@ def build_create_did_transaction(client: "LedgerClient",_from: "str",did_doc: "s
         _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_did_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(identity),
+        _UniffiConverterString.lower(did),
         _UniffiConverterString.lower(did_doc)),
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_complete_pointer,
@@ -2553,10 +2567,12 @@ def build_create_did_transaction(client: "LedgerClient",_from: "str",did_doc: "s
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_schema_transaction(client: "LedgerClient",_from: "str",schema: "str"):
+def build_create_schema_transaction(client: "LedgerClient",_from: "str",id: "str",schema: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(id)
     
     _UniffiConverterString.check_lower(schema)
     
@@ -2564,6 +2580,7 @@ def build_create_schema_transaction(client: "LedgerClient",_from: "str",schema: 
         _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_create_schema_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(schema)),
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_complete_pointer,
@@ -2748,10 +2765,12 @@ def build_revoke_role_transaction(client: "LedgerClient",_from: "str",role: "int
         _UniffiConverterTypeVdrError,
     )
 
-def build_update_did_transaction(client: "LedgerClient",_from: "str",did_doc: "str"):
+def build_update_did_transaction(client: "LedgerClient",_from: "str",did: "str",did_doc: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
     
     _UniffiConverterString.check_lower(did_doc)
     
@@ -2759,6 +2778,7 @@ def build_update_did_transaction(client: "LedgerClient",_from: "str",did_doc: "s
         _UniffiLib.uniffi_indy2_vdr_uniffi_fn_func_build_update_did_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
         _UniffiConverterString.lower(did_doc)),
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy2_vdr_uniffi_rust_future_complete_pointer,

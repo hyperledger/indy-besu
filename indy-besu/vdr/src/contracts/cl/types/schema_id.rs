@@ -1,4 +1,4 @@
-use crate::{types::ContractParam, DID};
+use crate::{contracts::did::types::did::DID, types::ContractParam};
 use log::trace;
 use serde_derive::{Deserialize, Serialize};
 

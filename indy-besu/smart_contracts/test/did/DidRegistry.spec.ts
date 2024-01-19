@@ -1,9 +1,8 @@
 import { expect } from 'chai'
-import { VerificationMethod } from '../../contracts-ts/types/Did'
 import { createBaseDidDocument } from '../../utils/entity-factories'
 import { deployIndyDidRegistry, TestableIndyDidRegistry } from '../utils/contract-helpers'
 import { IndyDidValidator } from '../utils/contract-helpers'
-import { DidError, Errors } from '../utils/errors'
+import { DidError } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('DIDContract', function () {
@@ -29,9 +28,8 @@ describe('DIDContract', function () {
     it('Should create and resolve DID document', async function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
-      console.log(JSON.stringify(didDocument))
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
 
       const { document } = await didRegistry.resolveDid(did)
 
@@ -50,9 +48,9 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
 
-      await expect(didRegistry.createDid(didDocument))
+      await expect(didRegistry.createDid(testAccounts.noRole2.account.address, did, didDocument))
         .to.be.revertedWithCustomError(didRegistry.baseInstance, DidError.DidAlreadyExist)
         .withArgs(did)
     })
@@ -61,7 +59,7 @@ describe('DIDContract', function () {
       const did: string = 'indy:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await expect(didRegistry.createDid(didDocument))
+      await expect(didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument))
         .to.be.revertedWithCustomError(didValidator.baseInstance, DidError.IncorrectDid)
         .withArgs(did)
     })
@@ -70,7 +68,7 @@ describe('DIDContract', function () {
       const did: string = 'did:indy3:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await expect(didRegistry.createDid(didDocument))
+      await expect(didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument))
         .to.be.revertedWithCustomError(didValidator.baseInstance, DidError.IncorrectDid)
         .withArgs(did)
     })
@@ -79,126 +77,9 @@ describe('DIDContract', function () {
       const did: string = 'did:indy3:testnet:123456789'
       const didDocument = createBaseDidDocument(did)
 
-      await expect(didRegistry.createDid(didDocument))
+      await expect(didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument))
         .revertedWithCustomError(didValidator.baseInstance, DidError.IncorrectDid)
         .withArgs(did)
-    })
-
-    it('Should fail if an authentication key is not provided', async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-      didDocument.authentication = []
-
-      await expect(didRegistry.createDid(didDocument))
-        .revertedWithCustomError(didValidator.baseInstance, DidError.AuthenticationKeyRequired)
-        .withArgs(did)
-    })
-
-    it('Should fail if an authentication key is not found in the verification methods', async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-      didDocument.authentication = [
-        {
-          id: `${did}#KEY-3`,
-          verificationMethod: {
-            id: '',
-            verificationMethodType: '',
-            controller: '',
-            publicKeyMultibase: '',
-            publicKeyJwk: '',
-          },
-        },
-      ]
-
-      await expect(didRegistry.createDid(didDocument))
-        .revertedWithCustomError(didValidator.baseInstance, DidError.AuthenticationKeyNotFound)
-        .withArgs(didDocument.authentication[0].id)
-    })
-
-    it("Should fail if the DID document's verification reference has both id and method fields", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      didDocument.assertionMethod = [
-        {
-          id: `${did}#KEY-2`,
-          verificationMethod: {
-            id: `${did}#KEY-2`,
-            verificationMethodType: 'Ed25519VerificationKey2018',
-            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
-            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
-            publicKeyJwk: '',
-          },
-        },
-      ]
-
-      await expect(didRegistry.createDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
-        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
-    })
-
-    it("Should fail if the DID document's verification reference format is incorrect", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      didDocument.assertionMethod = [
-        {
-          id: `${did}#KEY-2`,
-          verificationMethod: {
-            id: '',
-            verificationMethodType: 'Ed25519VerificationKey2018',
-            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
-            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
-            publicKeyJwk: '',
-          },
-        },
-      ]
-
-      await expect(didRegistry.createDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
-        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
-    })
-
-    const failIfMissingRequiredField = (field: string) =>
-      async function () {
-        const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-        const didDocument = createBaseDidDocument(did)
-
-        didDocument.verificationMethod[0][field] = ''
-
-        await expect(didRegistry.createDid(didDocument))
-          .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
-          .withArgs(`VerificationMethod.${field}`)
-      }
-
-    ;['id', 'controller', 'verificationMethodType'].forEach((field: string) =>
-      it(
-        `Should fail if the DID document's verification method is missing '${field}' field`,
-        failIfMissingRequiredField(field),
-      ),
-    )
-
-    it("Should fail if the DID document's verification method is missing public key fields", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      didDocument.verificationMethod[0].publicKeyMultibase = ''
-
-      await expect(didRegistry.createDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
-        .withArgs('VerificationMethod.publicKeyJwk or VerificationMethod.publicKeyMultibase')
-    })
-
-    it("Should fail if the DID document's verification method has both jwk and multibase keys", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      didDocument.verificationMethod[0].publicKeyJwk =
-        '{"kty":"EC","d":"zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"...}'
-
-      await expect(didRegistry.createDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
-        .withArgs('VerificationMethod.publicKeyJwk, VerificationMethod.publicKeyMultibase')
     })
   })
 
@@ -207,19 +88,9 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
 
-      const verificationMethod: VerificationMethod = {
-        id: `${did}#KEY-2`,
-        verificationMethodType: 'X25519KeyAgreementKey2019',
-        controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
-        publicKeyMultibase: 'FbQWLPRhTH95MCkQUeFYdiSoQt8zMwetqfWoxqPgaq7x',
-        publicKeyJwk: '',
-      }
-
-      didDocument.verificationMethod.push(verificationMethod)
-
-      await didRegistry.updateDid(didDocument)
+      await didRegistry.updateDid(did, didDocument)
 
       const { document } = await didRegistry.resolveDid(did)
 
@@ -230,12 +101,12 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
 
       didRegistry.connect(testAccounts.trustee2.account)
-      await expect(didRegistry.updateDid(didDocument)).to.revertedWithCustomError(
+      await expect(didRegistry.updateDid(did, didDocument)).to.revertedWithCustomError(
         didRegistry.baseInstance,
-        DidError.SenderIsNotCreator,
+        DidError.UnauthorizedSender,
       )
     })
 
@@ -243,7 +114,7 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await expect(didRegistry.updateDid(didDocument))
+      await expect(didRegistry.updateDid(did, didDocument))
         .to.revertedWithCustomError(didRegistry.baseInstance, DidError.DidNotFound)
         .withArgs(did)
     })
@@ -252,158 +123,12 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
       await didRegistry.deactivateDid(did)
 
-      await expect(didRegistry.updateDid(didDocument))
+      await expect(didRegistry.updateDid(did, didDocument))
         .to.revertedWithCustomError(didRegistry.baseInstance, DidError.DidHasBeenDeactivated)
         .withArgs(did)
-    })
-
-    it('Should fail if an authentication key is not provided', async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      await didRegistry.createDid(didDocument)
-
-      didDocument.authentication = []
-
-      await expect(didRegistry.updateDid(didDocument))
-        .revertedWithCustomError(didValidator.baseInstance, DidError.AuthenticationKeyRequired)
-        .withArgs(did)
-    })
-
-    it('Should fail if an authentication key is not found in the verification methods', async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      await didRegistry.createDid(didDocument)
-
-      didDocument.authentication = [
-        {
-          id: `${did}#KEY-3`,
-          verificationMethod: {
-            id: '',
-            verificationMethodType: '',
-            controller: '',
-            publicKeyMultibase: '',
-            publicKeyJwk: '',
-          },
-        },
-      ]
-
-      await expect(didRegistry.updateDid(didDocument))
-        .revertedWithCustomError(didValidator.baseInstance, DidError.AuthenticationKeyNotFound)
-        .withArgs(didDocument.authentication[0].id)
-    })
-
-    it("Should fail if the DID document's verification reference has both id and method fields", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      await didRegistry.createDid(didDocument)
-
-      didDocument.authentication[0].verificationMethod = didDocument.verificationMethod[0]
-
-      await expect(didRegistry.updateDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
-        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
-    })
-
-    it("Should fail if the DID document's verification reference has both id and method fields", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      await didRegistry.createDid(didDocument)
-
-      didDocument.assertionMethod = [
-        {
-          id: `${did}#KEY-2`,
-          verificationMethod: {
-            id: `${did}#KEY-2`,
-            verificationMethodType: 'Ed25519VerificationKey2018',
-            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
-            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
-            publicKeyJwk: '',
-          },
-        },
-      ]
-
-      await expect(didRegistry.updateDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
-        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
-    })
-
-    it("Should fail if the DID document's verification reference format is incorrect", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      await didRegistry.createDid(didDocument)
-
-      didDocument.assertionMethod = [
-        {
-          id: `${did}#KEY-2`,
-          verificationMethod: {
-            id: '',
-            verificationMethodType: 'Ed25519VerificationKey2018',
-            controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
-            publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
-            publicKeyJwk: '',
-          },
-        },
-      ]
-
-      await expect(didRegistry.updateDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
-        .withArgs('VerificationRelationship.id, VerificationRelationship.method')
-    })
-
-    const failIfMissingRequiredField = (field: string) =>
-      async function () {
-        const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-        const didDocument = createBaseDidDocument(did)
-
-        await didRegistry.createDid(didDocument)
-
-        didDocument.verificationMethod[0][field] = ''
-
-        await expect(didRegistry.updateDid(didDocument))
-          .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
-          .withArgs(`VerificationMethod.${field}`)
-      }
-
-    ;['id', 'controller', 'verificationMethodType'].forEach((field: string) =>
-      it(
-        `Should fail if the DID document's verification method is missing '${field}' field`,
-        failIfMissingRequiredField(field),
-      ),
-    )
-
-    it("Should fail if the DID document's verification method is missing public key fields", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      await didRegistry.createDid(didDocument)
-
-      didDocument.verificationMethod[0].publicKeyMultibase = ''
-
-      await expect(didRegistry.updateDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.FieldRequired)
-        .withArgs('VerificationMethod.publicKeyJwk or VerificationMethod.publicKeyMultibase')
-    })
-
-    it("Should fail if the DID document's verification method has both jwk and multibase keys", async function () {
-      const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
-      const didDocument = createBaseDidDocument(did)
-
-      await didRegistry.createDid(didDocument)
-
-      didDocument.verificationMethod[0].publicKeyJwk =
-        '{"kty":"EC","d":"zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf"...}'
-
-      await expect(didRegistry.updateDid(didDocument))
-        .to.revertedWithCustomError(didValidator.baseInstance, Errors.ConflictingFields)
-        .withArgs('VerificationMethod.publicKeyJwk, VerificationMethod.publicKeyMultibase')
     })
   })
 
@@ -412,7 +137,7 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
       await didRegistry.deactivateDid(did)
 
       const didStorage = await didRegistry.resolveDid(did)
@@ -424,7 +149,7 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
       await didRegistry.deactivateDid(did)
 
       await expect(didRegistry.deactivateDid(did))
@@ -444,12 +169,12 @@ describe('DIDContract', function () {
       const did: string = 'did:indy2:testnet:SEp33q43PsdP7nDATyySSH'
       const didDocument = createBaseDidDocument(did)
 
-      await didRegistry.createDid(didDocument)
+      await didRegistry.createDid(testAccounts.noRole.account.address, did, didDocument)
 
       didRegistry.connect(testAccounts.trustee2.account)
-      await expect(didRegistry.deactivateDid(didDocument.id)).to.revertedWithCustomError(
+      await expect(didRegistry.deactivateDid(did)).to.revertedWithCustomError(
         didRegistry.baseInstance,
-        DidError.SenderIsNotCreator,
+        DidError.UnauthorizedSender,
       )
     })
   })

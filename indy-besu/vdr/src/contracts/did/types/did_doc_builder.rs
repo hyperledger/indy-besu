@@ -2,12 +2,15 @@ use log::{trace, warn};
 use serde_json::Value;
 
 use crate::{
-    contracts::did::types::did_doc::{
-        Service, ServiceEndpoint, StringOrVector, VerificationMethod,
-        VerificationMethodOrReference, CONTEXT,
+    contracts::did::types::{
+        did::DID,
+        did_doc::{
+            Service, ServiceEndpoint, StringOrVector, VerificationMethod,
+            VerificationMethodOrReference, CONTEXT,
+        },
     },
     error::{VdrError, VdrResult},
-    DidDocument, VerificationKeyType, DID,
+    DidDocument, VerificationKeyType,
 };
 
 #[derive(Clone, Debug, Default, PartialEq)]

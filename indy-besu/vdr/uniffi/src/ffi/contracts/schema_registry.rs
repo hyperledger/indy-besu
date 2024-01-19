@@ -10,6 +10,7 @@ use serde_json::json;
 pub async fn build_create_schema_transaction(
     client: &LedgerClient,
     from: &str,
+    id: &str,
     schema: &str,
 ) -> VdrResult<Transaction> {
     let schema = serde_json::from_str(schema).map_err(|err| VdrError::CommonInvalidData {
@@ -18,6 +19,7 @@ pub async fn build_create_schema_transaction(
     let transaction = schema_registry::build_create_schema_transaction(
         &client.client,
         &Address::from(from),
+        &SchemaId::from(id),
         &schema,
     )
     .await?;

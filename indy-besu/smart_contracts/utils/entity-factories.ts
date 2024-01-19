@@ -1,49 +1,28 @@
-import {
-  CredentialDefinition,
-  DidDocument,
-  Schema,
-  VerificationMethod,
-  VerificationRelationship,
-} from '../contracts-ts'
-
-export function createBaseDidDocument(did: string): DidDocument {
-  const verificationMethod: VerificationMethod = {
-    id: `${did}#KEY-1`,
-    verificationMethodType: 'Ed25519VerificationKey2018',
-    controller: 'did:indy2:testnet:N22SEp33q43PsdP7nDATyySSH',
-    publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
-    publicKeyJwk: '',
-  }
-
-  const authentication: VerificationRelationship = {
-    id: `${did}#KEY-1`,
-    verificationMethod: {
-      id: '',
-      verificationMethodType: '',
-      controller: '',
-      publicKeyMultibase: '',
-      publicKeyJwk: '',
-    },
-  }
-
-  const didDocument: DidDocument = {
-    context: [],
+export function createBaseDidDocument(did: string) {
+  const kid = `${did}#KEY-1`
+  return JSON.stringify({
+    '@context': ['https://www.w3.org/ns/did/v1'],
     id: did,
-    controller: [],
-    verificationMethod: [verificationMethod],
-    authentication: [authentication],
+    controller: [did],
+    verificationMethod: [
+      {
+        id: kid,
+        type: 'Ed25519VerificationKey2018',
+        controller: did,
+        publicKeyMultibase: 'zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf',
+      },
+    ],
+    authentication: [kid],
     assertionMethod: [],
     capabilityInvocation: [],
     capabilityDelegation: [],
     keyAgreement: [],
     service: [],
     alsoKnownAs: [],
-  }
-
-  return didDocument
+  })
 }
 
-interface CreateShemaParams {
+interface CreateSchemaParams {
   issuerId: string
   name?: string
   version?: string
@@ -55,13 +34,17 @@ export function createSchemaObject({
   name = 'BasicIdentity',
   version = '1.0.0',
   attrNames = ['First Name', 'Last Name'],
-}: CreateShemaParams): Schema {
+}: CreateSchemaParams) {
+  const id = `${issuerId}/anoncreds/v0/SCHEMA/${name}/${version}`
   return {
-    id: `${issuerId}/anoncreds/v0/SCHEMA/${name}/${version}`,
-    issuerId,
-    name,
-    version,
-    attrNames,
+    id,
+    schema: JSON.stringify({
+      id,
+      issuerId,
+      name,
+      version,
+      attrNames,
+    }),
   }
 }
 
@@ -70,7 +53,7 @@ interface CreateCredentialDefinitionParams {
   schemaId: string
   credDefType?: string
   tag?: string
-  value?: string
+  value?: Record<string, string>
 }
 
 export function createCredentialDefinitionObject({
@@ -78,14 +61,23 @@ export function createCredentialDefinitionObject({
   schemaId,
   credDefType = 'CL',
   tag = 'BasicIdentity',
-  value = '{ "n": "779...397", "rctxt": "774...977", "s": "750..893", "z": "632...005" }',
-}: CreateCredentialDefinitionParams): CredentialDefinition {
+  value = {
+    n: '779...397',
+    rctxt: '774...977',
+    s: '750..893',
+    z: '632...005',
+  },
+}: CreateCredentialDefinitionParams) {
+  const id = `${issuerId}/anoncreds/v0/CLAIM_DEF/${schemaId}/${tag}`
   return {
-    id: `${issuerId}/anoncreds/v0/CLAIM_DEF/${schemaId}/${tag}`,
-    issuerId,
-    schemaId,
-    credDefType,
-    tag,
-    value,
+    id,
+    credDef: JSON.stringify({
+      id,
+      issuerId,
+      schemaId,
+      credDefType,
+      tag,
+      value,
+    }),
   }
 }

@@ -15,49 +15,53 @@ async function demo() {
   console.log(`Role ${ROLES.ENDORSER} assigned to account ${faber.address}. Receipt: ${JSON.stringify(receipt)}`)
 
   console.log('2. Faber creates DID Document')
-  receipt = await faber.didRegistry.createDid(faber.didDocument)
+  receipt = await faber.didRegistry.createDid(faber.address, faber.did, faber.didDocument)
   console.log(`Did Document created for DID ${faber.did}. Receipt: ${JSON.stringify(receipt)}`)
 
   console.log('3. Faber creates Test Schema')
-  const schema = createSchemaObject({ issuerId: faber.did })
-  receipt = await faber.schemaRegistry.createSchema(schema)
-  console.log(`Schema created for id ${schema.id}. Receipt: ${JSON.stringify(receipt)}`)
+  const { id: schemaId, schema } = createSchemaObject({ issuerId: faber.did })
+  receipt = await faber.schemaRegistry.createSchema(schemaId, faber.did, schema)
+  console.log(`Schema created for id ${schemaId}. Receipt: ${JSON.stringify(receipt)}`)
 
   console.log('4. Faber resolves Test Schema to ensure its written')
-  const resolvedSchema = await faber.schemaRegistry.resolveSchema(schema.id)
-  console.log(`Schema resolved for ${schema.id}. Schema: ${JSON.stringify(resolvedSchema.schema)}`)
+  const resolvedSchema = await faber.schemaRegistry.resolveSchema(schemaId)
+  console.log(`Schema resolved for ${schemaId}. Schema: ${resolvedSchema.schema}`)
 
   console.log('5. Faber create Test Credential Definition')
-  const credentialDefinition = createCredentialDefinitionObject({ issuerId: faber.did, schemaId: schema.id })
-  receipt = await faber.credentialDefinitionRegistry.createCredentialDefinition(credentialDefinition)
-  console.log(`Credential Definition created for id ${schema.id}. Receipt: ${JSON.stringify(receipt)}`)
+  const { id: credentialDefinitionId, credDef: credentialDefinition } = createCredentialDefinitionObject({
+    issuerId: faber.did,
+    schemaId: schemaId,
+  })
+  receipt = await faber.credentialDefinitionRegistry.createCredentialDefinition(
+    credentialDefinitionId,
+    faber.did,
+    schemaId,
+    credentialDefinition,
+  )
+  console.log(`Credential Definition created for id ${credentialDefinitionId}. Receipt: ${JSON.stringify(receipt)}`)
 
   console.log('6. Trustee resolves Test Credential Definition to ensure its written')
   const resolvedCredentialDefinition = await faber.credentialDefinitionRegistry.resolveCredentialDefinition(
-    credentialDefinition.id,
+    credentialDefinitionId,
   )
   console.log(
-    `Credential Definition resolved for ${credentialDefinition.id}. Credential Definition: ${JSON.stringify(
-      resolvedCredentialDefinition.credDef,
-    )}`,
+    `Credential Definition resolved for ${credentialDefinitionId}. Credential Definition: ${resolvedCredentialDefinition.credDef}`,
   )
 
   console.log("7. ALice resolves Faber's Did Document")
   const faberDidDocument = await alice.didRegistry.resolveDid(faber.did)
-  console.log(`Did Document resolved for ${faber.did}. DID Document: ${JSON.stringify(faberDidDocument?.document)}`)
+  console.log(`Did Document resolved for ${faber.did}. DID Document: ${faberDidDocument?.document}`)
 
   console.log('8. Alice resolves Test Schema')
-  const testSchema = await alice.schemaRegistry.resolveSchema(schema.id)
-  console.log(`Schema resolved for ${schema.id}. Schema: ${JSON.stringify(testSchema.schema)}`)
+  const testSchema = await alice.schemaRegistry.resolveSchema(schemaId)
+  console.log(`Schema resolved for ${schemaId}. Schema: ${testSchema.schema}`)
 
   console.log('9. Alice resolves Test Credential Definition')
   const testCredentialDefinition = await alice.credentialDefinitionRegistry.resolveCredentialDefinition(
-    credentialDefinition.id,
+    credentialDefinitionId,
   )
   console.log(
-    `Credential Definition resolved for ${credentialDefinition.id}. Credential Definition: ${JSON.stringify(
-      testCredentialDefinition.credDef,
-    )}`,
+    `Credential Definition resolved for ${credentialDefinitionId}. Credential Definition: ${testCredentialDefinition.credDef}`,
   )
 }
 

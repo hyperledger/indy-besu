@@ -1,7 +1,8 @@
 use crate::{
+    contracts::did::types::did::DID,
     error::{VdrError, VdrResult},
     migration::{DID_METHOD, NETWORK},
-    Schema, SchemaId, DID,
+    Schema, SchemaId,
 };
 use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};

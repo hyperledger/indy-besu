@@ -29,11 +29,17 @@ export class UpgradablePrototype extends testableContractMixin(Contract) {
 }
 
 export class TestableIndyDidRegistry extends testableContractMixin(IndyDidRegistry) {}
+
 export class TestableSchemaRegistry extends testableContractMixin(SchemaRegistry) {}
+
 export class TestableCredentialDefinitionRegistry extends testableContractMixin(CredentialDefinitionRegistry) {}
+
 export class TestableRoleControl extends testableContractMixin(RoleControl) {}
+
 export class TestableValidatorControl extends testableContractMixin(ValidatorControl) {}
+
 export class TestableUpgradeControl extends testableContractMixin(UpgradeControl) {}
+
 export class TestableUniversalDidResolver extends testableContractMixin(UniversalDidResolver) {}
 
 export async function deployRoleControl() {
@@ -84,16 +90,16 @@ export async function deployCredentialDefinitionRegistry() {
   return { credentialDefinitionRegistry, universalDidReolver, indyDidRegistry, schemaRegistry, testAccounts }
 }
 
-export async function createDid(didRegistry: IndyDidRegistry, did: string) {
+export async function createDid(didRegistry: IndyDidRegistry, identity: string, did: string) {
   const didDocument = createBaseDidDocument(did)
-  await didRegistry.createDid(didDocument)
+  await didRegistry.createDid(identity, did, didDocument)
   return didDocument
 }
 
 export async function createSchema(schemaRegistry: SchemaRegistry, issuerId: string) {
-  const schema = createSchemaObject({ issuerId })
-  await schemaRegistry.createSchema(schema)
-  return schema
+  const { id, schema } = createSchemaObject({ issuerId })
+  await schemaRegistry.createSchema(id, issuerId, schema)
+  return { id, schema }
 }
 
 function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {

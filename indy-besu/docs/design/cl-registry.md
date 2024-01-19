@@ -6,12 +6,12 @@
 
 #### AnonCreds Spec style
 
-| parameter          | value                                                           |
-|--------------------|-----------------------------------------------------------------|
-| id                 | “did:” method-name “:” namespace “:” method-specific-id         |
-| method-name        | “indy2”, “indy”, “sov”, “ethr”                                  |
-| namespace          | “testnet”/"mainnet"                                             |
-| indy-id            | <issuer_did>/anoncreds/v0/SCHEMA/<schema_name>/<schema_version> |
+| parameter   | value                                                           |
+|-------------|-----------------------------------------------------------------|
+| id          | “did:” method-name “:” namespace “:” method-specific-id         |
+| method-name | “indy2”, “indy”, “sov”, “ethr”                                  |
+| namespace   | “testnet”/"mainnet"                                             |
+| indy-id     | <issuer_did>/anoncreds/v0/SCHEMA/<schema_name>/<schema_version> |
 
 ```
 Example: did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0
@@ -23,19 +23,11 @@ Example: did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdent
     * Description: Mapping holding the list of Schema ID's to their data and metadata.
     * Format:
         ```
-        mapping(string id => SchemaWithMetadata schemaWithMetada);
+        mapping(string id => SchemaRecord schemaRecord);
   
-        struct SchemaWithMetadata {
-            SchemaData data;
+        struct SchemaRecord {
+            string data;
             SchemaMetadata metadata;
-        }
-
-        struct Schema {
-            string id;
-            string issuerId;
-            string name;
-            string version;
-            string[] attrNames;
         }
 
         struct SchemaMetadata {
@@ -46,13 +38,12 @@ Example: did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdent
       ```
       {
           "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0": {
-              schema: {
-                  id: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",                 
-                  issuerId: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
-                  name: "BasicIdentity",
-                  version: "1.0.0",
-                  attrNames: ["First Name", "Last Name"]              
-              }, 
+              schema: "{
+                  "issuerId": "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
+                  "name": "BasicIdentity",
+                  "version": "1.0.0",
+                  "attrNames": ["First Name", "Last Name"]              
+              }", 
               metadata: {
                   created: 1234
               }, 
@@ -63,15 +54,12 @@ Example: did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdent
 
 #### Types definition
 
-##### SchemaData
+##### Schema
 
-* `id` - identifier of the schema.
-* `issuerId` - issuer identifier of the schema.
-* `name` - name of the schema.
-* `version` - version of the schema as a documentation string that it’s not validated.
-* `attrNames` - an array of strings with each string being the name of an attribute of the schema.
+Schema must match to
+the [specification](https://hyperledger.github.io/anoncreds-spec/#schema-publisher-publish-schema-object).
 
-##### SchemaMetadata
+##### Schema Metadata
 
 * `created` - timestamp of schema creation.
 
@@ -83,49 +71,56 @@ Contract name: **SchemaRegistry**
 
 * Method: `createSchema`
     * Description: Transaction to create a new AnonCreds Schema
+    * Parameters:
+        * `id` - Id of schema to be created
+        * `issuerId` - Id of schema issuer
+        * `schema` - AnonCreds schema as JSON string
     * Restrictions:
-        * Schema must be unique.
-        * Schema must have name.
-        * Schema must contain at least one attribute.
-        * Schema must have version.
+        * Schema id must be unique.
         * Corresponding issuer DID must exist, be active, and owned by sender.
     * Format:
         ```
-        SchemaRegistry.createSchema(Schema schema)
+        SchemaRegistry.createSchema(
+            string calldata id,
+            string calldata issuerId,
+            string calldata schema
+        )
         ```
     * Example:
         ```
         SchemaRegistry.createSchema(
-        {
-            id: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",
-            issuerId: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
-            name: "BasicIdentity",
-            version: "1.0.0",
-            attrNames: ["First Name", "Last Name"]
-        }
+            "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",
+            "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
+            "{
+                "issuerId": "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
+                "name": "BasicIdentity",
+                "version": "1.0.0",
+                "attrNames": ["First Name", "Last Name"]
+            }"
         )
     * Raised Event:
-        * SchemaCreated(schema_id, sender)
+        * `SchemaCreated(schemaId)`
 
 #### Resolve schema
 
 * Method: `resolveSchema`
     * Description: Transaction to resolve Schema for giving id
+    * Parameters:
+        * `id` - ID of the Schema to resolve
     * Restrictions:
         * Schema must exist.
-        * Schema id must be valid.
     * Format:
         ```
         SchemaRegistry.resolveSchema(
-        string id
-        ) returns (SchemaWithMetadata)
+            string id
+        ) returns (SchemaRecord sschemaRecord)
         ```
     * Example:
         ```
         SchemaRegistry.resolveSchema(
-        "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0"
+            "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0"
         )
-    * Raised Event: None
+    * Raised Event: `None`
 
 ## Credential Definition
 
@@ -133,12 +128,12 @@ Contract name: **SchemaRegistry**
 
 #### AnonCreds Spec style
 
-| parameter          | value                                                   |
-|--------------------|---------------------------------------------------------|
-| id                 | “did:” method-name “:” namespace “:” method-specific-id |
-| method-name        | “indy2”, “indy”, “sov”, “ethr”                          |
-| namespace          | “testnet”/"mainnet"                                     |
-| indy-id            | <issuer_did>/anoncreds/v0/CLAIM_DEF/<schema_id>/<name>  |
+| parameter   | value                                                   |
+|-------------|---------------------------------------------------------|
+| id          | “did:” method-name “:” namespace “:” method-specific-id |
+| method-name | “indy2”, “indy”, “sov”, “ethr”                          |
+| namespace   | “testnet”/"mainnet"                                     |
+| indy-id     | <issuer_did>/anoncreds/v0/CLAIM_DEF/<schema_id>/<name>  |
 
 ```
 Example: did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/mctc
@@ -150,20 +145,11 @@ Example: did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/mc
     * Description: Mapping holding the list of Credential Definition ID's to their data and metadata.
     * Format:
         ```
-        mapping(string id => CredentialDefinition credentialDefinition);
+        mapping(string id => CredentialDefinitionRecord credentialDefinitionRecord);
 
-        struct CredentialDefinitionWithMetadata {
-            CredentialDefinition credDef;
+        struct CredentialDefinitionRecord {
+            string credDef;
             CredentialDefinitionMetadata metadata;
-        }
-
-        struct CredentialDefinition {
-            string id;
-            string issuerId;
-            string schemaId;
-            string type;
-            string tag;
-            string value;
         }
 
         struct CredentialDefinitionMetadata {
@@ -174,14 +160,13 @@ Example: did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/mc
       ```
       {
           "did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/mctc": {
-              credDef: {
-                  id: "did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/mctc",                 
-                  issuerId: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
-                  schemaId: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",
-                  type: "CL",
-                  tag: "BasicIdentity",
-                  value: "{ ... }"
-              }, 
+              credDef: "{
+                  "issuerId": "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
+                  "schemaId": "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",
+                  "type": "CL",
+                  "tag": "BasicIdentity",
+                  "value": "{ ... }"
+              }", 
               metadata: {
                   created: 1234
               }, 
@@ -194,13 +179,8 @@ Example: did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/mc
 
 ##### CredentialDefinitionData
 
-* `id` - identifier of the credential definition.
-* `issuerId` - issuer identifier of the credential definition.
-* `schemaId` - identifier of the schema upon which the credential definition is defined.
-* `type` - type of credential signature.
-* `tag` - client-defined name for the credential definition.
-* `value` - credential definition public keys for issuing credentials 
-  > **Note, that `value` string representation does not match to the specification and should be converted into object on the VDR level.**
+Schema must match to
+the [specification](https://hyperledger.github.io/anoncreds-spec/#generating-a-credential-definition-without-revocation-support).
 
 ##### CredentialDefinitionMetadata
 
@@ -214,47 +194,60 @@ Contract name: **CredentialDefinitionRegistry**
 
 * Method: `createCredentialDefinition`
     * Description: Transaction to create a new AnonCreds Credential Definition
+    * Parameters:
+        * `id` - Id of credential definition to be created
+        * `issuerId` - Id of credential definition issuer
+        * `schemaId` - Id of credential definition schema
+        * `credDef` - AnonCreds credential definition as JSON string
     * Restrictions:
         * Credential Definition must be unique.
         * Corresponding issuer DID must exist, be active, and owned by sender.
         * Corresponding schema must exist.
     * Format:
         ```
-        CredentialDefinitionRegistry.createCredentialDefinition(CredentialDefinitionData data)
+        CredentialDefinitionRegistry.createCredentialDefinition(
+            string calldata id,
+            string calldata issuerId,
+            string calldata schemaId,
+            string calldata credDef
+        )
         ```
     * Example:
         ```
         CredentialDefinitionRegistry.createCredentialDefinition(
-        {
-            id: "did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/BasicIdentity",
-            issuerId: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
-            schemaId: "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",
-            type: "CL",
-            tag: "BasicIdentity",
-            value: "{.......}",
-        }
+            "did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/BasicIdentity",
+            "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
+            "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",
+            "{
+                "issuerId": "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu",
+                "schemaId": "did:indy2:mainnet:Y6LRXGU3ZCpm7yzjVRSaGu/anoncreds/v0/SCHEMA/BasicIdentity/1.0.0",
+                "type": "CL",
+                "tag": "BasicIdentity",
+                "value": "{.......}",
+            }"
         )
     * Raised Event:
-        * CredentialDefinitionCreated(credential_definition_id, sender)
+        * `CredentialDefinitionCreated(credentialDefinitionId)`
 
 #### Resolve credential definition
 
 * Method: `resolveCredentialDefinition`
     * Description: Transaction to resolve Credential Definition for giving id
+    * Parameters:
+        * `id` - Id of credential definition to be resolved
     * Restrictions:
         * Credential Definition must exist.
-        * Credential Definition id must be valid.
     * Format:
         ```
         CredentialDefinitionRegistry.resolveCredentialDefinition(
-        string id
-        ) returns (CredentialDefinitionWithMetadata)
+            string calldata id
+        ) returns (CredentialDefinitionRecord credentialDefinitionRecord)
         ```
     * Example:
         ```
-        SchemaRegistry.resolveCredentialDefinition(
-        "did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/BasicIdentity"
+        CredentialDefinitionRegistry.resolveCredentialDefinition(
+           "did:indy2:sovrin:Gs6cQcvrtWoZKsbBhD3dQJ/anoncreds/v0/CLAIM_DEF/56495/BasicIdentity"
         )
-    * Raised Event: None
+    * Raised Event: `None`
 
 

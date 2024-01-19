@@ -7,7 +7,7 @@ import { DidUtils, ParsedDid } from "../utils/DidUtils.sol";
 import { IncorrectDid } from "./DidErrors.sol";
 import { IndyDidRegistryInterface } from "./IndyDidRegistryInterface.sol";
 import { EthereumExtDidRegistry } from "./EthereumExtDidRegistry.sol";
-import { DidDocument, DidMetadata } from "./DidTypes.sol";
+import { DidMetadata } from "./DidTypes.sol";
 import { UniversalDidResolverInterface } from "./UniversalDidResolverInterface.sol";
 
 contract UniversalDidResolver is UniversalDidResolverInterface, ControlledUpgradeable {
@@ -16,20 +16,20 @@ contract UniversalDidResolver is UniversalDidResolverInterface, ControlledUpgrad
 
     function initialize(
         address upgradeControlAddress,
-        address didRegistryddress,
+        address indyDidRegistry,
         address ethereumDIDRegistryAddress
     ) public reinitializer(1) {
         _initializeUpgradeControl(upgradeControlAddress);
-        _indyDidRegistry = IndyDidRegistryInterface(didRegistryddress);
+        _indyDidRegistry = IndyDidRegistryInterface(indyDidRegistry);
         _ethereumDIDRegistry = EthereumExtDidRegistry(ethereumDIDRegistryAddress);
     }
 
     /// @inheritdoc UniversalDidResolverInterface
-    function resolveDocument(string calldata id) public view override returns (DidDocument memory document) {
-        ParsedDid memory parsedDid = DidUtils.parseDid(id);
+    function resolveDocument(string calldata did) public view override returns (string memory document) {
+        ParsedDid memory parsedDid = DidUtils.parseDid(did);
 
         if (DidUtils.isIndyMethod(parsedDid.method)) {
-            return _indyDidRegistry.resolveDid(id).document;
+            return _indyDidRegistry.resolveDid(did).document;
         } else {
             revert UnsupportedOperation(
                 "UniversalDidResolver.resolveDocument",
@@ -39,18 +39,18 @@ contract UniversalDidResolver is UniversalDidResolverInterface, ControlledUpgrad
     }
 
     /// @inheritdoc UniversalDidResolverInterface
-    function resolveMetadata(string calldata id) public view override returns (DidMetadata memory metadata) {
-        ParsedDid memory parsedDid = DidUtils.parseDid(id);
+    function resolveMetadata(string calldata did) public view override returns (DidMetadata memory metadata) {
+        ParsedDid memory parsedDid = DidUtils.parseDid(did);
 
         if (DidUtils.isEthereumMethod(parsedDid.method)) {
             address identity = DidUtils.convertEthereumIdentifierToAddress(parsedDid.identifier);
 
-            if (identity == address(0)) revert IncorrectDid(id);
+            if (identity == address(0)) revert IncorrectDid(did);
 
             address identityOwner = _ethereumDIDRegistry.identityOwner(identity);
-            return DidMetadata(identityOwner, 0, 0, false);
+            return DidMetadata(identityOwner, address(0), 0, 0, false);
         } else if (DidUtils.isIndyMethod(parsedDid.method)) {
-            return _indyDidRegistry.resolveDid(id).metadata;
+            return _indyDidRegistry.resolveDid(did).metadata;
         } else {
             revert UnsupportedOperation(
                 "UniversalDidResolver.resolveMetadata",

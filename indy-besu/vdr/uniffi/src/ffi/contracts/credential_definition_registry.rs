@@ -10,6 +10,7 @@ use serde_json::json;
 pub async fn build_create_credential_definition_transaction(
     client: &LedgerClient,
     from: &str,
+    id: &str,
     credential_definition: &str,
 ) -> VdrResult<Transaction> {
     let credential_definition =
@@ -20,6 +21,7 @@ pub async fn build_create_credential_definition_transaction(
         credential_definition_registry::build_create_credential_definition_transaction(
             &client.client,
             &Address::from(from),
+            &CredentialDefinitionId::from(id),
             &credential_definition,
         )
         .await?;
@@ -31,11 +33,10 @@ pub async fn build_resolve_credential_definition_transaction(
     client: &LedgerClient,
     id: &str,
 ) -> VdrResult<Transaction> {
-    let cred_def_id = CredentialDefinitionId::from(id);
     let transaction =
         credential_definition_registry::build_resolve_credential_definition_transaction(
             &client.client,
-            &cred_def_id,
+            &CredentialDefinitionId::from(id),
         )
         .await?;
     Ok(Transaction { transaction })
