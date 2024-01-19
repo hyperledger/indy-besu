@@ -1,7 +1,8 @@
 #!/bin/sh
 
 # Blockscout docker compose config file location
-BLOCKSCOUT_DOCKER_CONFIG=/$(dirname $(dirname $(readlink -f "$0")))/infra/blockscout/blockscout.yml
+BLOCKSCOUT_CONFIGS_DIR=$(dirname $(dirname $(readlink -f "$0")))/infra/blockscout
+BLOCKSCOUT_DOCKER_CONFIG=$BLOCKSCOUT_CONFIGS_DIR/blockscout.yml
 
 # checks that this script didn't run manually
 me=`basename "$0"`
