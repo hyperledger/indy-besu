@@ -26,11 +26,13 @@ pub use contracts::{
         },
     },
     did::{
-        did_registry,
+        did_ethr_registry, did_indy_registry,
         types::{
             did::DID,
-            did_doc::{DidDocument, VerificationKeyType},
+            did_doc::{DidDocument, DidResolutionOptions, VerificationKeyType},
+            did_doc_attribute::{DelegateType, DidDocAttribute, Validity},
             did_doc_builder::DidDocumentBuilder,
+            did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},
         },
     },
     network::validator_control,

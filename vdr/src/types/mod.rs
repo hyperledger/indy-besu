@@ -1,11 +1,23 @@
 mod address;
 mod contract;
+mod event_query;
+mod signature;
 mod status;
 mod transaction;
 
 pub use address::Address;
 pub use contract::{ContractConfig, ContractSpec};
-pub(crate) use contract::{ContractOutput, ContractParam};
+pub use event_query::{EventLog, EventQuery};
+pub use signature::SignatureData;
 pub use status::{PingStatus, Status};
-pub use transaction::{SignatureData, Transaction, TransactionSignature, TransactionType};
-pub(crate) use transaction::{TransactionBuilder, TransactionParser};
+pub use transaction::{
+    Block, Transaction, TransactionEndorsingData, TransactionSignature, TransactionType,
+};
+
+pub(crate) use contract::{
+    ContractEvent, ContractOutput, ContractParam, MethodParam, UintBytesParam,
+};
+pub(crate) use event_query::{EventParser, EventQueryBuilder};
+pub(crate) use transaction::{
+    TransactionBuilder, TransactionEndorsingDataBuilder, TransactionParser,
+};

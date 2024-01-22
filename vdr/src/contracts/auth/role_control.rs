@@ -4,7 +4,7 @@ use crate::{
     error::VdrResult,
     types::{Address, Transaction, TransactionBuilder, TransactionParser, TransactionType},
 };
-use log::{debug, info};
+use log_derive::{logfn, logfn_inputs};
 
 const CONTRACT_NAME: &str = "RoleControl";
 const METHOD_ASSIGN_ROLE: &str = "assignRole";
@@ -22,33 +22,23 @@ const METHOD_GET_ROLE: &str = "getRole";
 ///
 /// # Returns
 /// Write transaction to sign and submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_assign_role_transaction(
     client: &LedgerClient,
     from: &Address,
     role: &Role,
     account: &Address,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Sender: {:?}, assignee: {:?}, role: {:?}",
-        METHOD_ASSIGN_ROLE, from, account, role
-    );
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_ASSIGN_ROLE)
-        .add_param((*role).into())
-        .add_param(account.try_into()?)
+        .add_param(role)?
+        .add_param(account)?
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_ASSIGN_ROLE, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Build transaction to execute RoleControl.revokeRole contract method to revoke a role from an account
@@ -61,33 +51,23 @@ pub async fn build_assign_role_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_revoke_role_transaction(
     client: &LedgerClient,
     from: &Address,
     role: &Role,
     account: &Address,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Sender: {:?}, revokee: {:?}, role: {:?}",
-        METHOD_REVOKE_ROLE, from, account, role
-    );
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_REVOKE_ROLE)
-        .add_param((*role).into())
-        .add_param(account.try_into()?)
+        .add_param(role)?
+        .add_param(account)?
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_REVOKE_ROLE, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Build transaction to execute RoleControl.hasRole contract method to check an account has a role
@@ -99,31 +79,21 @@ pub async fn build_revoke_role_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_has_role_transaction(
     client: &LedgerClient,
     role: &Role,
     account: &Address,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Account to check: {:?}, role: {:?}",
-        METHOD_HAS_ROLE, account, role
-    );
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_HAS_ROLE)
-        .add_param((*role).into())
-        .add_param(account.try_into()?)
+        .add_param(role)?
+        .add_param(account)?
         .set_type(TransactionType::Read)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result {:?}",
-        METHOD_HAS_ROLE, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Build transaction to execute RoleControl.getRole contract method to get account's role
@@ -134,29 +104,19 @@ pub async fn build_has_role_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_get_role_transaction(
     client: &LedgerClient,
     account: &Address,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Account to get: {:?}",
-        METHOD_GET_ROLE, account,
-    );
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_ROLE)
-        .add_param(account.try_into()?)
+        .add_param(account)?
         .set_type(TransactionType::Read)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_GET_ROLE, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Parse the result of execution RoleControl.HasRole contract method to check an account has a role
@@ -167,23 +127,13 @@ pub async fn build_get_role_transaction(
 ///
 /// # Returns
 /// Account has role result
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub fn parse_has_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<bool> {
-    debug!(
-        "{} result parse has started. Bytes to parse: {:?}",
-        METHOD_HAS_ROLE, bytes
-    );
-
-    let has_result = TransactionParser::new()
+    TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_HAS_ROLE)
-        .parse::<HasRole>(client, bytes)?;
-
-    info!(
-        "{} result parse has finished. Result: {:?}",
-        METHOD_HAS_ROLE, has_result
-    );
-
-    Ok(has_result)
+        .parse::<HasRole>(client, bytes)
 }
 
 /// Parse the result of execution RoleControl.GetRole contract method to get account's role
@@ -194,23 +144,13 @@ pub fn parse_has_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<b
 ///
 /// # Returns
 /// Account's role
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Role> {
-    debug!(
-        "{} result parse has started. Bytes to parse: {:?}",
-        METHOD_GET_ROLE, bytes
-    );
-
-    let role = TransactionParser::new()
+    TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_ROLE)
-        .parse::<Role>(client, bytes)?;
-
-    info!(
-        "{} result parse has finished. Result: {:?}",
-        METHOD_GET_ROLE, role
-    );
-
-    Ok(role)
+        .parse::<Role>(client, bytes)
 }
 
 #[cfg(test)]

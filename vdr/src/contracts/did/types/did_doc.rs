@@ -5,11 +5,63 @@ use crate::{
 };
 
 use crate::contracts::did::types::did::DID;
-use log::trace;
+use log::{trace, warn};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 
-pub const CONTEXT: &str = "https://www.w3.org/ns/did/v1";
+pub const BASE_CONTEXT: &str = "https://www.w3.org/ns/did/v1";
+pub const SECPK_CONTEXT: &str = "https://w3id.org/security/suites/secp256k1recovery-2020/v2";
+pub const KEYS_CONTEXT: &str = "https://w3id.org/security/v3-unstable";
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DidDocumentWithMeta {
+    pub did_document: DidDocument,
+    pub did_document_metadata: DidMetadata,
+    pub did_resolution_metadata: DidResolutionMetadata,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct DidResolutionOptions {
+    pub accept: String,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub struct DidResolutionMetadata {
+    pub content_type: String,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DidDocument {
+    #[serde(rename = "@context")]
+    pub context: StringOrVector,
+    pub id: DID,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub controller: Option<StringOrVector>,
+    pub verification_method: Vec<VerificationMethod>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub authentication: Vec<VerificationMethodOrReference>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub assertion_method: Vec<VerificationMethodOrReference>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub capability_invocation: Vec<VerificationMethodOrReference>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub capability_delegation: Vec<VerificationMethodOrReference>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub key_agreement: Vec<VerificationMethodOrReference>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub service: Vec<Service>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub also_known_as: Option<Vec<String>>,
+}
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,23 +71,6 @@ pub struct DidRecord {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DidDocument {
-    #[serde(rename = "@context")]
-    pub context: StringOrVector,
-    pub id: DID,
-    pub controller: StringOrVector,
-    pub verification_method: Vec<VerificationMethod>,
-    pub authentication: Vec<VerificationMethodOrReference>,
-    pub assertion_method: Vec<VerificationMethodOrReference>,
-    pub capability_invocation: Vec<VerificationMethodOrReference>,
-    pub capability_delegation: Vec<VerificationMethodOrReference>,
-    pub key_agreement: Vec<VerificationMethodOrReference>,
-    pub service: Vec<Service>,
-    pub also_known_as: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct DidMetadata {
     pub owner: Address,
     pub sender: Address,
@@ -52,9 +87,15 @@ pub struct VerificationMethod {
     pub type_: VerificationKeyType,
     pub controller: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub blockchain_account_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub public_key_multibase: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub public_key_jwk: Option<Value>,
+    pub public_key_hex: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key_base58: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key_base64: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -66,6 +107,61 @@ pub enum VerificationKeyType {
     X25519KeyAgreementKey2020,
     JsonWebKey2020,
     EcdsaSecp256k1VerificationKey2019,
+    EcdsaSecp256k1VerificationKey2020,
+}
+
+impl ToString for VerificationKeyType {
+    fn to_string(&self) -> String {
+        match self {
+            VerificationKeyType::Ed25519VerificationKey2018 => {
+                "Ed25519VerificationKey2018".to_string()
+            }
+            VerificationKeyType::X25519KeyAgreementKey2019 => {
+                "X25519KeyAgreementKey2019".to_string()
+            }
+            VerificationKeyType::Ed25519VerificationKey2020 => {
+                "Ed25519VerificationKey2020".to_string()
+            }
+            VerificationKeyType::X25519KeyAgreementKey2020 => {
+                "X25519KeyAgreementKey2020".to_string()
+            }
+            VerificationKeyType::JsonWebKey2020 => "JsonWebKey2020".to_string(),
+            VerificationKeyType::EcdsaSecp256k1VerificationKey2019
+            | VerificationKeyType::EcdsaSecp256k1VerificationKey2020 => {
+                "EcdsaSecp256k1VerificationKey2019".to_string()
+            }
+        }
+    }
+}
+
+impl TryFrom<&str> for VerificationKeyType {
+    type Error = VdrError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "Ed25519VerificationKey2018" => Ok(VerificationKeyType::Ed25519VerificationKey2018),
+            "X25519KeyAgreementKey2019" => Ok(VerificationKeyType::X25519KeyAgreementKey2019),
+            "Ed25519VerificationKey2020" => Ok(VerificationKeyType::Ed25519VerificationKey2020),
+            "X25519KeyAgreementKey2020" => Ok(VerificationKeyType::X25519KeyAgreementKey2020),
+            "JsonWebKey2020" => Ok(VerificationKeyType::JsonWebKey2020),
+            "EcdsaSecp256k1VerificationKey2019" => {
+                Ok(VerificationKeyType::EcdsaSecp256k1VerificationKey2020)
+            }
+            _type => Err({
+                let vdr_error = VdrError::CommonInvalidData(format!(
+                    "Unexpected verification key type {}",
+                    _type
+                ));
+
+                warn!(
+                    "Error: {} during converting VerificationKeyType from String: {} ",
+                    vdr_error, value
+                );
+
+                vdr_error
+            }),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -117,21 +213,11 @@ impl Default for StringOrVector {
     }
 }
 
-impl From<&DidDocument> for ContractParam {
-    fn from(value: &DidDocument) -> Self {
-        trace!(
-            "DidDocument: {:?} convert into ContractParam has started",
-            value
-        );
+impl TryFrom<&DidDocument> for ContractParam {
+    type Error = VdrError;
 
-        let did_doc_contract_param = ContractParam::String(json!(value).to_string());
-
-        trace!(
-            "DidDocument convert into ContractParam has finished. Result: {:?}",
-            did_doc_contract_param
-        );
-
-        did_doc_contract_param
+    fn try_from(value: &DidDocument) -> Result<Self, Self::Error> {
+        Ok(ContractParam::String(json!(value).to_string()))
     }
 }
 
@@ -139,24 +225,12 @@ impl TryFrom<&ContractOutput> for DidDocument {
     type Error = VdrError;
 
     fn try_from(value: &ContractOutput) -> Result<Self, Self::Error> {
-        trace!(
-            "DidDocument convert from ContractOutput: {:?} has started",
-            value
-        );
-
-        let did_doc = serde_json::from_str(&value.get_string(0)?).map_err(|err| {
+        serde_json::from_str(&value.get_string(0)?).map_err(|err| {
             VdrError::ContractInvalidResponseData(format!(
                 "Unable to parse DID Document from the response. Err: {:?}",
                 err
             ))
-        })?;
-
-        trace!(
-            "DidDocument convert from ContractOutput has finished. Result: {:?}",
-            did_doc
-        );
-
-        Ok(did_doc)
+        })
     }
 }
 
@@ -164,17 +238,11 @@ impl TryFrom<ContractOutput> for DidMetadata {
     type Error = VdrError;
 
     fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        trace!(
-            "DidMetadata convert from ContractOutput: {:?} has started",
-            value
-        );
-
         let owner = value.get_address(0)?;
         let sender = value.get_address(1)?;
         let created = value.get_u128(2)? as u64;
         let updated = value.get_u128(3)? as u64;
         let deactivated = value.get_bool(4)?;
-
         let did_metadata = DidMetadata {
             owner,
             sender,
@@ -182,12 +250,6 @@ impl TryFrom<ContractOutput> for DidMetadata {
             updated,
             deactivated,
         };
-
-        trace!(
-            "DidMetadata convert from ContractOutput has finished. Result: {:?}",
-            did_metadata
-        );
-
         Ok(did_metadata)
     }
 }
@@ -196,25 +258,13 @@ impl TryFrom<ContractOutput> for DidRecord {
     type Error = VdrError;
 
     fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        trace!(
-            "DidDocumentWithMeta convert from ContractOutput: {:?} has started",
-            value
-        );
-
         let output_tuple = value.get_tuple(0)?;
-        let document = DidDocument::try_from(&output_tuple)?;
+        let did_document = DidDocument::try_from(&output_tuple)?;
         let metadata = output_tuple.get_tuple(1)?;
-
         let did_doc_with_metadata = DidRecord {
-            document,
+            document: did_document,
             metadata: DidMetadata::try_from(metadata)?,
         };
-
-        trace!(
-            "DidDocumentWithMeta convert from ContractOutput has finished. Result: {:?}",
-            did_doc_with_metadata
-        );
-
         Ok(did_doc_with_metadata)
     }
 }
@@ -237,7 +287,10 @@ pub mod test {
             type_: VerificationKeyType::Ed25519VerificationKey2018,
             controller: id.to_string(),
             public_key_multibase: Some(MULTIBASE_KEY.to_string()),
-            public_key_jwk: None,
+            public_key_hex: None,
+            public_key_base58: None,
+            blockchain_account_id: None,
+            public_key_base64: None,
         }
     }
 
@@ -265,7 +318,7 @@ pub mod test {
         DidDocument {
             context: StringOrVector::Vector(vec![CONTEXT.to_string()]),
             id: DID::from(id.as_str()),
-            controller: StringOrVector::Vector(vec![]),
+            controller: None,
             verification_method: vec![verification_method(&id)],
             authentication: vec![verification_relationship(&id)],
             assertion_method: vec![],
@@ -286,7 +339,7 @@ pub mod test {
 
         #[test]
         fn convert_did_doc_into_contract_param_test() {
-            let param: ContractParam = (&did_doc(Some(ISSUER_ID))).into();
+            let param: ContractParam = (&did_doc(Some(ISSUER_ID))).try_into().unwrap();
             assert_eq!(did_doc_param(), param);
         }
     }

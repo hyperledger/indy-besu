@@ -1,4 +1,4 @@
-use indy2_vdr::{did_registry, Address, DidDocument, DID};
+use indy2_vdr::{did_indy_registry, Address, DidDocument, DID};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -25,9 +25,11 @@ impl IndyDidRegistry {
         let address = Address::from(from);
         let identity = Address::from(identity);
         let did = DID::from(did);
-        let transaction = did_registry::build_create_did_transaction(&client.0, &address, &identity, &did, &did_doc)
-            .await
-            .as_js()?;
+        let transaction = did_indy_registry::build_create_did_transaction(
+            &client.0, &address, &identity, &did, &did_doc,
+        )
+        .await
+        .as_js()?;
         Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
@@ -41,9 +43,10 @@ impl IndyDidRegistry {
         let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
         let address = Address::from(from);
         let did = DID::from(did);
-        let transaction = did_registry::build_update_did_transaction(&client.0, &address, &did, &did_doc)
-            .await
-            .as_js()?;
+        let transaction =
+            did_indy_registry::build_update_did_transaction(&client.0, &address, &did, &did_doc)
+                .await
+                .as_js()?;
         Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
@@ -55,9 +58,10 @@ impl IndyDidRegistry {
     ) -> Result<TransactionWrapper> {
         let address = Address::from(from);
         let did = DID::from(did);
-        let transaction = did_registry::build_deactivate_did_transaction(&client.0, &address, &did)
-            .await
-            .as_js()?;
+        let transaction =
+            did_indy_registry::build_deactivate_did_transaction(&client.0, &address, &did)
+                .await
+                .as_js()?;
         Ok(TransactionWrapper(Rc::new(transaction)))
     }
 
@@ -67,7 +71,7 @@ impl IndyDidRegistry {
         did: &str,
     ) -> Result<TransactionWrapper> {
         let did = DID::from(did);
-        let transaction = did_registry::build_resolve_did_transaction(&client.0, &did)
+        let transaction = did_indy_registry::build_resolve_did_transaction(&client.0, &did)
             .await
             .as_js()?;
         Ok(TransactionWrapper(Rc::new(transaction)))
@@ -78,7 +82,7 @@ impl IndyDidRegistry {
         client: &LedgerClientWrapper,
         bytes: Vec<u8>,
     ) -> Result<JsValue> {
-        let did_doc = did_registry::parse_resolve_did_result(&client.0, &bytes).as_js()?;
+        let did_doc = did_indy_registry::parse_resolve_did_result(&client.0, &bytes).as_js()?;
         let result: JsValue = serde_wasm_bindgen::to_value(&did_doc)?;
         Ok(result)
     }

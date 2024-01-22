@@ -1,28 +1,39 @@
 use crate::{
     client::Client,
     error::{VdrError, VdrResult},
-    types::PingStatus,
+    types::{EventQuery, PingStatus},
     Address, Transaction,
 };
 
 use async_trait::async_trait;
+use ethereum_types::{H160, U64};
 use log::{trace, warn};
+use log_derive::{logfn, logfn_inputs};
 use serde_json::json;
-use std::{str::FromStr, time::Duration};
+use std::{
+    fmt::{Debug, Formatter},
+    str::FromStr,
+    time::Duration,
+};
 
 #[cfg(not(feature = "wasm"))]
 use web3::{
     api::Eth,
     transports::Http,
-    types::{Address as EthAddress, Bytes, CallRequest, TransactionId, H256},
+    types::{
+        Address as EthAddress, BlockNumber, Bytes, CallRequest, FilterBuilder, TransactionId, H256,
+    },
     Web3,
 };
 
+use crate::types::EventLog;
 #[cfg(feature = "wasm")]
 use web3_wasm::{
     api::Eth,
     transports::Http,
-    types::{Address as EthAddress, Bytes, CallRequest, TransactionId, H256},
+    types::{
+        Address as EthAddress, BlockNumber, Bytes, CallRequest, FilterBuilder, TransactionId, H256,
+    },
     Web3,
 };
 
@@ -34,18 +45,16 @@ const POLL_INTERVAL: u64 = 200;
 const NUMBER_TX_CONFIRMATIONS: usize = 1; // FIXME: what number of confirmation events should we wait? 2n+1?
 
 impl Web3Client {
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     pub fn new(node_address: &str) -> VdrResult<Web3Client> {
-        trace!(
-            "Started creating new Web3Client. Node address: {}",
-            node_address
-        );
+        trace!("Web3Client::new >>> node_address: {}", node_address);
 
         let transport = Http::new(node_address).map_err(|_| VdrError::ClientNodeUnreachable)?;
         let web3 = Web3::new(transport);
         let web3_client = Web3Client { client: web3 };
 
-        trace!("Created new Web3Client. Node address: {}", node_address);
-
+        trace!("Web3Client::new <<<");
         Ok(web3_client)
     }
 
@@ -57,7 +66,9 @@ impl Web3Client {
 #[cfg_attr(not(feature = "wasm"), async_trait)]
 #[cfg_attr(feature = "wasm", async_trait(? Send))]
 impl Client for Web3Client {
-    async fn get_transaction_count(&self, address: &crate::Address) -> VdrResult<[u64; 4]> {
+    async fn get_transaction_count(&self, address: &Address) -> VdrResult<u64> {
+        trace!("Web3Client::get_transaction_count(address: {:?})", address);
+
         let account_address = EthAddress::from_str(address.as_ref()).map_err(|_| {
             VdrError::ClientInvalidTransaction(format!(
                 "Invalid transaction sender address {:?}",
@@ -65,19 +76,20 @@ impl Client for Web3Client {
             ))
         })?;
 
-        let nonce = self
+        let count = self
             .client
             .eth()
             .transaction_count(account_address, None)
-            .await
-            .unwrap();
+            .await?
+            .as_u64();
 
-        Ok(nonce.0)
+        trace!("Web3Client::get_transaction_count() -> {:?}", count);
+        Ok(count)
     }
 
     async fn submit_transaction(&self, transaction: &[u8]) -> VdrResult<Vec<u8>> {
         trace!(
-            "Submit transaction process has started. Transaction: {:?}",
+            "Web3Client::submit_transaction(transaction: {:?})",
             transaction
         );
 
@@ -88,16 +100,19 @@ impl Client for Web3Client {
                 Duration::from_millis(POLL_INTERVAL),
                 NUMBER_TX_CONFIRMATIONS,
             )
-            .await?;
+            .await?
+            .transaction_hash
+            .0
+            .to_vec();
 
-        trace!("Submitted transaction: {:?}", transaction);
-
-        Ok(receipt.transaction_hash.0.to_vec())
+        trace!("Web3Client::submit_transaction() -> {:?}", receipt);
+        Ok(receipt)
     }
 
     async fn call_transaction(&self, to: &str, transaction: &[u8]) -> VdrResult<Vec<u8>> {
         trace!(
-            "Call transaction process has started. Transaction: {:?}",
+            "Web3Client::call_transaction(to: {:?}, transaction: {:?})",
+            to,
             transaction
         );
 
@@ -118,14 +133,86 @@ impl Client for Web3Client {
             .to(address)
             .data(Bytes(transaction.to_vec()))
             .build();
-        let response = self.client.eth().call(request, None).await?;
+        let response = self.client.eth().call(request, None).await?.0.to_vec();
 
-        trace!("Called transaction: {:?}", transaction);
+        trace!("Web3Client::call_transaction() -> {:?}", response);
+        Ok(response)
+    }
 
-        Ok(response.0.to_vec())
+    async fn query_events(&self, query: &EventQuery) -> VdrResult<Vec<EventLog>> {
+        trace!("Web3Client::query_events(query: {:?})", query);
+
+        let address = H160::from_str(query.address.as_ref()).map_err(|_| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Invalid transaction target address {:?}",
+                query.address
+            ))
+        })?;
+
+        let from_block = match query.from_block {
+            Some(ref block) => BlockNumber::Number(U64::from(block.value())),
+            None => BlockNumber::Earliest,
+        };
+
+        let to_block = match query.to_block {
+            Some(ref block) => BlockNumber::Number(U64::from(block.value())),
+            None => BlockNumber::Latest,
+        };
+
+        let event_signature = match query.event_signature {
+            Some(ref event_signature) => Some(H256::from_str(event_signature).map_err(|_| {
+                VdrError::ClientInvalidTransaction(format!(
+                    "Unable to convert event signature into H256 {:?}",
+                    event_signature
+                ))
+            })?),
+            None => None,
+        };
+
+        let event_filter = match query.event_filter {
+            Some(ref event_filter) => Some(H256::from_str(event_filter).map_err(|_| {
+                VdrError::ClientInvalidTransaction(format!(
+                    "Unable to convert event filter into H256 {:?}",
+                    event_filter
+                ))
+            })?),
+            None => None,
+        };
+
+        let filter = FilterBuilder::default()
+            .address(vec![address])
+            .topics(
+                event_signature.map(|event_signature| vec![event_signature]),
+                event_filter.map(|event_filter| vec![event_filter]),
+                None,
+                None,
+            )
+            .from_block(from_block)
+            .to_block(to_block)
+            .build();
+
+        let logs = self
+            .client
+            .eth()
+            .logs(filter)
+            .await
+            .map_err(|_| VdrError::GetTransactionError("Could not query events".to_string()))?;
+
+        let events: Vec<EventLog> = logs
+            .into_iter()
+            .map(|log| EventLog {
+                topics: log.topics,
+                data: log.data.0,
+            })
+            .collect();
+
+        trace!("Web3Client::query_events() -> {:?}", events);
+        Ok(events)
     }
 
     async fn get_receipt(&self, hash: &[u8]) -> VdrResult<String> {
+        trace!("Web3Client::get_receipt(hash: {:?})", hash);
+
         let receipt = self
             .client
             .eth()
@@ -139,25 +226,30 @@ impl Client for Web3Client {
 
                 vdr_error
             })
-            .map(|receipt| json!(receipt).to_string());
+            .map(|receipt| json!(receipt).to_string())?;
 
-        trace!("Got receipt: {:?}", receipt);
-
-        receipt
+        trace!("Web3Client::query_events() -> {:?}", receipt);
+        Ok(receipt)
     }
 
     async fn ping(&self) -> VdrResult<PingStatus> {
+        trace!("Web3Client::ping()");
+
         let ping_result = match self.client.eth().block_number().await {
-            Ok(_current_block) => Ok(PingStatus::ok()),
-            Err(_) => Ok(PingStatus::err("Could not get current network block")),
+            Ok(_current_block) => PingStatus::ok(),
+            Err(_) => PingStatus::err("Could not get current network block"),
         };
 
-        trace!("Ping result: {:?}", ping_result);
-
-        ping_result
+        trace!("Web3Client::ping() -> {:?}", ping_result);
+        Ok(ping_result)
     }
 
     async fn get_transaction(&self, transaction_hash: &[u8]) -> VdrResult<Option<Transaction>> {
+        trace!(
+            "Web3Client::get_transaction(transaction_hash: {:?})",
+            transaction_hash
+        );
+
         let transaction_id = TransactionId::Hash(H256::from_slice(transaction_hash));
         let transaction = self
             .client
@@ -177,12 +269,20 @@ impl Client for Web3Client {
                 .to
                 .map(|from| Address::from(from.to_string().as_str()))
                 .unwrap_or_default(),
-            nonce: Some(transaction.nonce.0.to_vec()),
+            nonce: Some(transaction.nonce.as_u64()),
             chain_id: 0,
             data: transaction.input.0.to_vec(),
             signature: Default::default(),
             hash: Some(transaction.hash.as_bytes().to_vec()),
         });
+
+        trace!("Web3Client::get_transaction() -> {:?}", transaction);
         Ok(transaction)
+    }
+}
+
+impl Debug for Web3Client {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, r#"Web3Client {{ }}"#)
     }
 }

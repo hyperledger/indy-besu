@@ -7,12 +7,9 @@ use crate::{
             types::{credential_definition::test::credential_definition, schema::test::schema},
             CredentialDefinition, Schema, SchemaId,
         },
-        did::{
-            did_registry,
-            types::{did::DID, did_doc::test::did_doc},
-            DidDocument,
-        },
+        did::{types::did_doc::test::did_doc, DidDocument, DID},
     },
+    did_indy_registry,
     error::VdrResult,
     signer::basic_signer::{
         test::{basic_signer, TRUSTEE_ACC},
@@ -24,7 +21,7 @@ use crate::{
 
 async fn create_did(client: &LedgerClient, signer: &crate::BasicSigner) -> DidDocument {
     let did_doc = did_doc(None);
-    let transaction = did_registry::build_create_did_transaction(
+    let transaction = did_indy_registry::build_create_did_transaction(
         &client,
         &TRUSTEE_ACC,
         &IDENTITY_ACC,
@@ -75,14 +72,21 @@ async fn sign_and_submit_transaction(
 
 mod did {
     use super::*;
-    use crate::{client::client::test::IDENTITY_ACC, did_registry};
+    use crate::{
+        contracts::did::{
+            did_ethr_registry,
+            did_ethr_registry::test::{public_key, service, validity},
+            types::did_doc_attribute::DidDocAttribute,
+        },
+        did_indy_registry, DID,
+    };
 
     pub(crate) async fn build_and_submit_create_did_doc_transaction(
         client: &LedgerClient,
         did_doc: &DidDocument,
         signer: &BasicSigner,
     ) -> String {
-        let transaction = did_registry::build_create_did_transaction(
+        let transaction = did_indy_registry::build_create_did_transaction(
             &client,
             &TRUSTEE_ACC,
             &IDENTITY_ACC,
@@ -105,12 +109,114 @@ mod did {
         println!("Receipt: {}", receipt);
 
         // read
-        let transaction = did_registry::build_resolve_did_transaction(&client, &did_doc.id)
+        let transaction = did_indy_registry::build_resolve_did_transaction(&client, &did_doc.id)
             .await
             .unwrap();
         let result = client.submit_transaction(&transaction).await.unwrap();
-        let resolved_did_doc = did_registry::parse_resolve_did_result(&client, &result).unwrap();
+        let resolved_did_doc =
+            did_indy_registry::parse_resolve_did_result(&client, &result).unwrap();
         assert_eq!(did_doc, resolved_did_doc);
+
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn demo_build_and_submit_did_ethr_transaction_test() -> VdrResult<()> {
+        let signer = basic_signer();
+        let client = client();
+
+        // write
+        let did = DID::from(format!("did:ethr:{}", TRUSTEE_ACC.clone().as_ref()).as_str());
+        let transaction = did_ethr_registry::build_did_set_attribute_transaction(
+            &client,
+            &TRUSTEE_ACC,
+            &did,
+            &service(),
+            &validity(),
+        )
+        .await
+        .unwrap();
+        let receipt = sign_and_submit_transaction(&client, transaction, &signer).await;
+        println!("Receipt: {}", receipt);
+
+        // read event
+        let transaction = did_ethr_registry::build_get_did_events_query(&client, &did, None, None)
+            .await
+            .unwrap();
+        let events = client.query_events(&transaction).await.unwrap();
+        let event = did_ethr_registry::parse_did_event_response(&client, &events[0]).unwrap();
+        let _attribute: DidDocAttribute = event.try_into().unwrap();
+
+        // read changed
+        let transaction = did_ethr_registry::build_get_did_changed_transaction(&client, &did)
+            .await
+            .unwrap();
+        let result = client.submit_transaction(&transaction).await.unwrap();
+        let changed = did_ethr_registry::parse_did_changed_result(&client, &result).unwrap();
+        assert!(!changed.is_none());
+
+        // write
+        let transaction = did_ethr_registry::build_did_set_attribute_transaction(
+            &client,
+            &TRUSTEE_ACC,
+            &did,
+            &public_key(),
+            &validity(),
+        )
+        .await
+        .unwrap();
+        let receipt = sign_and_submit_transaction(&client, transaction, &signer).await;
+        println!("Receipt: {}", receipt);
+
+        let did_doc = did_ethr_registry::resolve_did(&client, &did, None)
+            .await
+            .unwrap();
+        assert_eq!(1, did_doc.did_document.service.len());
+        assert_eq!(2, did_doc.did_document.verification_method.len());
+
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn demo_endorse_did_ethr_transaction_test() -> VdrResult<()> {
+        let mut signer = basic_signer();
+        let client = client();
+
+        let (identity, _) = signer.create_key(None)?;
+
+        // write
+        let did = DID::from(format!("did:ethr:{}", identity.to_string()).as_str());
+        let service = service();
+        let validity = validity();
+
+        let transaction_endorsing_data = did_ethr_registry::build_did_set_attribute_endorsing_data(
+            &client, &did, &service, &validity,
+        )
+        .await
+        .unwrap();
+
+        let endorsing_sign_bytes = transaction_endorsing_data.get_signing_bytes()?;
+        let signature = signer
+            .sign(&endorsing_sign_bytes, &identity.to_string())
+            .unwrap();
+
+        let transaction = did_ethr_registry::build_did_set_attribute_signed_transaction(
+            &client,
+            &TRUSTEE_ACC,
+            &did,
+            &service,
+            &validity,
+            &signature,
+        )
+        .await
+        .unwrap();
+        let receipt = sign_and_submit_transaction(&client, transaction, &signer).await;
+        println!("Receipt: {}", receipt);
+
+        let did_doc = did_ethr_registry::resolve_did(&client, &did, None)
+            .await
+            .unwrap();
+        assert_eq!(1, did_doc.did_document.service.len());
 
         Ok(())
     }

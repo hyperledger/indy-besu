@@ -1,16 +1,22 @@
+use ethabi::Uint;
 use ethereum::{
     EnvelopedEncodable, LegacyTransaction, LegacyTransactionMessage, TransactionAction,
     TransactionSignature as EthTransactionSignature,
 };
 use ethereum_types::{H160, H256, U256};
-use log::{trace, warn};
+use log::warn;
+use log_derive::{logfn, logfn_inputs};
 use serde_derive::{Deserialize, Serialize};
-use std::{str::FromStr, sync::RwLock};
+use sha3::Digest;
+use std::{fmt::Debug, str::FromStr, sync::RwLock};
 
 use crate::{
     client::{GAS_LIMIT, GAS_PRICE},
+    did_ethr_registry::resolve_identity_nonce,
     error::{VdrError, VdrResult},
-    types::{Address, ContractOutput, ContractParam},
+    types::{
+        contract::UintBytesParam, signature::SignatureData, Address, ContractOutput, ContractParam,
+    },
     LedgerClient,
 };
 
@@ -37,7 +43,7 @@ pub struct Transaction {
     pub to: Address,
     /// nonce - count of transaction sent by account
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nonce: Option<Vec<u64>>,
+    pub nonce: Option<u64>,
     /// chain id of the ledger
     pub chain_id: u64,
     /// transaction payload
@@ -49,14 +55,6 @@ pub struct Transaction {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SignatureData {
-    /// recovery ID using for public key recovery
-    pub recovery_id: u64,
-    /// ECDSA signature
-    pub signature: Vec<u8>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionSignature {
     pub v: u64,
     pub r: Vec<u8>,
@@ -64,13 +62,15 @@ pub struct TransactionSignature {
 }
 
 impl Transaction {
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     pub fn new(
         type_: TransactionType,
         from: Option<Address>,
         to: Address,
         chain_id: u64,
         data: Vec<u8>,
-        nonce: Option<Vec<u64>>,
+        nonce: Option<u64>,
         signature: Option<TransactionSignature>,
     ) -> Transaction {
         Transaction {
@@ -85,6 +85,8 @@ impl Transaction {
         }
     }
 
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
         let eth_transaction: LegacyTransactionMessage = LegacyTransactionMessage {
             nonce: self.get_nonce()?,
@@ -99,17 +101,19 @@ impl Transaction {
         Ok(hash.as_bytes().to_vec())
     }
 
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     pub fn set_signature(&self, signature_data: SignatureData) {
-        let v = signature_data.recovery_id + 35 + self.chain_id * 2;
-        let transaction_signature = TransactionSignature {
-            v,
-            r: signature_data.signature[..32].to_vec(),
-            s: signature_data.signature[32..].to_vec(),
-        };
         let mut signature = self.signature.write().unwrap();
-        *signature = Some(transaction_signature)
+        *signature = Some(TransactionSignature {
+            v: signature_data.v().0 + 35 + self.chain_id * 2,
+            r: signature_data.r().0,
+            s: signature_data.s().0,
+        })
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn encode(&self) -> VdrResult<Vec<u8>> {
         let transaction = LegacyTransaction {
             nonce: self.get_nonce()?,
@@ -123,6 +127,8 @@ impl Transaction {
         Ok(transaction.encode().to_vec())
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn get_to(&self) -> VdrResult<H160> {
         H160::from_str(self.to.as_ref()).map_err(|_| {
             VdrError::ClientInvalidTransaction(format!(
@@ -132,19 +138,17 @@ impl Transaction {
         })
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn get_nonce(&self) -> VdrResult<U256> {
-        let nonce: [u64; 4] = self
-            .nonce
-            .as_ref()
-            .ok_or_else(|| {
-                VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
-            })?
-            .clone()
-            .try_into()
-            .map_err(|_| VdrError::CommonInvalidData("Invalid nonce provided".to_string()))?;
-        Ok(U256(nonce))
+        let nonce = self.nonce.ok_or_else(|| {
+            VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
+        })?;
+        Ok(U256::from(nonce))
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn get_transaction_signature(&self) -> VdrResult<EthTransactionSignature> {
         let signature = self.signature.read().unwrap();
         let signature = signature
@@ -178,8 +182,24 @@ impl PartialEq for Transaction {
     }
 }
 
+#[cfg(test)]
+impl Clone for Transaction {
+    fn clone(&self) -> Self {
+        Transaction {
+            type_: self.type_.clone(),
+            from: self.from.clone(),
+            to: self.to.clone(),
+            nonce: self.nonce.clone(),
+            chain_id: self.chain_id.clone(),
+            data: self.data.clone(),
+            signature: RwLock::new(self.signature.read().unwrap().clone()),
+            hash: self.hash.clone(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct TransactionBuilder {
+pub(crate) struct TransactionBuilder {
     contract: String,
     method: String,
     from: Option<Address>,
@@ -189,65 +209,59 @@ pub struct TransactionBuilder {
 }
 
 impl TransactionBuilder {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn new() -> TransactionBuilder {
         TransactionBuilder::default()
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn set_contract(mut self, contract: &str) -> TransactionBuilder {
-        trace!(
-            "Set contract: {} to TransactionBuilder: {:?}",
-            contract,
-            self
-        );
-
         self.contract = contract.to_string();
-
         self
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn set_method(mut self, method: &str) -> TransactionBuilder {
-        trace!("Set method: {} to TransactionBuilder: {:?}", method, self);
-
         self.method = method.to_string();
-
         self
     }
 
-    pub fn add_param(mut self, param: ContractParam) -> TransactionBuilder {
-        trace!(
-            "Add ContractParam: {:?} to TransactionBuilder: {:?}",
-            param,
-            self
-        );
-
-        self.params.push(param);
-
-        self
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn add_param<T: TryInto<ContractParam, Error = VdrError> + Debug>(
+        mut self,
+        param: T,
+    ) -> VdrResult<TransactionBuilder> {
+        self.params.push(param.try_into()?);
+        Ok(self)
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn set_type(mut self, type_: TransactionType) -> TransactionBuilder {
-        trace!(
-            "Set TransactionType: {:?} to TransactionBuilder: {:?}",
-            type_,
-            self
-        );
-
         self.type_ = type_;
-
         self
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn set_from(mut self, from: &Address) -> TransactionBuilder {
-        trace!("Set from: {:?} to TransactionBuilder: {:?}", from, self);
-
         self.from = Some(from.clone());
-
         self
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub async fn build(self, client: &LedgerClient) -> VdrResult<Transaction> {
         let contract = client.contract(&self.contract)?;
-        let data = contract.encode_input(&self.method, &self.params)?;
+
+        let data = contract
+            .function(&self.method)?
+            .encode_input(&self.params)?;
+
         let nonce = match self.type_ {
             TransactionType::Write => {
                 let from = self.from.as_ref().ok_or_else(|| {
@@ -255,9 +269,7 @@ impl TransactionBuilder {
                         "Transaction `sender` is not set".to_string(),
                     )
                 })?;
-
-                let nonce = client.get_transaction_count(from).await?;
-                Some(nonce.to_vec())
+                Some(client.get_transaction_count(from).await?)
             }
             TransactionType::Read => None,
         };
@@ -272,45 +284,40 @@ impl TransactionBuilder {
             signature: RwLock::new(None),
             hash: None,
         };
-
-        trace!("Built transaction: {:?}", transaction);
-
         Ok(transaction)
     }
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct TransactionParser {
+pub(crate) struct TransactionParser {
     contract: String,
     method: String,
 }
 
 impl TransactionParser {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn new() -> TransactionParser {
         TransactionParser::default()
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn set_contract(mut self, contract: &str) -> TransactionParser {
         self.contract = contract.to_string();
-
-        trace!(
-            "Set contract: {} to TransactionParser: {:?}",
-            contract,
-            self
-        );
-
         self
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn set_method(mut self, method: &str) -> TransactionParser {
         self.method = method.to_string();
-
-        trace!("Set method: {} to TransactionParser: {:?}", method, self);
-
         self
     }
 
-    pub fn parse<T: TryFrom<ContractOutput, Error = VdrError>>(
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn parse<T: TryFrom<ContractOutput, Error = VdrError> + Debug>(
         self,
         client: &LedgerClient,
         bytes: &[u8],
@@ -324,7 +331,10 @@ impl TransactionParser {
             return Err(vdr_error);
         }
         let contract = client.contract(&self.contract)?;
-        let output = contract.decode_output(&self.method, bytes)?;
+        let output = contract
+            .function(&self.method)?
+            .decode_output(bytes)
+            .map(ContractOutput::from)?;
 
         if output.is_empty() {
             let vdr_error =
@@ -335,24 +345,121 @@ impl TransactionParser {
             return Err(vdr_error);
         }
 
-        trace!("Decoded transaction output: {:?}", output);
-
         T::try_from(output)
     }
 }
 
-#[cfg(test)]
-impl std::clone::Clone for Transaction {
-    fn clone(&self) -> Self {
-        Transaction {
-            type_: self.type_.clone(),
-            from: self.from.clone(),
-            to: self.to.clone(),
-            nonce: self.nonce.clone(),
-            chain_id: self.chain_id.clone(),
-            data: self.data.clone(),
-            signature: RwLock::new(self.signature.read().unwrap().clone()),
-            hash: self.hash.clone(),
-        }
+/// Transaction Endorsing object
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct TransactionEndorsingData {
+    pub to: Address,
+    pub from: Address,
+    pub nonce: u64,
+    pub params: Vec<ContractParam>,
+}
+
+impl TransactionEndorsingData {
+    const PREFIX: u8 = 0x19;
+    const VERSION: u8 = 0x0;
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
+        let mut tokens = vec![
+            ContractParam::Uint(Uint::from(Self::PREFIX)),
+            ContractParam::FixedBytes(vec![Self::VERSION]),
+            (&self.to).try_into()?,
+            UintBytesParam::from(self.nonce).try_into()?,
+        ];
+        tokens.extend_from_slice(self.params.as_slice());
+
+        let encoded = ethers_core::abi::encode_packed(&tokens).unwrap();
+        let hash = sha3::Keccak256::digest(encoded).to_vec();
+        Ok(hash)
+    }
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct TransactionEndorsingDataBuilder {
+    contract: String,
+    identity: Address,
+    params: Vec<ContractParam>,
+}
+
+impl TransactionEndorsingDataBuilder {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn new() -> TransactionEndorsingDataBuilder {
+        TransactionEndorsingDataBuilder::default()
+    }
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn set_contract(mut self, contract: &str) -> TransactionEndorsingDataBuilder {
+        self.contract = contract.to_string();
+        self
+    }
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn set_identity(mut self, identity: &Address) -> TransactionEndorsingDataBuilder {
+        self.identity = identity.to_owned();
+        self
+    }
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn add_param<T: TryInto<ContractParam, Error = VdrError> + Debug>(
+        mut self,
+        param: T,
+    ) -> VdrResult<TransactionEndorsingDataBuilder> {
+        self.params.push(param.try_into()?);
+        Ok(self)
+    }
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub async fn build(self, client: &LedgerClient) -> VdrResult<TransactionEndorsingData> {
+        let contract = client.contract(&self.contract)?;
+        let nonce: u64 = resolve_identity_nonce(client, &self.identity).await?;
+        Ok(TransactionEndorsingData {
+            to: contract.address().to_owned(),
+            from: self.identity.to_owned(),
+            params: self.params,
+            nonce,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct Block(u64);
+
+impl Block {
+    pub fn value(&self) -> u64 {
+        self.0
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.0 == 0
+    }
+}
+
+impl From<u64> for Block {
+    fn from(value: u64) -> Self {
+        Block(value)
+    }
+}
+
+impl TryFrom<ContractOutput> for Block {
+    type Error = VdrError;
+
+    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
+        Ok(Block::from(value.get_u64(0)?))
+    }
+}
+
+impl From<&Block> for ContractParam {
+    fn from(value: &Block) -> Self {
+        ContractParam::Uint(Uint::from(value.0))
     }
 }

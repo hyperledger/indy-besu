@@ -1,5 +1,4 @@
-use crate::{contracts::did::types::did::DID, types::ContractParam};
-use log::trace;
+use crate::{contracts::did::types::did::DID, types::ContractParam, VdrError};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -9,7 +8,7 @@ impl SchemaId {
     const ID_PATH: &'static str = "anoncreds/v0/SCHEMA";
 
     pub fn build(issuer_id: &DID, name: &str, version: &str) -> SchemaId {
-        let schema_id = SchemaId::from(
+        SchemaId::from(
             format!(
                 "{}/{}/{}/{}",
                 issuer_id.as_ref(),
@@ -18,17 +17,15 @@ impl SchemaId {
                 version
             )
             .as_str(),
-        );
-
-        trace!("Created new SchemaId: {:?}", schema_id);
-
-        schema_id
+        )
     }
 }
 
-impl From<&SchemaId> for ContractParam {
-    fn from(id: &SchemaId) -> Self {
-        ContractParam::String(id.to_string())
+impl TryFrom<&SchemaId> for ContractParam {
+    type Error = VdrError;
+
+    fn try_from(value: &SchemaId) -> Result<Self, Self::Error> {
+        Ok(ContractParam::String(value.to_string()))
     }
 }
 

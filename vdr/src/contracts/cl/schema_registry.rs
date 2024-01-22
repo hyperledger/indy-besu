@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log_derive::{logfn, logfn_inputs};
 
 use crate::{
     client::LedgerClient,
@@ -24,36 +24,25 @@ const METHOD_RESOLVE_SCHEMA: &str = "resolveSchema";
 ///
 /// # Returns
 /// Write transaction to sign and submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_create_schema_transaction(
     client: &LedgerClient,
     from: &Address,
     id: &SchemaId,
     schema: &Schema,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Sender: {:?}, schema: {:?}",
-        METHOD_CREATE_SCHEMA, from, schema
-    );
-
     // TODO: validate schema
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_SCHEMA)
-        .add_param(id.into())
-        .add_param((&schema.issuer_id).into())
-        .add_param(schema.into())
+        .add_param(id)?
+        .add_param(&schema.issuer_id)?
+        .add_param(schema)?
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_CREATE_SCHEMA, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Build transaction to execute SchemaRegistry.resolveSchema contract method to retrieve an existing Schema by the given id
@@ -64,29 +53,19 @@ pub async fn build_create_schema_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_resolve_schema_transaction(
     client: &LedgerClient,
     id: &SchemaId,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Schema ID: {:?}",
-        METHOD_RESOLVE_SCHEMA, id
-    );
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
-        .add_param(id.into())
+        .add_param(id)?
         .set_type(TransactionType::Read)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_RESOLVE_SCHEMA, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Parse the result of execution SchemaRegistry.resolveSchema contract method to receive a Schema associated with the id
@@ -97,26 +76,19 @@ pub async fn build_resolve_schema_transaction(
 ///
 /// # Returns
 /// parsed Schema
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Schema> {
-    debug!(
-        "{} result parse has started. Bytes to parse: {:?}",
-        METHOD_RESOLVE_SCHEMA, bytes
-    );
-
-    let schema = TransactionParser::new()
+    // TODO: validate schema
+    Ok(TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
         .parse::<SchemaRecord>(client, bytes)?
-        .schema;
+        .schema)
+}
 
-    // TODO: validate schema
-
-    info!(
-        "{} result parse has finished. Result: {:?}",
-        METHOD_RESOLVE_SCHEMA, schema
-    );
-
-    Ok(schema)
+pub fn resolve_schema(_client: &LedgerClient, _id: &SchemaId) -> VdrResult<Schema> {
+    unimplemented!()
 }
 
 #[cfg(test)]

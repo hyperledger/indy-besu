@@ -1,17 +1,27 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
+    DID,
 };
 
 use ethereum_types::Address as Address_;
-use log::trace;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+const PREFIX: &str = "0x";
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Address(String);
 
-const PREFIX: &str = "0x";
+impl Address {
+    pub(crate) fn to_filter(&self) -> String {
+        format!("000000000000000000000000{}", &self.0[2..])
+    }
+
+    pub fn as_blockchain_id(&self, chain_id: u64) -> String {
+        format!("eip155:{}:{}", chain_id, self.as_ref())
+    }
+}
 
 impl From<&str> for Address {
     fn from(address: &str) -> Self {
@@ -39,23 +49,12 @@ impl TryInto<ContractParam> for &Address {
     type Error = VdrError;
 
     fn try_into(self) -> Result<ContractParam, Self::Error> {
-        trace!("Address: {:?} convert into ContractParam has started", self);
-
         let acc_address = Address_::from_str(self.as_ref()).map_err(|err| {
             VdrError::CommonInvalidData(format!(
                 "Unable to parse account address. Err: {:?}",
                 err.to_string()
             ))
         })?;
-
-        let acc_address_contract_param = ContractParam::Address(acc_address);
-
-        trace!(
-            "Address: {:?} convert into ContractParam has finished. Result: {:?}",
-            self,
-            acc_address_contract_param
-        );
-
         Ok(ContractParam::Address(acc_address))
     }
 }
@@ -64,19 +63,15 @@ impl TryFrom<ContractOutput> for Address {
     type Error = VdrError;
 
     fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        trace!(
-            "Address convert from ContractOutput: {:?} has started",
-            value
-        );
+        value.get_address(0)
+    }
+}
 
-        let acc_address = Address(value.get_string(0)?);
+impl TryFrom<&DID> for Address {
+    type Error = VdrError;
 
-        trace!(
-            "Address convert from ContractOutput: {:?} has finished. Result: {:?}",
-            value,
-            acc_address
-        );
-
-        Ok(acc_address)
+    fn try_from(did: &DID) -> Result<Self, Self::Error> {
+        let identifier = did.identifier()?;
+        Ok(Address::from(identifier.as_str()))
     }
 }

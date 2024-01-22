@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log_derive::{logfn, logfn_inputs};
 
 use crate::{
     client::LedgerClient,
@@ -25,37 +25,26 @@ const METHOD_RESOLVE_CREDENTIAL_DEFINITION: &str = "resolveCredentialDefinition"
 ///
 /// # Returns
 /// Write transaction to sign and submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_create_credential_definition_transaction(
     client: &LedgerClient,
     from: &Address,
     id: &CredentialDefinitionId,
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Sender: {:?}, CredentialDefinition: {:?}",
-        METHOD_CREATE_CREDENTIAL_DEFINITION, from, credential_definition
-    );
-
     // TODO: validate credential definition
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_CREDENTIAL_DEFINITION)
-        .add_param(id.into())
-        .add_param((&credential_definition.issuer_id).into())
-        .add_param((&credential_definition.schema_id).into())
-        .add_param(credential_definition.into())
+        .add_param(id)?
+        .add_param(&credential_definition.issuer_id)?
+        .add_param(&credential_definition.schema_id)?
+        .add_param(credential_definition)?
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_CREATE_CREDENTIAL_DEFINITION, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Build transaction to execute CredentialDefinitionRegistry.resolveCredentialDefinition contract
@@ -67,31 +56,20 @@ pub async fn build_create_credential_definition_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_resolve_credential_definition_transaction(
     client: &LedgerClient,
     id: &CredentialDefinitionId,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. CredentialDefinitionId: {:?}",
-        METHOD_RESOLVE_CREDENTIAL_DEFINITION, id
-    );
-
     // TODO: validate credential definition
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
-        .add_param(id.into())
+        .add_param(id)?
         .set_type(TransactionType::Read)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_RESOLVE_CREDENTIAL_DEFINITION, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Parse the result of execution CredentialDefinitionRegistry.resolveCredentialDefinition contract
@@ -103,29 +81,25 @@ pub async fn build_resolve_credential_definition_transaction(
 ///
 /// # Returns
 /// parsed Credential Definition
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub fn parse_resolve_credential_definition_result(
     client: &LedgerClient,
     bytes: &[u8],
 ) -> VdrResult<CredentialDefinition> {
-    debug!(
-        "{} result parse has started. Bytes to parse: {:?}",
-        METHOD_RESOLVE_CREDENTIAL_DEFINITION, bytes
-    );
-
-    let credential_definition = TransactionParser::new()
+    // TODO: validate credential definition
+    Ok(TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
         .parse::<CredentialDefinitionRecord>(client, bytes)?
-        .credential_definition;
+        .credential_definition)
+}
 
-    // TODO: validate credential definition
-
-    info!(
-        "{} result parse has finished. Result: {:?}",
-        METHOD_RESOLVE_CREDENTIAL_DEFINITION, credential_definition
-    );
-
-    Ok(credential_definition)
+pub fn resolve_credential_definition(
+    _client: &LedgerClient,
+    _id: &CredentialDefinitionId,
+) -> VdrResult<CredentialDefinition> {
+    unimplemented!()
 }
 
 #[cfg(test)]

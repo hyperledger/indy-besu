@@ -1,5 +1,4 @@
-use crate::{contracts::did::types::did::DID, types::ContractParam};
-use log::trace;
+use crate::{contracts::did::types::did::DID, types::ContractParam, VdrError};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -9,7 +8,7 @@ impl CredentialDefinitionId {
     const ID_PATH: &'static str = "anoncreds/v0/CLAIM_DEF";
 
     pub fn build(issuer_id: &DID, schema_id: &str, tag: &str) -> CredentialDefinitionId {
-        let cred_def_id = CredentialDefinitionId::from(
+        CredentialDefinitionId::from(
             format!(
                 "{}/{}/{}/{}",
                 issuer_id.as_ref(),
@@ -18,17 +17,15 @@ impl CredentialDefinitionId {
                 tag
             )
             .as_str(),
-        );
-
-        trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
-
-        cred_def_id
+        )
     }
 }
 
-impl From<&CredentialDefinitionId> for ContractParam {
-    fn from(id: &CredentialDefinitionId) -> Self {
-        ContractParam::String(id.to_string())
+impl TryFrom<&CredentialDefinitionId> for ContractParam {
+    type Error = VdrError;
+
+    fn try_from(value: &CredentialDefinitionId) -> Result<Self, Self::Error> {
+        Ok(ContractParam::String(value.to_string()))
     }
 }
 

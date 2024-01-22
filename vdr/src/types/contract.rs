@@ -3,8 +3,10 @@ use crate::{
     Address,
 };
 
-use ethabi::Token;
-use log::{trace, warn};
+use crate::utils::format_bytes32;
+use ethabi::{Log, Token};
+use log::warn;
+use log_derive::{logfn, logfn_inputs};
 use serde::{Deserialize, Serialize};
 
 /// Contract configuration
@@ -30,6 +32,8 @@ pub struct ContractSpec {
 
 impl ContractSpec {
     /// Read and parse contract specification from a JSON file
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn from_file(spec_path: &str) -> VdrResult<Self> {
         let contract_spec = std::fs::read_to_string(spec_path).map_err(|err| {
             let vdr_error = VdrError::ContractInvalidSpec(format!(
@@ -58,11 +62,6 @@ impl ContractSpec {
             vdr_error
         });
 
-        trace!(
-            "Read contract specification from file. Result: {:?}",
-            contract_spec
-        );
-
         contract_spec
     }
 }
@@ -72,23 +71,16 @@ pub type ContractParam = Token;
 
 /// Helper wrapper for more convenient parsing of the contract execution results
 #[derive(Debug)]
-pub struct ContractOutput(Vec<ContractParam>);
+pub(crate) struct ContractOutput(Vec<ContractParam>);
 
 impl ContractOutput {
+    #[allow(unused)]
     pub fn new(data: Vec<ContractParam>) -> ContractOutput {
         ContractOutput(data)
     }
 
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-
-    pub fn size(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn into_iter(self) -> impl Iterator<Item = ContractParam> {
-        self.0.into_iter()
     }
 
     pub fn get_tuple(&self, index: usize) -> VdrResult<ContractOutput> {
@@ -138,17 +130,6 @@ impl ContractOutput {
             .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing bool value".to_string()))
     }
 
-    pub fn get_u128(&self, index: usize) -> VdrResult<u128> {
-        Ok(self
-            .0
-            .get(index)
-            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
-            .clone()
-            .into_uint()
-            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
-            .as_u128())
-    }
-
     pub fn get_u8(&self, index: usize) -> VdrResult<u8> {
         Ok(self
             .0
@@ -160,24 +141,26 @@ impl ContractOutput {
             .as_u32() as u8)
     }
 
-    pub fn get_string_array(&self, index: usize) -> VdrResult<Vec<String>> {
-        self.0
+    pub fn get_u64(&self, index: usize) -> VdrResult<u64> {
+        Ok(self
+            .0
             .get(index)
-            .ok_or_else(|| {
-                VdrError::ContractInvalidResponseData("Missing string array value".to_string())
-            })?
+            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
             .clone()
-            .into_array()
-            .ok_or_else(|| {
-                VdrError::ContractInvalidResponseData("Missing string array value".to_string())
-            })?
-            .into_iter()
-            .map(|token| {
-                token.into_string().ok_or_else(|| {
-                    VdrError::ContractInvalidResponseData("Missing string value".to_string())
-                })
-            })
-            .collect()
+            .into_uint()
+            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
+            .as_u64())
+    }
+
+    pub fn get_u128(&self, index: usize) -> VdrResult<u128> {
+        Ok(self
+            .0
+            .get(index)
+            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
+            .clone()
+            .into_uint()
+            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
+            .as_u128())
     }
 
     pub fn get_address_array(&self, index: usize) -> VdrResult<Vec<Address>> {
@@ -200,33 +183,127 @@ impl ContractOutput {
             .map(|token| Address::from(token.to_string().as_str()))
             .collect())
     }
-
-    pub fn get_objects_array(&self, index: usize) -> VdrResult<Vec<ContractOutput>> {
-        let tokens = self
-            .0
-            .get(index)
-            .ok_or_else(|| {
-                VdrError::ContractInvalidResponseData("Missing object array value".to_string())
-            })?
-            .clone()
-            .into_array()
-            .ok_or_else(|| {
-                VdrError::ContractInvalidResponseData("Missing object array value".to_string())
-            })?;
-
-        let mut result: Vec<ContractOutput> = Vec::new();
-        for item in tokens.into_iter() {
-            let item = item.into_tuple().ok_or_else(|| {
-                VdrError::ContractInvalidResponseData("Missing object value".to_string())
-            })?;
-            result.push(ContractOutput(item))
-        }
-        Ok(result)
-    }
 }
 
 impl From<Vec<Token>> for ContractOutput {
     fn from(value: Vec<Token>) -> Self {
         ContractOutput(value)
+    }
+}
+
+/// Helper wrapper for more convenient parsing of the contract event logs
+#[derive(Debug)]
+pub(crate) struct ContractEvent(Log);
+
+impl ContractEvent {
+    pub fn is_empty(&self) -> bool {
+        self.0.params.is_empty()
+    }
+
+    pub fn get_address(&self, index: usize) -> VdrResult<Address> {
+        let address_str = self
+            .0
+            .params
+            .get(index)
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })?
+            .clone()
+            .value
+            .into_address()
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })?
+            .to_string();
+
+        Ok(Address::from(address_str.as_str()))
+    }
+
+    pub fn get_fixed_bytes(&self, index: usize) -> VdrResult<Vec<u8>> {
+        self.0
+            .params
+            .get(index)
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })?
+            .clone()
+            .value
+            .into_fixed_bytes()
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })
+    }
+
+    pub fn get_bytes(&self, index: usize) -> VdrResult<Vec<u8>> {
+        self.0
+            .params
+            .get(index)
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })?
+            .clone()
+            .value
+            .into_bytes()
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })
+    }
+
+    pub fn get_uint(&self, index: usize) -> VdrResult<u64> {
+        self.0
+            .params
+            .get(index)
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })?
+            .clone()
+            .value
+            .into_uint()
+            .ok_or_else(|| {
+                VdrError::ContractInvalidResponseData("Missing address value".to_string())
+            })
+            .map(|uint| uint.as_u64())
+    }
+}
+
+impl From<Log> for ContractEvent {
+    fn from(value: Log) -> Self {
+        ContractEvent(value)
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct UintBytesParam(u64);
+
+impl From<u64> for UintBytesParam {
+    fn from(value: u64) -> Self {
+        UintBytesParam(value)
+    }
+}
+
+impl TryFrom<UintBytesParam> for ContractParam {
+    type Error = VdrError;
+
+    fn try_from(value: UintBytesParam) -> Result<Self, Self::Error> {
+        Ok(ContractParam::FixedBytes(
+            format_bytes32(value.0.to_be_bytes().as_slice())?.to_vec(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct MethodParam(&'static str);
+
+impl From<&'static str> for MethodParam {
+    fn from(value: &'static str) -> Self {
+        MethodParam(value)
+    }
+}
+
+impl TryFrom<MethodParam> for ContractParam {
+    type Error = VdrError;
+
+    fn try_from(value: MethodParam) -> Result<Self, Self::Error> {
+        Ok(ContractParam::String(value.0.to_string()))
     }
 }
