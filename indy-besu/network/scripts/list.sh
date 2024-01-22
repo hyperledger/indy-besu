@@ -30,7 +30,7 @@ echo "----------------------------------"
 
 echo "JSON-RPC HTTP service endpoint                 : http://${HOST}:8545"
 echo "JSON-RPC WebSocket service endpoint            : ws://${HOST}:8546"
-if [ ! -z `docker compose -f docker-compose.yml ps -q blockscout 2> /dev/null` ]; then
+if [ ! -z `docker-compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG ps -a -q proxy` ]; then
 echo "Blockscout address                             : http://${HOST}:26000/"
 fi
 if [ ! -z `docker compose -f docker-compose.yml ps -q prometheus 2> /dev/null` ]; then
