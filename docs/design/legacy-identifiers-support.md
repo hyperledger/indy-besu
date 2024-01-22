@@ -13,36 +13,38 @@ So that legacy DID can be associated with a new `did:ethr` and we can only use `
         // legacy formated ids of schemas and cred defs -> new id
         mapping(string => string) public clMappings;
     
-        function createDidMapping(string legacyDid, address identity, bytes32 key, bytes32 signature) {
+        function createDidMapping(string legacyDid, bytes32 key, bytes32 ed25518Signature) {
             // check signature
             // check legacyDid is derived from key
-            didMappings[legacyDid] = identity;
+            didMappings[legacyDid] = msg.sender;
         }
     
-        function endorseDidMapping(string legacyDid, address identity, bytes32 key, bytes32 ed25518Signature, bytes32 ecdsaSignature) {
+        function endorseDidMapping(address identity, string legacyDid, bytes32 key, bytes32 ed25518Signature, bytes32 ecdsaSignature) {
             // check signatures
             didMappings[legacyDid] = identity;
         }
     
-        function getDidMapping(string legacyDid) {
-            return didMappings[legacyDid];
-        }
+        // resolve mapping done through `didMappings(string)` function available after contract compilation
     
         function createClMapping(string legacyId, string id, bytes32 key, bytes32 signature) {
             // fetch issuer did from legacy schema/credDef id 
             // check issuer did is derived from key
+            // check msg.sender is owner of issuer did
+            // check identity is owner of schema / cred def
             // check signature
             clMappings[legacyId] = id;
         }
     
-        function endorseClMapping(string legacyId, string id, bytes32 key, bytes32 ed25518Signature, bytes32 ecdsaSignature) {
+        function endorseClMapping(address identity, string legacyId, string id, bytes32 key, bytes32 ed25518Signature, bytes32 ecdsaSignature) {
+            // fetch issuer did from legacy schema/credDef id 
+            // check issuer did is derived from key
+            // check identity is owner of issuer did
+            // check identity is owner of schema / cred def
             // check signatures
             clMappings[legacyId] = id;
         }
     
-        function getClMapping(string legacyId) {
-            return clMappings[legacyId];
-        }
+        // resolve mapping done through `clMappings(string)` function available after contract compilation
     }
     ```
     * Note, that user must pass signature over identifier to prove ownership
@@ -62,9 +64,9 @@ So that legacy DID can be associated with a new `did:ethr` and we can only use `
             * Signature must be done over the following hash value: `keccak256(abi.encodePacked(bytes1(0x19), bytes1(0), address(this), msg.sender, "createClMapping", legacyId, id, key))`
 * After migration, clients in order to resolve legacy identifiers:
     * for DID document firstly must resolve ethereum account
-      using `LegacyIdMappingRegistry.getDidMapping(identifier)`, and next resolve DID ether document as it described in the
+      using `LegacyIdMappingRegistry.didMappings(identifier)`, and next resolve DID ether document as it described in the
       corresponding specification.
     * for Schema/Credential Definition firstly must resolve new identifier
-      using `LegacyIdMappingRegistry.getClMapping(identifier)`, and next resolve Schema/Credential Definition as it described in the
+      using `LegacyIdMappingRegistry.clMappings(identifier)`, and next resolve Schema/Credential Definition as it described in the
       corresponding specification.
     
