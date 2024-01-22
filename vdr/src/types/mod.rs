@@ -11,7 +11,7 @@ pub use event_query::{EventLog, EventQuery};
 pub use signature::SignatureData;
 pub use status::{PingStatus, Status};
 pub use transaction::{
-    Block, Transaction, TransactionEndorsingData, TransactionSignature, TransactionType,
+    Block, Nonce, Transaction, TransactionEndorsingData, TransactionSignature, TransactionType,
 };
 
 pub(crate) use contract::{

@@ -274,7 +274,7 @@ pub mod test {
     use super::*;
     use crate::utils::rand_bytes;
 
-    pub const ISSUER_ID: &str = "did:indy2:testnet:3LpjszkgTmE3qThge25FZw";
+    pub const ISSUER_ID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const CONTEXT: &str = "https://www.w3.org/ns/did/v1";
     pub const MULTIBASE_KEY: &str = "zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf";
     pub const SERVICE_ENDPOINT: &str = "127.0.0.1:5555";

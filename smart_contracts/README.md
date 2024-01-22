@@ -76,7 +76,8 @@ You can find sample scripts demonstrating the usage of deployed contracts in the
 
 * `genesis` - helper scripts to generate genesis blocks for injecting contracts.
 
-  > Find more details regarding the scripts in the [genesis section](#inject-contracts-into-network-genesis) of this document.
+  > Find more details regarding the scripts in the [genesis section](#inject-contracts-into-network-genesis) of this
+  document.
 
 ## Inject contracts into network genesis
 
@@ -93,12 +94,12 @@ This section describes how to inject smart contracts into the genesis state of t
    yarn solc-compile
    ```
 
-* `artifacts` and `compiled-contracts` folders with compiled contracts will be generated as the result of the execution.
+   * `artifacts` and `compiled-contracts` folders with compiled contracts will be generated as the result of the execution.
 
 3. Execute script generating the contracts content for the network genesis file:
    > yarn genesis/generate
 
-* `ContractsGenesis.json` file will be generated as the result
+   * `ContractsGenesis.json` file will be generated as the result
 
 4. Put the whole block into the `alloc` section of the network genesis file.
 

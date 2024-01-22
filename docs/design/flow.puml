@@ -44,14 +44,6 @@ T->TV: Submit transaction
 TV->C: Send transaction
 C-->C: Execute RoleControl.assignRole contract
 
-== Create Indy Did ==
-
-E->EV: Build Did Document
-E->EV: Build and sign transaction to create Did
-E->EV: Submit transaction
-EV->C: Send transaction
-C-->C: Execute IndyDidRegistry.createDid contract
-
 == Create Ethr Did ==
 
 note across
@@ -61,46 +53,44 @@ end note
 E->EV: Build and sign transaction to add DID attribute (Service)
 E->EV: Submit transaction
 EV->C: Send transaction
-C-->C: Execute EthrExtDidRegistry.setAttribute contract
-
-== Endorse Indy Did ==
-
-F->FV: Build Did Document
-F->FV: Encode Did Document
-F->FW: EdDSA sign did document bytes
-F-->E: Pass Did Document, Signature
-E->EV: Build and sign transaction to endorse Did
-E->EV: Submit transaction
-EV->C: Send transaction
-C-->C: Execute IndyDidRegistry.endorseDid contract
+C-->C: Execute `EthrExtDidRegistry.setAttribute` contract
 
 == Endorse Ethr Did ==
 
 note across
-  Not needed as DID imply to be written by default
-  Owner can add resource without endorsement need
+  Not needed for creation as DID imply to be written by default
+  Required for adding of a resource
 end note
 
-== Create Schema (any DID method) ==
+F->FV: Build Service attribute
+F->FV: Prepare endorsement data for setting attribute
+F->FW: EdDSA sign endorsement data
+F-->E: Pass Service attribute and Signature
+E->EV: Build and sign transaction for setting signed attribute
+E->EV: Submit transaction
+EV->C: Send transaction
+C-->C: Execute `EthrExtDidRegistry.setAttributeSigned` contract
+
+== Create Schema ==
 
 E->EV: Build Schema
 E->EV: Build and sign transaction to create Schema
 E->EV: Submit transaction
 EV->C: Send transaction
-C-->C: Execute SchemaRegistry.createSchema contract
+C-->C: Execute `SchemaRegistry.createSchema` contract
 C-->C: Resolve and verify issuerDid ownership
 
-== Endorse Schema (any DID method) ==
+== Endorse Schema ==
 
 F->FV: Build Schema
-F->FV: Encode Schema
-F->FW: EdDSA sign Schema bytes
-F-->E: Pass Schema, Signature
-E->EV: Build and sign transaction to endorse Schema
+F->FV: Prepare endorsement data for creating schema
+F->FW: EdDSA sign endorsement data
+F-->E: Pass Schema and Signature
+E->EV: Build and sign transaction to creating signed schema
 E->EV: Submit transaction
 EV->C: Send transaction
-C-->C: Execute SchemaRegistry.endorseSchema contract
-C-->C: Resolve and verify issuerDid ownership
+C-->C: Execute SchemaRegistry.createSchemaSigned contract
+C-->C: Resolve and verify issuerId ownership
 
 ==  ==
 

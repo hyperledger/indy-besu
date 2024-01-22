@@ -1,18 +1,11 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
+    Address,
 };
 
-use crate::contracts::did::types::did::DID;
+use crate::{contracts::did::types::did::DID, types::ContractEvent};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::json;
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SchemaRecord {
-    pub schema: Schema,
-    pub metadata: SchemaMetadata,
-}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Schema {
@@ -24,16 +17,13 @@ pub struct Schema {
     pub attr_names: Vec<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct SchemaMetadata {
-    pub created: u64,
-}
-
 impl TryFrom<&Schema> for ContractParam {
     type Error = VdrError;
 
     fn try_from(value: &Schema) -> Result<Self, Self::Error> {
-        Ok(ContractParam::String(json!(value).to_string()))
+        serde_json::to_vec(value)
+            .map(ContractParam::Bytes)
+            .map_err(|_| VdrError::ContractInvalidInputData)
     }
 }
 
@@ -50,31 +40,32 @@ impl TryFrom<&ContractOutput> for Schema {
     }
 }
 
-impl TryFrom<ContractOutput> for SchemaMetadata {
-    type Error = VdrError;
-
-    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        let created = value.get_u128(0)?;
-        let schema_metadata = SchemaMetadata {
-            created: created as u64,
-        };
-        Ok(schema_metadata)
-    }
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SchemaCreatedEvent {
+    pub id_hash: String,
+    pub identity: Address,
+    pub schema: Schema,
 }
 
-impl TryFrom<ContractOutput> for SchemaRecord {
+impl TryFrom<ContractEvent> for SchemaCreatedEvent {
     type Error = VdrError;
 
-    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        let output_tuple = value.get_tuple(0)?;
-        let schema = Schema::try_from(&output_tuple)?;
-        let metadata = output_tuple.get_tuple(1)?;
+    fn try_from(log: ContractEvent) -> Result<Self, Self::Error> {
+        let id = log.get_fixed_bytes(0)?;
+        let identity = log.get_address(1)?;
+        let schema_bytes = log.get_bytes(2)?;
+        let schema = serde_json::from_slice(&schema_bytes).map_err(|err| {
+            VdrError::ContractInvalidResponseData(format!(
+                "Unable to parse schema from contract event. Err: {:?}",
+                err
+            ))
+        })?;
 
-        let schema_with_meta = SchemaRecord {
+        Ok(SchemaCreatedEvent {
+            id_hash: hex::encode(&id),
+            identity,
             schema,
-            metadata: SchemaMetadata::try_from(metadata)?,
-        };
-        Ok(schema_with_meta)
+        })
     }
 }
 
@@ -114,7 +105,7 @@ pub mod test {
 
     fn schema_param() -> ContractParam {
         let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-        ContractParam::String(json!(schema).to_string())
+        ContractParam::Bytes(serde_json::to_vec(&schema).unwrap())
     }
 
     mod convert_into_contract_param {
@@ -125,18 +116,6 @@ pub mod test {
             let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
             let param: ContractParam = (&schema).try_into().unwrap();
             assert_eq!(schema_param(), param);
-        }
-    }
-
-    mod convert_into_object {
-        use super::*;
-
-        #[test]
-        fn convert_contract_output_into_schema() {
-            let data = ContractOutput::new(vec![schema_param()]);
-            let converted = Schema::try_from(&data).unwrap();
-            let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-            assert_eq!(schema, converted);
         }
     }
 }

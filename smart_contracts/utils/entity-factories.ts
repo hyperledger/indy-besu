@@ -23,18 +23,19 @@ export function createBaseDidDocument(did: string) {
 }
 
 interface CreateSchemaParams {
-  issuerId: string
+  issuer: string
   name?: string
   version?: string
   attrNames?: string[]
 }
 
 export function createSchemaObject({
-  issuerId,
+  issuer,
   name = 'BasicIdentity',
   version = '1.0.0',
   attrNames = ['First Name', 'Last Name'],
 }: CreateSchemaParams) {
+  const issuerId = `did:ethr:${issuer}`
   const id = `${issuerId}/anoncreds/v0/SCHEMA/${name}/${version}`
   return {
     id,
@@ -49,7 +50,7 @@ export function createSchemaObject({
 }
 
 interface CreateCredentialDefinitionParams {
-  issuerId: string
+  issuer: string
   schemaId: string
   credDefType?: string
   tag?: string
@@ -57,7 +58,7 @@ interface CreateCredentialDefinitionParams {
 }
 
 export function createCredentialDefinitionObject({
-  issuerId,
+  issuer,
   schemaId,
   credDefType = 'CL',
   tag = 'BasicIdentity',
@@ -68,6 +69,7 @@ export function createCredentialDefinitionObject({
     z: '632...005',
   },
 }: CreateCredentialDefinitionParams) {
+  const issuerId = `did:ethr:${issuer}`
   const id = `${issuerId}/anoncreds/v0/CLAIM_DEF/${schemaId}/${tag}`
   return {
     id,

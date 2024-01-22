@@ -67,12 +67,6 @@ interface ValidatorControlInterface {
     error ValidatorNotFound(address validator);
 
     /**
-     * @dev Gets the list of active validators.
-     * @return A array of the active validators.
-     */
-    function getValidators() external view returns (address[] memory);
-
-    /**
      * @dev Adds a new validator to the list.
      *
      * Restrictions:
@@ -104,4 +98,10 @@ interface ValidatorControlInterface {
      * - On successful validator removal, will emit a `ValidatorRemoved` event.
      */
     function removeValidator(address validator) external;
+
+    /**
+     * @dev Gets the list of active validators.
+     * @return A array of the active validators.
+     */
+    function getValidators() external view returns (address[] memory);
 }

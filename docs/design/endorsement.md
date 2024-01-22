@@ -1,24 +1,36 @@
 ## Endorsement
 
 Not all identity owners may have permissions for writing transactions on the ledger.  
-We need to define a mechanism of doing transaction writes by an Endorser with preserving original author as an entity
-owner.
+The goal of this document to define a mechanism of doing transaction writes to the ledger by a special parties having an
+Endorser role with preserving of original author as an entity owner.
 
 ### DID Indy registry
 
 #### Flow
 
 * Author steps:
-    * Step 1: Author prepares a DID Document object
-    * Step 2: Author queries `nonce` from the ledger
-    * Step 3: Author convert DID Document into contracts representation (which will be stored on the ledger) and encodes
-      it into bytes using `abi.encodePacked` (available in solidity as well)
-    * Step 4: Author performs EcDSA signing using his ethereum identity account keys of concatenated nonce and did
-      document bytes and next hashing of the result value: `keccak256(abi.encodePacked(nonce, didDocument))`
-    * Step 5: Author passes DID Document and Signature to Endorser
+    * Step 1: Prepares a DID Document object
+    * Step 2: Queries `nonce` from the ledger: `IndyDidRegistry.nonce(identity)`
+    * Step 3: Execute VDR method to calculate hash need to be signed - contract signed data according
+      to [EIP](https://eips.ethereum.org/EIPS/eip-191).
+        ```
+        keccak256(abi.encodePacked(bytes1(0x19), bytes1(0), address(this), nonce[identity], identity, "createDid", did, document))
+        // Arguments when calculating hash to validate
+        // 1: byte(0x19) - the initial 0x19 byte
+        // 2: byte(0) - the version byte
+        // 3: address(this) - the validator address
+        // 4-8: Application specific data
+        //  nonce - nonce to prevent reply attack
+        //  identity - author account address
+        //  `createDid` original contract method - added to be aligned with did:ethr contract
+        //  did - DID to be created
+        //  document - DID document as JSON string
+        ```
+    * Step 4: Performs EcDSA signing using his ethereum identity account keys
+    * Step 5: Passes DID Document and Signature to Endorser
 * Endorser steps:
     * Step 1: Endorser builds transaction to endorse
-      DID: `endorseDid(address sender, address identity, DidDocument didDocument, bytes32 identitySignature)`
+      DID: `endorseDid(address identity, string did, string document, uint8 sigV, bytes32 sigR, bytes32 sigS)`
       > Optionally: `identity` can be derived from DidDocument.id instead of passing explicitly
     * Step 2: Endorser does regular EcDSA signing of the **Transaction**
     * Step 3: Endorser submit the signed transaction to the ledger which executes deployed `IndyDidRegistry.endorseDid`
@@ -27,11 +39,9 @@ owner.
     * Checks the validity of the transaction level signature (Endorser's signature)
 * Contract:
     * Step 1: Get current nonce value of identity
-    * Step 2: Calculate the hash signed data: `keccak256(abi.encodePacked(nonce, didDocument))`
+    * Step 2: Calculate the hash of signed data: same as for Author Step 3
     * Step 3: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
         * `ecrecover` returns an account signed the message
-
-> Should we add and use some nonce to prevent reply attack?
 
 #### Contracts
 
@@ -41,7 +51,7 @@ mapping(address => uint) public nonce;
 // identity - ethereum address of DID owner
 // document - did document
 // identitySignature - identity owner signatures (EcDSA and optionally ED25519) ower serialized DID Document
-function endorseDid(address identity, DidDocument didDocument, bytes32 identitySignature) {
+function endorseDid(address identity, string calldata did, string calldata document, uint8 sigV, bytes32 sigR, bytes32 sigS) {
     // sender is endorser when it's not equal to identity
     if (msg.sender == identity) {
         revert InvalidmethodExecution;
@@ -49,8 +59,8 @@ function endorseDid(address identity, DidDocument didDocument, bytes32 identityS
     
     // calculate the hash of DiDocument 
     // this hash will be checked agains signatures to verify ownership 
-    bytes32 hash = keccak256(abi.encodePacked(nonce[identity], didDocument));
-    
+    bytes32 hash = keccak256(abi.encodePacked(bytes1(0x19), bytes1(0), address(this), nonce[identity], identity, "createDid", did, document));
+
     // verify EcDSA identity owner signature ower DID + DidDocument
     checkEcDsaSignature(identity, hash, identitySignature);
     
@@ -74,8 +84,12 @@ function checkEcDsaSignature(address identity, bytes32 hash, EcDSASignature sign
 #### VDR
 
 ```rust
-// Encode DID Document which need to be signed by an identity owner 
-fn indy_vdr_encode_did_document(did_doc: DidDocument) -> Vec<u8>;
+// Prepare endorsing bytes which need to be signed by an identity owner 
+fn prepare_endorse_did_data(
+    client: &LedgerClient,
+    identity: &Address, 
+    did_doc: DidDocument
+) -> Vec<u8>;
 
 // Build transaction to endorse DID
 fn build_endorse_did_transaction(
@@ -95,6 +109,8 @@ So that DID assume to be written by default -> endorsement is not needed.
 
 Endorsement is needed to modify DID properties, what can be done using the set of existing contract methods:
 
+#### Contracts
+
 ```
 function setAttributeSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, bytes32 name, bytes memory value, uint validity)
 
@@ -107,12 +123,6 @@ function revokeDelegateSigned(address identity, uint8 sigV, bytes32 sigR, bytes3
 function changeOwnerSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, address newOwner)
 ```
 
-#### Contracts
-
-Should we extend DidEthrRegistry contract to add roles check?
-
-> We already extended `DidEthrRegistry` to use UpgradeControl
-
 #### VDR
 
 TO BE defined later.
@@ -121,19 +131,32 @@ TO BE defined later.
 
 #### Flow
 
-**Schema endorsing**
+**Schema endorsing steps**
+
+> In case of Schema and Credential Definition we do not need to add `nonce` as we do not have an update operation.  
 
 * Author steps:
     * Step 1: Author prepares a Schema object
-    * Step 2: Author queries `nonce` from the ledger
-    * Step 3: Author convert Schema into contracts representation (which will be stored on the ledger) and encodes
-      it into bytes using `abi.encodePacked` (available in solidity as well)
-    * Step 4: Author performs EcDSA signing using his ethereum identity account keys of concatenated nonce and did
-      document bytes and next hashing of the result value: `keccak256(abi.encodePacked(nonce, schema))`
-    * Step 5: Author passes Schema and Signature to Endorser
+    * Step 2: Execute VDR method to calculate hash need to be signed - contract signed data according
+      to [EIP](https://eips.ethereum.org/EIPS/eip-191).
+        ```
+        keccak256(abi.encodePacked(bytes1(0x19), bytes1(0), address(this), identity, "createSchema", id, issuerId, schema))
+        // Arguments when calculating hash to validate
+        // 1: byte(0x19) - the initial 0x19 byte
+        // 2: byte(0) - the version byte
+        // 3: address(this) - the validator address
+        // 4-8: Application specific data
+        //  identity - author account address
+        //  `createSchema` original contract method - added to be aligned with did:ethr contract
+        //  id - id of schema to be created
+        //  issuerId - id of schema issuer
+        //  schema - schema as JSON string
+        ```
+    * Step 3: Performs EcDSA signing using his ethereum identity account keys
+    * Step 4: Author passes Schema and Signature to Endorser
 * Endorser steps:
     * Step 1: Endorser builds transaction to endorse
-      DID: `endorseSchema(address sender, Schema schema, bytes32 identitySignature)`
+      DID: `endorseSchema(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, string id, string issuerId, string schema)`
     * Step 2: Endorser does regular EcDSA signing of the **Transaction**
     * Step 3: Endorser submit the signed transaction to the ledger which executes
       deployed `SchemaRegistry.endorseSchema`
@@ -141,75 +164,119 @@ TO BE defined later.
 * Ethereum:
     * Checks the validity of the transaction level signature (Endorser's signature)
 * Contract:
-    * Step 1: Resolve identity owner for the schema `issuerId`
-    * Step 2: Get current nonce value of identity
-    * Step 3: Calculate the hash signed data: `keccak256(abi.encodePacked(nonce, schema))`
-    * Step 4: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
+    * Step 1: Calculate the hash of signed data: same as for Author Step 3
+    * Step 2: Checks the validity of the provided signature against identity passed as the parameter `ecrecover(...);`
         * `ecrecover` returns an account signed the message
+    * Step 3: Resolve and check identity owner for the schema `issuerId`
 
-Credential Definition endorsing process is the same as for Schema.
+**Credential Definition endorsing steps**:
+
+> Credential Definition endorsing process is the same as for Schema.
+
+* Author steps:
+    * Step 1: Author prepares a Credential Definition object
+    * Step 2: Execute VDR method to calculate hash need to be signed - contract signed data according
+      to [EIP](https://eips.ethereum.org/EIPS/eip-191).
+        ```
+        keccak256(abi.encodePacked(bytes1(0x19), bytes1(0), address(this), identity, "createCredentialDefinition", id, issuerId, schemaId, credDef))
+        // Arguments when calculating hash to validate
+        // 1: byte(0x19) - the initial 0x19 byte
+        // 2: byte(0) - the version byte
+        // 3: address(this) - the validator address
+        // 4-9: Application specific data
+        //  identity - author account address
+        //  `createSchema` original contract method - added to be aligned with did:ethr contract
+        //  id - id of schema to be created
+        //  issuerId - id of issuer
+        //  schemaId - id of schema
+        //  credDef - credential definition as JSON string
+        ```
+    * Step 3: Performs EcDSA signing using his ethereum identity account keys
+    * Step 4: Author passes Credential Definition and Signature to Endorser
+* Endorser/Ethereum/Contract steps are similar to the schema steps.
 
 #### Contracts
 
 ```
-// schema - CL schema
-// identitySignature - signature ower serialized Schema of the schema issuer identity owner
-function endorseSchema(Schema schema, EcDsaSignature identitySignature) {
-    // resolver owner of issuerDID
-    DidMetadata issuerDidMeta = didResolver.resolveMetadata(schema.issuerId)
-    
-    if (msg.sender == issuerDidMeta.owner) {
-        revert InvalidmethodExecution;
-    }
-    
-    bytes32 hash = keccak256(abi.encodePacked(nonce[issuerDidMeta.owner], schema));
-    
-    checkEcDsaSignature(issuerDidMeta.owner, hash, identitySignature);
+function endorseSchema(
+    address identity,
+    string calldata id,
+    string calldata issuerId,
+    string calldata schema,
+    uint8 sigV,
+    bytes32 sigR,
+    bytes32 sigS
+) public virtual {
+    // validate identity signature
+    bytes32 hash = keccak256(abi.encodePacked(bytes1(0x19), bytes1(0), address(this), identity, "createSchema", id, issuerId, schema));
+    checkSignature(identity, hash, sigV, sigR, sigS);
 
-    nonce[issuerDidMeta.owner]++;
-    _schemas[schema.id].schema = schema;
+    // store schema
+    createSchema(identity, id, issuerId, schema);
 }
 
-// credDef - CL credential definition
-// identitySignature - signature ower serialized credDef of the cred def issuer identity owner
-function endorseCredentialDefinition(CredentialDefinition credDef, EcDsaSignature identitySignature) {
-    // resolver owner of issuerDID
-    DidMetadata issuerDidMeta = didResolver.resolveMetadata(credDef.issuerId)
-    if (msg.sender == identity) {
-        revert InvalidmethodExecution;
-    }
-    
-    bytes32 hash = keccak256(abi.encodePacked(nonce[issuerDidMeta.owner], credDef));
+function endorseCredentialDefinition(
+    address identity,
+    string memory id,
+    string calldata issuerId,
+    string calldata schemaId,
+    string memory credDef,
+    uint8 sigV,
+    bytes32 sigR,
+    bytes32 sigS
+) public virtual {
+    // validate identity signature
+    bytes32 hash = keccak256(abi.encodePacked(bytes1(0x19), bytes1(0), address(this), identity, "createCredentialDefinition", id, issuerId, schemaId, credDef));
+    checkSignature(identity, hash, sigV, sigR, sigS);
 
-    checkEcDsaSignature(issuerDidMeta.owner, hash, identitySignature);
-    
-    nonce[issuerDidMeta.owner]++;
-    _credDefs[credDef.id].credDef = credDef;
+    // store credential definition
+    createCredentialDefinition_(identity, id, issuerId, schemaId, credDef);
 }
 ```
 
 #### VDR
 
 ```rust
-// Encode Schema which need to be signed by an identity owner 
-fn indy_vdr_encode_schema(schema: Schema) -> Vec<u8>;
+// Prepare schema endorsing bytes which need to be signed by an identity owner 
+fn prepare_endorse_schema_data(
+    client: &LedgerClient,
+    identity: &Address,
+    id: &SchemaId,
+    issuer_id: &DID,
+    schema: &Schema,
+) -> Vec<u8>;
 
 // Build transaction to endorse Schema
 fn build_endorse_schema_transaction(
     client: &LedgerClient,
     sender: &Address,
+    identity: &Address,
+    id: &SchemaId,
+    issuer_id: &DID,
     schema: &Schema,
     signature: &Signature
 ) -> VdrResult<Transaction> {}
 
-// Encode CredentialDefinition which need to be signed by an identity owner 
-fn indy_vdr_encode_credential_definition(cred_def: CredentialDefinition) -> Vec<u8>;
+// Prepare credential definition endorsing bytes which need to be signed by an identity owner 
+fn prepare_endorse_credential_definition_data(
+    client: &LedgerClient,
+    identity: &Address,
+    id: &SchemaId,
+    issuer_id: &DID,
+    schema_id: &SchemaId,
+    cred_def: &CredentialDefinition,
+) -> Vec<u8>;
 
 // Build transaction to endorse CredentialDefinition
 fn build_endorse_credential_definition_transaction(
     client: &LedgerClient,
     sender: &Address,
+    identity: &Address,
+    id: &SchemaId,
+    issuer_id: &DID,
+    schema_id: &SchemaId,
     cred_def: &CredentialDefinition,
     signature: &Signature
 ) -> VdrResult<Transaction> {}
 ```
+

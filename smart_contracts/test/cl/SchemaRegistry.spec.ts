@@ -1,25 +1,36 @@
 import { expect } from 'chai'
-import { IndyDidRegistry, SchemaRegistry } from '../../contracts-ts'
+import { keccak256, toUtf8Bytes } from 'ethers'
+import { EthereumExtDidRegistry, SchemaRegistry } from '../../contracts-ts'
 import { createSchemaObject } from '../../utils'
-import { createDid, deploySchemaRegistry, TestableSchemaRegistry } from '../utils/contract-helpers'
+import {
+  createDid,
+  deploySchemaRegistry,
+  signSchemaEndorsementData,
+  TestableSchemaRegistry,
+  testActorAddress,
+  testActorPrivateKey,
+} from '../utils/contract-helpers'
 import { ClErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('SchemaRegistry', function () {
-  let didRegistry: IndyDidRegistry
+  let didRegistry: EthereumExtDidRegistry
   let schemaRegistry: TestableSchemaRegistry
   let testAccounts: TestAccounts
-  const issuerId = 'did:indy2:mainnet:SEp33q43PsdP7nDATyySSH'
+  let issuer: string
 
   beforeEach(async function () {
     const {
-      indyDidRegistry: didRegistryInit,
+      didRegistry: didRegistryInit,
       schemaRegistry: schemaRegistryInit,
       testAccounts: testAccountsInit,
     } = await deploySchemaRegistry()
 
+    issuer = testAccountsInit.trustee.account.address
     didRegistryInit.connect(testAccountsInit.trustee.account)
     schemaRegistryInit.connect(testAccountsInit.trustee.account)
+
+    const issuerId = `did:ethr:mainnet:${issuer}`
     await createDid(didRegistryInit, testAccountsInit.trustee.account.address, issuerId)
 
     didRegistry = didRegistryInit
@@ -29,103 +40,80 @@ describe('SchemaRegistry', function () {
 
   describe('Add/Resolve Schema', function () {
     it('Should create and resolve Schema', async function () {
-      const { id, schema } = createSchemaObject({ issuerId })
+      const { id, schema } = createSchemaObject({ issuer })
 
-      await schemaRegistry.createSchema(id, issuerId, schema)
-      const result = await schemaRegistry.resolveSchema(id)
+      await schemaRegistry.createSchema(issuer, id, schema)
 
-      expect(result.schema).to.be.deep.equal(schema)
+      const created = await schemaRegistry.created(id)
+      expect(created).to.be.not.equal(0)
     })
 
     it('Should fail if resolving a non-existing schema', async function () {
-      const { id, schema } = createSchemaObject({ issuerId })
+      const { id } = createSchemaObject({ issuer })
 
-      await expect(schemaRegistry.resolveSchema(id))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.SchemaNotFound)
-        .withArgs(id)
+      const created = await schemaRegistry.created(id)
+      expect(created).to.be.equal(0)
     })
 
     it('Should fail if Schema is being created already exists', async function () {
-      const { id, schema } = createSchemaObject({ issuerId })
+      const { id, schema } = createSchemaObject({ issuer })
 
-      await schemaRegistry.createSchema(id, issuerId, schema)
+      await schemaRegistry.createSchema(issuer, id, schema)
 
-      await expect(schemaRegistry.createSchema(id, issuerId, schema))
+      await expect(schemaRegistry.createSchema(issuer, id, schema))
         .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.SchemaAlreadyExist)
-        .withArgs(id)
-    })
-
-    it('Should fail if Schema is being created with non-existing Issuer', async function () {
-      const unknownIssuerId = 'did:indy2:mainnet:GEzcdDLhCpGCYRHW82kjHd'
-      const { id, schema } = createSchemaObject({ issuerId: unknownIssuerId })
-
-      await expect(schemaRegistry.createSchema(id, unknownIssuerId, schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.IssuerNotFound)
-        .withArgs(unknownIssuerId)
-    })
-
-    it('Should fail if Schema is being created with inactive Issuer', async function () {
-      didRegistry.deactivateDid(issuerId)
-
-      const { id, schema } = createSchemaObject({ issuerId })
-
-      await expect(schemaRegistry.createSchema(id, issuerId, schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.IssuerHasBeenDeactivated)
-        .withArgs(issuerId)
-    })
-
-    it('Should fail if Schema is being created with invalid Schema ID', async function () {
-      const { schema } = createSchemaObject({ issuerId })
-      const id = 'SEp33q43PsdP7nDATyySSH:2:BasicSchema:1.0.0'
-
-      await expect(schemaRegistry.createSchema(id, issuerId, schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.InvalidSchemaId)
-        .withArgs(id)
+        .withArgs(keccak256(toUtf8Bytes(id)))
     })
 
     it('Should fail if Schema is being created with not owned Issuer DID', async function () {
-      const issuerId2 = 'did:indy2:mainnet:SEp33q43PsdP7nDATyyDDA'
-      const { id, schema } = createSchemaObject({ issuerId })
+      const { id, schema } = createSchemaObject({ issuer })
 
-      didRegistry.connect(testAccounts.trustee2.account)
-      schemaRegistry.connect(testAccounts.trustee2.account)
-
-      await createDid(didRegistry, testAccounts.trustee2.account.address, issuerId2)
-      await expect(schemaRegistry.createSchema(id, issuerId, schema))
+      await expect(schemaRegistry.createSchema(testAccounts.trustee2.account.address, id, schema))
         .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
-        .withArgs(testAccounts.trustee2.account.address)
+        .withArgs(testAccounts.trustee2.account.address, testAccounts.trustee.account.address)
     })
   })
 
-  describe('Add/Resolve Schema with did:ethr Issuer', function () {
-    it('Should create and resolve Schema', async function () {
-      const ethrIssuerId = `did:ethr:${testAccounts.trustee.account.address}`
+  describe('Endorse/Resolve Schema with did:ethr Issuer', function () {
+    it('Should endorse and resolve Schema', async function () {
+      const { id, schema } = createSchemaObject({ issuer: testActorAddress })
 
-      const { id, schema } = createSchemaObject({ issuerId: ethrIssuerId })
+      const sig = await signSchemaEndorsementData(schemaRegistry, testActorAddress, testActorPrivateKey, id, schema)
 
-      await schemaRegistry.createSchema(id, ethrIssuerId, schema)
-      const result = await schemaRegistry.resolveSchema(id)
-
-      expect(result.schema).to.be.deep.equal(schema)
+      await schemaRegistry.createSchemaSigned(testActorAddress, id, schema, sig)
+      const created = await schemaRegistry.created(id)
+      expect(created).to.be.not.equal(0)
     })
 
-    it('Should fail if Schema is being created with not owned Issuer DID', async function () {
-      const ethrIssuerId = `did:ethr:${testAccounts.trustee2.account.address}`
+    it('Should fail if Schema is being endorsed with not owned Issuer DID', async function () {
+      const { id, schema } = createSchemaObject({ issuer: testAccounts.trustee2.account.address })
 
-      const { id, schema } = createSchemaObject({ issuerId: ethrIssuerId })
-
-      await expect(schemaRegistry.createSchema(id, ethrIssuerId, schema))
+      const sig = await signSchemaEndorsementData(
+        schemaRegistry,
+        testAccounts.trustee2.account.address,
+        testActorPrivateKey,
+        id,
+        schema,
+      )
+      await expect(schemaRegistry.createSchemaSigned(testAccounts.trustee2.account.address, id, schema, sig))
         .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
-        .withArgs(testAccounts.trustee.account.address)
+        .withArgs(testAccounts.trustee2.account.address, testActorAddress)
     })
 
-    it('Should fail if Schema is being created with invalid Issuer ID', async function () {
-      const invalidIssuerId = 'did:ethr:ab$ddfgh354345'
-      const { id, schema } = createSchemaObject({ issuerId: invalidIssuerId })
+    it('Should fail if Schema is being endorsed with invalid signature', async function () {
+      const { id, schema } = createSchemaObject({ issuer: testActorAddress })
 
-      await expect(schemaRegistry.createSchema(id, invalidIssuerId, schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.InvalidIssuerId)
-        .withArgs(invalidIssuerId)
+      const sig = await signSchemaEndorsementData(
+        schemaRegistry,
+        testActorAddress,
+        testActorPrivateKey,
+        'different id passed into signature',
+        schema,
+      )
+      await expect(schemaRegistry.createSchemaSigned(testActorAddress, id, schema, sig)).to.be.revertedWithCustomError(
+        schemaRegistry.baseInstance,
+        ClErrors.UnauthorizedIssuer,
+      )
     })
   })
 })
