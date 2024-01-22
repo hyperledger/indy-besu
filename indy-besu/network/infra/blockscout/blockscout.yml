@@ -27,15 +27,6 @@ services:
       service: backend
     links:
       - db:database
-    environment:
-        NETWORK: 'Indy-Besu'
-        ETHEREUM_JSONRPC_VARIANT: 'besu'
-        ETHEREUM_JSONRPC_HTTP_URL: http://host.docker.internal:8545/
-        ETHEREUM_JSONRPC_TRACE_URL: http://host.docker.internal:8545/
-        ETHEREUM_JSONRPC_WS_URL: ws://host.docker.internal:8546/
-        CHAIN_ID: '1337'
-        EMISSION_FORMAT: 'POA'
-        CHAIN_SPEC_PATH: '/opt/besu/genesis.json'
 
   visualizer:
     extends:
@@ -53,13 +44,6 @@ services:
     extends:
       file: ./network/infra/blockscout/services/frontend.yml
       service: frontend
-    environment:
-      NEXT_PUBLIC_NETWORK_NAME: Indy-Besu
-      NEXT_PUBLIC_NETWORK_SHORT_NAME: Indy-Besu
-      NEXT_PUBLIC_NETWORK_VERIFICATION_TYPE: validation
-      NEXT_PUBLIC_HOMEPAGE_SHOW_GAS_TRACKER: false
-      NEXT_PUBLIC_VIEWS_TX_HIDDEN_FIELDS: '["value","tx_fee"]'
-      NEXT_PUBLIC_TRANSACTION_INTERPRETATION_PROVIDER: blockscout
 
   stats-db-init:
     extends:
