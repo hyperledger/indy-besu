@@ -28,7 +28,12 @@ echo "--------------------"
 
 echo "Starting network..."
 docker compose --profile services build --pull
-docker compose --profile services up --detach
+
+if [ "${1-}" = "--blockscout" -o "${1-}" = "-b" ]; then
+  docker compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services up --detach
+else
+  docker compose --profile services up --detach
+fi
 
 
 #list services and endpoints
