@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONTRACTS_DIR="indy-besu/smart_contracts"
+CONTRACTS_DIR="smart_contracts"
 
 # Change to the smart contracts directory
 cd "$CONTRACTS_DIR" || exit
