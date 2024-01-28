@@ -1,17 +1,12 @@
+use log::trace;
 use serde_json::json;
 
 #[cfg(not(feature = "wasm"))]
-use web3::{
-    Error as Web3Error,
-    ethabi::Error as Web3EthabiError
-};
+use web3::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 #[cfg(feature = "wasm")]
-use web3_wasm::{
-    Error as Web3Error,
-    ethabi::Error as Web3EthabiError
-};
+use web3_wasm::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum VdrError {
     #[error("Ledger: Quorum not reached: {}", _0)]
     QuorumNotReached(String),
@@ -69,7 +64,7 @@ pub type VdrResult<T> = Result<T, VdrError>;
 
 impl From<Web3Error> for VdrError {
     fn from(value: Web3Error) -> Self {
-        match value {
+        let vdr_error = match value {
             Web3Error::Unreachable => VdrError::ClientNodeUnreachable,
             Web3Error::InvalidResponse(err) => VdrError::ClientInvalidResponse(err),
             Web3Error::Rpc(err) => VdrError::ClientTransactionReverted(json!(err).to_string()),
@@ -90,7 +85,14 @@ impl From<Web3EthabiError> for VdrError {
         let vdr_error = match value {
             Web3EthabiError::InvalidName(name) => VdrError::ContractInvalidName(name),
             _ => VdrError::ContractInvalidInputData,
-        }
+        };
+
+        trace!(
+            "VdrError convert from web3::ethabi::Error has finished. Result: {:?}",
+            vdr_error
+        );
+
+        vdr_error
     }
 }
 

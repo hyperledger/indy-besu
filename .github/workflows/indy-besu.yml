@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    paths: "indy-besu/**"
+    paths: "*"
 
   workflow_dispatch:
 
@@ -18,10 +18,10 @@ jobs:
           node-version: "20.x"
       - name: Install dependencies
         run: yarn install
-        working-directory: indy-besu/smart_contracts
+        working-directory: smart_contracts
       - name: Lint
         run: yarn lint-check
-        working-directory: indy-besu/smart_contracts
+        working-directory: smart_contracts
 
   test-contracts:
     needs: lint-contracts
@@ -35,16 +35,16 @@ jobs:
           node-version: "20.x"
       - name: Install dependencies
         run: yarn install
-        working-directory: indy-besu/smart_contracts
+        working-directory: smart_contracts
       - name: Unit tests
         run: yarn test
-        working-directory: indy-besu/smart_contracts
+        working-directory: smart_contracts
       - name: Run localnet
         run: ./network/scripts/run.sh && sleep 40
-        working-directory: indy-besu
+        working-directory: .
       - name: Demos
         run: yarn demos
-        working-directory: indy-besu/smart_contracts
+        working-directory: smart_contracts
 
   lint-vdr:
     runs-on: ubuntu-latest
@@ -57,7 +57,7 @@ jobs:
           toolchain: stable
       - name: Lint
         run: cargo fmt --check
-        working-directory: indy-besu/vdr
+        working-directory: vdr
 
   store-artifacts:
     needs: lint-vdr
@@ -71,15 +71,15 @@ jobs:
           node-version: "20.x"
       - name: Install dependencies
         run: yarn add hardhat
-        working-directory: indy-besu/smart_contracts
+        working-directory: smart_contracts
       - name: Compile smart contracts
         run: yarn compile
-        working-directory: indy-besu/smart_contracts
+        working-directory: smart_contracts
       - name: Archive contract artifacts
         uses: actions/upload-artifact@v3
         with:
           name: smart-contracts-artifacts
-          path: indy-besu/smart_contracts/artifacts/**
+          path: smart_contracts/artifacts/**
           retention-days: 3
 
   test-vdr:
@@ -96,10 +96,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: smart-contracts-artifacts
-          path: indy-besu/smart_contracts/artifacts
+          path: smart_contracts/artifacts
       - name: Run localnet
         run: ./network/scripts/run.sh && sleep 40
-        working-directory: indy-besu
+        working-directory: .
       - name: Test
         run: cargo test --features=ledger_test -- --test-threads=1
-        working-directory: indy-besu/vdr
+        working-directory: vdr

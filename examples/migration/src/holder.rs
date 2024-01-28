@@ -2,23 +2,20 @@ use crate::{
     ledger::{BesuLedger, IndyLedger, Ledgers},
     wallet::{BesuWallet, IndyWallet},
 };
-use indy2_vdr::cl::types::{
-    credential_definition_id::CredentialDefinitionId,
-    credential_definition::migration::IndyCredentialDefinitionFormat,
-    schema_id::SchemaId,
-    schema::migration::IndySchemaFormat,
+use indy2_vdr::{
+    migration::{IndyCredentialDefinitionFormat, IndySchemaFormat},
+    CredentialDefinitionId, SchemaId,
 };
 use serde_json::json;
 use vdrtoolsrs::future::Future;
 
 pub struct Holder {
-    pub indy_wallet: IndyWallet,
-    pub indy_ledger: IndyLedger,
-    pub besu_ledger: BesuLedger,
-    pub did: String,
-    pub verkey: String,
-    pub master_secret: String,
-    pub used_ledger: Ledgers,
+    indy_wallet: IndyWallet,
+    indy_ledger: IndyLedger,
+    besu_ledger: BesuLedger,
+    did: String,
+    master_secret: String,
+    used_ledger: Ledgers,
 }
 
 impl Holder {
@@ -33,7 +30,7 @@ impl Holder {
             vdrtoolsrs::anoncreds::prover_create_master_secret(indy_wallet.handle, None)
                 .wait()
                 .unwrap();
-        let (did, verkey) = vdrtoolsrs::did::create_and_store_my_did(indy_wallet.handle, "{}")
+        let (did, _) = vdrtoolsrs::did::create_and_store_my_did(indy_wallet.handle, "{}")
             .wait()
             .unwrap();
         Holder {
@@ -41,7 +38,6 @@ impl Holder {
             indy_ledger,
             besu_ledger,
             did,
-            verkey,
             master_secret,
             used_ledger: Ledgers::Indy,
         }

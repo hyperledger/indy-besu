@@ -1,11 +1,7 @@
 use crate::wallet::BesuWallet;
 use indy2_vdr::{
-    cl::types::{
-        credential_definition_id::CredentialDefinitionId,
-        schema_id::SchemaId,
-    },
-    ContractConfig, CredentialDefinition, CredentialDefinitionRegistry, LedgerClient, Schema,
-    SchemaRegistry, Status,
+    ContractConfig, CredentialDefinition, CredentialDefinitionId, CredentialDefinitionRegistry,
+    LedgerClient, Schema, SchemaId, SchemaRegistry, Status,
 };
 use serde_json::json;
 use std::{env, fs};
@@ -30,10 +26,7 @@ impl IndyLedger {
             .unwrap()
             .to_string();
 
-        let config = json!({
-            "genesis_txn": genesis_txn
-        })
-        .to_string();
+        let config = json!({ "genesis_txn": genesis_txn }).to_string();
         vdrtoolsrs::pool::create_pool_ledger_config(name, Some(&config))
             .wait()
             .ok();
@@ -130,14 +123,12 @@ impl BesuLedger {
     }
 
     pub async fn get_schema(&self, id: &SchemaId) -> Schema {
-        println!("    get_schema: {:?}", id);
         SchemaRegistry::resolve_schema(&self.client, id)
             .await
             .unwrap()
     }
 
     pub async fn get_cred_def(&self, id: &CredentialDefinitionId) -> CredentialDefinition {
-        println!("    get_cred_def: {:?}", id);
         CredentialDefinitionRegistry::resolve_credential_definition(&self.client, id)
             .await
             .unwrap()

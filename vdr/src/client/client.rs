@@ -139,9 +139,12 @@ impl LedgerClient {
     ) -> VdrResult<HashMap<String, Box<dyn Contract>>> {
         let mut contracts: HashMap<String, Box<dyn Contract>> = HashMap::new();
         for contract_config in contract_configs {
-            let spec = match (contract_config.spec_path.as_ref(), contract_config.spec.as_ref()) {
-                (Some(spec_path) , None) => ContractSpec::from_file(spec_path)?,
-                (None , Some(spec)) => spec.clone(),
+            let spec = match (
+                contract_config.spec_path.as_ref(),
+                contract_config.spec.as_ref(),
+            ) {
+                (Some(spec_path), None) => ContractSpec::from_file(spec_path)?,
+                (None, Some(spec)) => spec.clone(),
                 (Some(_), Some(_)) => {
                     return Err(VdrError::ContractInvalidSpec(
                         "Either `spec_path` or `spec` must be provided".to_string(),
@@ -177,6 +180,13 @@ pub mod test {
         "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
     pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
+    pub const RPC_NODE_ADDRESS: &str = "http://127.0.0.1:8545";
+    pub const CLIENT_NODE_ADDRESSES: [&str; 4] = [
+        "http://127.0.0.1:21001",
+        "http://127.0.0.1:21002",
+        "http://127.0.0.1:21003",
+        "http://127.0.0.1:21004",
+    ];
     pub static DEFAULT_NONCE: Lazy<Vec<u64>> = Lazy::new(|| vec![0, 0, 0, 0]);
 
     pub static DID_REGISTRY_ADDRESS: Lazy<Address> =

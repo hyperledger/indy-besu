@@ -4,7 +4,7 @@ import { ROLES } from '../../contracts-ts'
 import { Account } from '../../utils'
 import { TestableRoleControl } from '../utils/contract-helpers'
 import { AuthErrors } from '../utils/errors'
-import { getTestAccounts } from '../utils/test-entities'
+import { getTestAccounts, ZERO_ADDRESS } from '../utils/test-entities'
 
 const { expect } = chai
 

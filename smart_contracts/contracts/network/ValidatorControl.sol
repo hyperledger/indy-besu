@@ -60,7 +60,11 @@ contract ValidatorControl is ValidatorControlInterface, ControlledUpgradeable {
         _;
     }
 
-    constructor(address roleControlContractAddress, InitialValidatorInfo[] memory initialValidators) {
+    function initialize(
+        address roleControlContractAddress,
+        address upgradeControlAddress,
+        InitialValidatorInfo[] memory initialValidators
+    ) public reinitializer(1) {
         if (initialValidators.length == 0) revert InitialValidatorsRequired();
         if (initialValidators.length >= _MAX_VALIDATORS) revert ExceedsValidatorLimit(_MAX_VALIDATORS);
 

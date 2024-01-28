@@ -79,6 +79,7 @@ impl BasicSigner {
     }
 }
 
+#[cfg(test)]
 pub mod test {
     use super::*;
     use once_cell::sync::Lazy;

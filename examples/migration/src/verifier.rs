@@ -1,42 +1,30 @@
 use crate::{
     ledger::{BesuLedger, IndyLedger, Ledgers},
-    wallet::{BesuWallet, IndyWallet},
+    wallet::BesuWallet,
 };
-use indy2_vdr::cl::types::{
-    credential_definition_id::CredentialDefinitionId,
-    credential_definition::migration::IndyCredentialDefinitionFormat,
-    schema_id::SchemaId,
-    schema::migration::IndySchemaFormat,
+use indy2_vdr::{
+    migration::{IndyCredentialDefinitionFormat, IndySchemaFormat},
+    CredentialDefinitionId, SchemaId,
 };
 use serde_json::json;
 use vdrtoolsrs::future::Future;
 
 pub struct Verifier {
-    pub indy_wallet: IndyWallet,
-    pub indy_ledger: IndyLedger,
-    pub besu_ledger: BesuLedger,
-    pub did: String,
-    pub verkey: String,
-    pub used_ledger: Ledgers,
+    indy_ledger: IndyLedger,
+    besu_ledger: BesuLedger,
+    used_ledger: Ledgers,
 }
 
 impl Verifier {
     const NAME: &'static str = "verifier";
 
     pub async fn setup() -> Verifier {
-        let indy_wallet = IndyWallet::new(Self::NAME);
         let indy_ledger = IndyLedger::new(Self::NAME);
         let besu_wallet = BesuWallet::new(None);
         let besu_ledger = BesuLedger::new(besu_wallet).await;
-        let (did, verkey) = vdrtoolsrs::did::create_and_store_my_did(indy_wallet.handle, "{}")
-            .wait()
-            .unwrap();
         Verifier {
-            indy_wallet,
             indy_ledger,
             besu_ledger,
-            did,
-            verkey,
             used_ledger: Ledgers::Indy,
         }
     }

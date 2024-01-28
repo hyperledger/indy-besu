@@ -18,14 +18,9 @@ use crate::{
 /// depending on the transaction type different client methods will be executed to submit transaction
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum TransactionType {
+    #[default]
     Read,
     Write,
-}
-
-impl Default for TransactionType {
-    fn default() -> Self {
-        TransactionType::Read
-    }
 }
 
 /// Transaction object

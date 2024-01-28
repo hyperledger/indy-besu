@@ -14,7 +14,7 @@ describe('ValidatorControl', function () {
   const initialValidators: Array<string> = [validator1, validator2]
 
   async function deployValidatorControlFixture() {
-    const roleControl = await new RoleControl().deploy()
+    const roleControl = await new RoleControl().deployProxy({ params: [ZERO_ADDRESS] })
     const testAccounts = await getTestAccounts(roleControl)
 
     const initialValidatorsData = [
@@ -28,8 +28,8 @@ describe('ValidatorControl', function () {
       },
     ]
 
-    const validatorControl = await new TestableValidatorControl().deploy({
-      params: [roleControl.address, initialValidatorsData],
+    const validatorControl = await new TestableValidatorControl().deployProxy({
+      params: [roleControl.address, ZERO_ADDRESS, initialValidatorsData],
     })
 
     return { validatorControl, roleControl, testAccounts }
