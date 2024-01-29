@@ -10,11 +10,11 @@ const nodeAddress = 'http://127.0.0.1:8545'
 // set path to the compiled contract
 const didIndyRegistryConfig = {
     address: '0x0000000000000000000000000000000000003333',
-    specPath: '/Users/indy-besu/smart_contracts/artifacts/contracts/did/IndyDidRegistry.sol/IndyDidRegistry.json'
+    specPath: '/Users/user/indy-besu/smart_contracts/artifacts/contracts/did/IndyDidRegistry.sol/IndyDidRegistry.json'
 }
 const didEthrRegistryConfig = {
     address: '0x0000000000000000000000000000000000018888',
-    specPath: '/Users/indy-besu/smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json'
+    specPath: '/Users/user/indy-besu/smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json'
 }
 
 const account = '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5'
