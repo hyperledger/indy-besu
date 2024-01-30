@@ -1,4 +1,4 @@
-use indy2_vdr::{Address, Block, EventLog as EventLog_, EventQuery as EventQuery_};
+use indy_besu_vdr::{Address, Block, EventLog as EventLog_, EventQuery as EventQuery_};
 
 #[derive(uniffi::Object)]
 pub struct EventQuery {

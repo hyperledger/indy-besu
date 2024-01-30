@@ -1,4 +1,4 @@
-use indy2_vdr::{SignatureData, Transaction, TransactionEndorsingData};
+use indy_besu_vdr::{SignatureData, Transaction, TransactionEndorsingData};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 

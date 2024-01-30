@@ -69,4 +69,3 @@ So that legacy DID can be associated with a new `did:ethr` and we can only use `
     * for Schema/Credential Definition firstly must resolve new identifier
       using `LegacyIdMappingRegistry.clMappings(identifier)`, and next resolve Schema/Credential Definition as it described in the
       corresponding specification.
-    

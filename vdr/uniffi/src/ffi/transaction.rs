@@ -2,7 +2,7 @@ use crate::ffi::{
     error::{VdrError, VdrResult},
     types::{SignatureData, TransactionSignature, TransactionType},
 };
-use indy2_vdr::{
+use indy_besu_vdr::{
     Address, Transaction as Transaction_, TransactionEndorsingData as TransactionEndorsingData_,
 };
 

@@ -1,5 +1,5 @@
 use crate::JsonValue;
-use indy2_vdr::{
+use indy_besu_vdr::{
     ContractConfig as ContractConfig_, ContractSpec as ContractSpec_, PingStatus as PingStatus_,
     QuorumConfig as QuorumConfig_, SignatureData as SignatureData_, Status as Status_,
     TransactionSignature as TransactionSignature_, TransactionType as TransactionType_,

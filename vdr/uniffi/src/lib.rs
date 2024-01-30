@@ -18,4 +18,4 @@ impl UniffiCustomTypeConverter for JsonValue {
 }
 
 uniffi::custom_type!(JsonValue, String);
-uniffi::include_scaffolding!("indy2_vdr");
+uniffi::include_scaffolding!("indy_besu_vdr");

@@ -1,4 +1,4 @@
-use indy2_vdr::{validator_control, Address};
+use indy_besu_vdr::{validator_control, Address};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 

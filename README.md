@@ -81,6 +81,11 @@ _Resources_ section. The [Docker for Mac](https://docs.docker.com/docker-for-mac
 
 See [README.md](/smart_contracts/README.md).
 
+## Client library
+
+[Rust library](./vdr/README.md) representing a convenient client for connecting to an Indy-Besu node, building and
+executing transactions and queries.
+
 ## Contributing
 
 Pull requests are welcome! Please read our [contributions guide](./CONTRIBUTING.md)

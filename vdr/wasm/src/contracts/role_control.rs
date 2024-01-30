@@ -1,4 +1,4 @@
-use indy2_vdr::{role_control, Address, Role};
+use indy_besu_vdr::{role_control, Address, Role};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 

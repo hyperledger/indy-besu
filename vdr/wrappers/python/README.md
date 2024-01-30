@@ -10,8 +10,8 @@ This is thin python package created on top of Indy Besu bindings generated using
 
 1. Bindings building:
     * Build bindings as describe in uniffi [README.md](../../uniffi/README.md).
-    * Copy `uniffi/out/indy2_vdr` file and put into `wrappers/python/indy2_vdr` folder.
-    * Copy `uniffi/target/release/libindy2_vdr_uniffi.dylib` file and put into `wrappers/python/indy2_vdr` folder.
+    * Copy `uniffi/out/indy_besu_vdr` file and put into `wrappers/python/indy_besu_vdr` folder.
+    * Copy `uniffi/target/release/libindy_besu_vdr_uniffi.dylib` file and put into `wrappers/python/indy_besu_vdr` folder.
 2. Package building:
     * Run the following commands:
        ```

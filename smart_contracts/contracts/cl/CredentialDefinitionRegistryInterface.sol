@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { CredentialDefinitionRecord } from "./CredentialDefinitionTypes.sol";
-
 interface CredentialDefinitionRegistryInterface {
     /**
-     * @dev Event that is sent when a Credential Definition is created
+     * @dev Event that is sent when a Credential Definition is created.
      *
-     * @param credentialDefinitionId ID of created credential definition
+     * @param id        KECCAK256 hash of credential definition id.
+     * @param identity  Account address of credential definition issuer.
+     * @param credDef   AnonCreds credential definition object as bytes.
      */
-    event CredentialDefinitionCreated(string credentialDefinitionId);
+    event CredentialDefinitionCreated(bytes32 indexed id, address identity, bytes credDef);
 
     /**
      * @dev Creates a new Credential Definition.
@@ -20,33 +20,53 @@ interface CredentialDefinitionRegistryInterface {
      * This function can revert with following errors:
      * - `CredentialDefinitionAlreadyExist`: Raised if Credential Definition with provided ID already exist.
      * - `SchemaNotFound`: Raised if the associated schema doesn't exist.
-     * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.
-     * - `IssuerHasBeenDeactivated`: Raised if the associated issuer is not active.
-     * - `InvalidCredentialDefinitionId`: Raised if the Credential Definition ID syntax is invalid.
      * - `UnauthorizedIssuer`: Raised when an issuer DID specified in CredentialDefinition is not owned by sender
      *
-     * @param id        Id of credential definition to be created.
-     * @param issuerId  Id of credential definition issuer.
-     * @param schemaId  Id of credential definition schema.
-     * @param credDef   AnonCreds credential definition as JSON string.
+     * @param identity  Account address of credential definition issuer.
+     * @param id        KECCAK256 hash of credential definition id to be created.
+     * @param schemaId  KECCAK256 hash of schema id.
+     * @param credDef   AnonCreds credential definition object as bytes.
      */
     function createCredentialDefinition(
-        string calldata id,
-        string calldata issuerId,
-        string calldata schemaId,
-        string calldata credDef
+        address identity,
+        bytes32 id,
+        bytes32 schemaId,
+        bytes calldata credDef
     ) external;
 
     /**
-     * @dev Resolve the Credential Definition associated with the given ID.
+     * @dev Endorse a new Credential Definition.
      *
-     * If no matching Credential Definition is found, the function revert with `CredentialDefinitionNotFound` error
+     * Once the Credential Definition is created, this function emits a `CredentialDefinitionCreated` event
+     * with the new Credential Definition's ID.
      *
-     * @param id The ID of the Credential Definition to be resolved.
+     * This function can revert with following errors:
+     * - `CredentialDefinitionAlreadyExist`: Raised if Credential Definition with provided ID already exist.
+     * - `SchemaNotFound`: Raised if the associated schema doesn't exist.
+     * - `UnauthorizedIssuer`: Raised when an issuer DID specified in CredentialDefinition is not owned by sender
      *
-     * @return credentialDefinitionRecord Returns the credential definition with metadata.
+     * @param identity  Account address of credential definition issuer.
+     * @param sigR      Part of EcDSA signature.
+     * @param sigV      Part of EcDSA signature.
+     * @param sigS      Part of EcDSA signature.
+     * @param id        KECCAK256 hash of credential definition id to be created.
+     * @param schemaId  KECCAK256 hash of schema id.
+     * @param credDef   AnonCreds credential definition object as bytes.
      */
-    function resolveCredentialDefinition(
-        string calldata id
-    ) external returns (CredentialDefinitionRecord memory credentialDefinitionRecord);
+    function createCredentialDefinitionSigned(
+        address identity,
+        uint8 sigV,
+        bytes32 sigR,
+        bytes32 sigS,
+        bytes32 id,
+        bytes32 schemaId,
+        bytes calldata credDef
+    ) external;
+
+    /**
+     * @dev Get the block number when a schema was created.
+     *
+     * @param id  KECCAK256 hash of credential definition id.
+     */
+    function created(bytes32 id) external returns (uint256 block);
 }

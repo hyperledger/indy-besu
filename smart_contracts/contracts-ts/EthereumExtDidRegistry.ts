@@ -1,14 +1,19 @@
+import { encodeBytes32String, toUtf8Bytes } from 'ethers'
 import { Contract } from '../utils/contract'
 
-export class EthereumDIDRegistry extends Contract {
+export class EthereumExtDidRegistry extends Contract {
   public static readonly defaultAddress = '0x0000000000000000000000000000000000018888'
 
   constructor(sender?: any) {
-    super(EthereumDIDRegistry.name, sender)
+    super(EthereumExtDidRegistry.name, sender)
   }
 
   public async identityOwner(identity: string): Promise<string> {
     return await this.instance.identityOwner(identity)
+  }
+
+  public async changed(identity: string) {
+    return await this.instance.changed(identity)
   }
 
   public async changeOwner(identity: string, newOwner: string) {
@@ -30,13 +35,13 @@ export class EthereumDIDRegistry extends Contract {
     return tx.wait()
   }
 
-  public async setAttribute(identity: string, name: string, value: Uint8Array, validity: number) {
-    const tx = await this.instance.setAttribute(identity, name, value, validity)
+  public async setAttribute(identity: string, name: string, value: string, validity: number) {
+    const tx = await this.instance.setAttribute(identity, encodeBytes32String(name), toUtf8Bytes(value), validity)
     return tx.wait()
   }
 
-  public async revokeAttribute(identity: string, name: string, value: Uint8Array) {
-    const tx = await this.instance.revokeAttribute(identity, name, value)
+  public async revokeAttribute(identity: string, name: string, value: string) {
+    const tx = await this.instance.revokeAttribute(identity, encodeBytes32String(name), toUtf8Bytes(value))
     return tx.wait()
   }
 

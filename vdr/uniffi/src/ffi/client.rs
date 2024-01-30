@@ -7,7 +7,7 @@ use crate::{
     },
     VdrError,
 };
-use indy2_vdr::{ContractConfig as ContractConfig_, LedgerClient as LedgerClient_};
+use indy_besu_vdr::{ContractConfig as ContractConfig_, LedgerClient as LedgerClient_};
 
 #[derive(uniffi::Object)]
 pub struct LedgerClient {

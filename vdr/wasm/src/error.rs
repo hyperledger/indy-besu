@@ -1,4 +1,4 @@
-use indy2_vdr::VdrResult;
+use indy_besu_vdr::VdrResult;
 use js_sys::Error as JsError;
 use wasm_bindgen::JsValue;
 

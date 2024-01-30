@@ -4,7 +4,7 @@ import os
 import runpy
 from setuptools import find_packages, setup
 
-PACKAGE_NAME = "indy2_vdr"
+PACKAGE_NAME = "indy_besu_vdr"
 version_meta = runpy.run_path("./{}/version.py".format(PACKAGE_NAME))
 VERSION = version_meta["__version__"]
 
@@ -23,9 +23,9 @@ if __name__ == "__main__":
         include_package_data=True,
         package_data={
             "": [
-                "indy2_vdr_uniffi.dll",
-                "libindy2_vdr_uniffi.dylib",
-                "libindy2_vdr_uniffi.so",
+                "indy_besu_vdr_uniffi.dll",
+                "libindy_besu_vdr_uniffi.dylib",
+                "libindy_besu_vdr_uniffi.so",
             ]
         },
         python_requires=">=3.6.3",

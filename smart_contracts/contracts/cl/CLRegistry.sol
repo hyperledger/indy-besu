@@ -1,34 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { DidNotFound, IncorrectDid } from "../did/DidErrors.sol";
-import { DidMetadata } from "../did/DidTypes.sol";
-import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
-import { Errors } from "../utils/Errors.sol";
-import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound, UnauthorizedIssuer } from "./ClErrors.sol";
+import { UnauthorizedIssuer } from "./ClErrors.sol";
+import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
 
 contract CLRegistry {
     /**
-     * @dev Reference to the contract that resolves DIDs
+     * @dev Reference to the DID registry contract
      */
-    UniversalDidResolverInterface internal _didResolver;
+    EthereumExtDidRegistry internal _didRegistry;
 
-    /**
-     * @dev Check that the Issuer DID exist, authorized for sender, and active.
-     * @param id The Issuer's DID.
-     */
-    modifier _validIssuer(string memory id) {
-        try _didResolver.resolveMetadata(id) returns (DidMetadata memory metadata) {
-            if (msg.sender != metadata.owner && msg.sender != metadata.sender) {
-                revert UnauthorizedIssuer(msg.sender);
-            }
-            if (metadata.deactivated) revert IssuerHasBeenDeactivated(id);
-        } catch (bytes memory reason) {
-            if (Errors.equals(reason, DidNotFound.selector)) revert IssuerNotFound(id);
-            if (Errors.equals(reason, IncorrectDid.selector)) revert InvalidIssuerId(id);
-
-            Errors.rethrow(reason);
+    modifier _validIssuer(address identity, address actor) {
+        if (actor != _didRegistry.identityOwner(identity)) {
+            revert UnauthorizedIssuer(identity, actor);
         }
         _;
+    }
+
+    function _checkSignature(
+        address identity,
+        bytes32 hash,
+        uint8 sigV,
+        bytes32 sigR,
+        bytes32 sigS
+    ) internal pure returns (address) {
+        address signer = ecrecover(hash, sigV, sigR, sigS);
+        if (identity != signer) {
+            revert UnauthorizedIssuer(identity, signer);
+        }
+        return signer;
     }
 }

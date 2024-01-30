@@ -1,5 +1,7 @@
 use crate::{contracts::did::types::did::DID, types::ContractParam, VdrError};
+
 use serde_derive::{Deserialize, Serialize};
+use sha3::Digest;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct CredentialDefinitionId(String);
@@ -19,13 +21,21 @@ impl CredentialDefinitionId {
             .as_str(),
         )
     }
+
+    pub fn hash(&self) -> Vec<u8> {
+        sha3::Keccak256::digest(&self.0.as_bytes()).to_vec()
+    }
+
+    pub(crate) fn to_filter(&self) -> String {
+        hex::encode(self.hash())
+    }
 }
 
 impl TryFrom<&CredentialDefinitionId> for ContractParam {
     type Error = VdrError;
 
     fn try_from(value: &CredentialDefinitionId) -> Result<Self, Self::Error> {
-        Ok(ContractParam::String(value.to_string()))
+        Ok(ContractParam::FixedBytes(value.hash()))
     }
 }
 

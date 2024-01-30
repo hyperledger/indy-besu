@@ -12,7 +12,6 @@ use std::{fmt::Debug, str::FromStr, sync::RwLock};
 
 use crate::{
     client::{GAS_LIMIT, GAS_PRICE},
-    did_ethr_registry::resolve_identity_nonce,
     error::{VdrError, VdrResult},
     types::{
         contract::UintBytesParam, signature::SignatureData, Address, ContractOutput, ContractParam,
@@ -354,7 +353,6 @@ impl TransactionParser {
 pub struct TransactionEndorsingData {
     pub to: Address,
     pub from: Address,
-    pub nonce: u64,
     pub params: Vec<ContractParam>,
 }
 
@@ -369,7 +367,6 @@ impl TransactionEndorsingData {
             ContractParam::Uint(Uint::from(Self::PREFIX)),
             ContractParam::FixedBytes(vec![Self::VERSION]),
             (&self.to).try_into()?,
-            UintBytesParam::from(self.nonce).try_into()?,
         ];
         tokens.extend_from_slice(self.params.as_slice());
 
@@ -421,12 +418,10 @@ impl TransactionEndorsingDataBuilder {
     #[logfn_inputs(Trace)]
     pub async fn build(self, client: &LedgerClient) -> VdrResult<TransactionEndorsingData> {
         let contract = client.contract(&self.contract)?;
-        let nonce: u64 = resolve_identity_nonce(client, &self.identity).await?;
         Ok(TransactionEndorsingData {
             to: contract.address().to_owned(),
             from: self.identity.to_owned(),
             params: self.params,
-            nonce,
         })
     }
 }
@@ -461,5 +456,36 @@ impl TryFrom<ContractOutput> for Block {
 impl From<&Block> for ContractParam {
     fn from(value: &Block) -> Self {
         ContractParam::Uint(Uint::from(value.0))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct Nonce(u64);
+
+impl Nonce {
+    pub fn value(&self) -> u64 {
+        self.0
+    }
+}
+
+impl From<u64> for Nonce {
+    fn from(value: u64) -> Self {
+        Nonce(value)
+    }
+}
+
+impl TryFrom<ContractOutput> for Nonce {
+    type Error = VdrError;
+
+    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
+        Ok(Nonce::from(value.get_u64(0)?))
+    }
+}
+
+impl TryFrom<&Nonce> for ContractParam {
+    type Error = VdrError;
+
+    fn try_from(value: &Nonce) -> Result<Self, Self::Error> {
+        UintBytesParam::from(value.0).try_into()
     }
 }

@@ -78,7 +78,7 @@ impl DidDocumentBuilder {
     ) -> DidDocumentBuilder {
         let id = id.map(String::from).unwrap_or_else(|| {
             format!(
-                "{}:delegate-{}",
+                "{}+delegate-{}",
                 self.id.as_ref(),
                 self.verification_method.len()
             )
@@ -186,7 +186,7 @@ impl DidDocumentBuilder {
     ) -> DidDocumentBuilder {
         let id = id
             .map(String::from)
-            .unwrap_or_else(|| format!("#service-{}", self.service.len() + 1));
+            .unwrap_or_else(|| format!("#{}#service-{}", self.id.as_ref(), self.service.len() + 1));
         let service = Service {
             id,
             type_: type_.to_string(),
