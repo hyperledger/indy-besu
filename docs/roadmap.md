@@ -31,23 +31,19 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
 
 ## Phase 1: MVP
 
-* DID Method:
-    * Publish final version of Indy2 DID Method specification 
-    * Ability for easy integration of DID methods into the network infrastructures
-    * Possibility of integration with `did:ethr` method
-    * Compatibility with `did:indy` and `did:sov` methods
 * Network identity implementation:
-    * Indy2 DID method
-      * More strict validation of DID Document format
-        *  Implement a validation to check VerificationRelationship format (Can accept only id or verificationMethod)
-    * CL Registry:
-      * Implement owner verification
+    * Change Indy2 method to using  `did:ethr` method
+    * Use JSON DID Documents instead of JS entities.
+    * CL Registry: implement event approach according to `did:ethr` design
+    * Design and implement endorsement flow for DID Documents and CL Registry
 * Network Permission implementation:
     * Restrict execution of transactions exclusively to users with specific roles
+    * Improve error handling
 * Demo:
     * Integration into Aries Frameworks Javascript
 * Migration:
     * Tooling implementation
+    * Mapping of legacy identifiers to ethereum account
 * Ready for experiments and testing
 * Documentation:
     * Network operators:
@@ -60,6 +56,7 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
         * How to issue and verify credentials
 * VDR:
     * Support `did:ethr` DID method
+    * Implement additional validations to replace checks removed from contracts.
     * Wrappers for foreign languages: Python + JavaScript
     * `indy-vdr` integration
 
