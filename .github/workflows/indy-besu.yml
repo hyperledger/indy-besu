@@ -15,7 +15,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "20.x"
       - name: Install dependencies
         run: yarn install
         working-directory: smart_contracts
@@ -32,7 +32,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "20.x"
       - name: Install dependencies
         run: yarn install
         working-directory: smart_contracts
@@ -67,7 +67,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "20.x"
       - name: Install dependencies
         run: yarn add hardhat
         working-directory: smart_contracts
