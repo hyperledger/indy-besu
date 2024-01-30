@@ -50,7 +50,7 @@ describe('CredentialDefinitionRegistry', function () {
   })
 
   describe('Add/Resolve Credential Definition', function () {
-    it('Should create and resolve Credential Definition', async function () {
+    it('Should create Credential Definition', async function () {
       const { id, credDef } = createCredentialDefinitionObject({ issuer, schemaId })
 
       await credentialDefinitionRegistry.createCredentialDefinition(issuer, id, schemaId, credDef)
@@ -59,7 +59,7 @@ describe('CredentialDefinitionRegistry', function () {
       expect(created).to.be.not.equal(0)
     })
 
-    it('Should fail if resolving Credential Definition does not exist', async function () {
+    it('Should return zero created block a non-existing credential definition', async function () {
       const { id } = createCredentialDefinitionObject({ issuer, schemaId })
 
       const created = await credentialDefinitionRegistry.created(id)

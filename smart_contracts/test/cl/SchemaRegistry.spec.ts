@@ -39,7 +39,7 @@ describe('SchemaRegistry', function () {
   })
 
   describe('Add/Resolve Schema', function () {
-    it('Should create and resolve Schema', async function () {
+    it('Should create Schema', async function () {
       const { id, schema } = createSchemaObject({ issuer })
 
       await schemaRegistry.createSchema(issuer, id, schema)
@@ -48,7 +48,7 @@ describe('SchemaRegistry', function () {
       expect(created).to.be.not.equal(0)
     })
 
-    it('Should fail if resolving a non-existing schema', async function () {
+    it('Should return zero created block a non-existing schema', async function () {
       const { id } = createSchemaObject({ issuer })
 
       const created = await schemaRegistry.created(id)
@@ -75,7 +75,7 @@ describe('SchemaRegistry', function () {
   })
 
   describe('Endorse/Resolve Schema with did:ethr Issuer', function () {
-    it('Should endorse and resolve Schema', async function () {
+    it('Should endorse Schema', async function () {
       const { id, schema } = createSchemaObject({ issuer: testActorAddress })
 
       const sig = await signSchemaEndorsementData(schemaRegistry, testActorAddress, testActorPrivateKey, id, schema)
