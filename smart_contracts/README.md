@@ -30,18 +30,20 @@ The following folders should be generated as the result:
 
 ### Main Contracts
 
-* `contracts/auth/AccountControl.sol` - contract to manage permissions for account transactions
+* [AccountControl](./contracts/auth/AccountControlInterface.sol) - contract to manage permissions for transactions and new contracts deployment
     * [AccountControl TS contract wrapper class](./contracts-ts/AccountControl.ts)
-* `contracts/auth/RoleControl.sol` - contract to manage (assign/revoke) account roles.
+* [RoleControl](./contracts/auth/RoleControlInterface.sol) - contract to manage (assign/revoke) account roles.
     * [RoleControl TS contract wrapper class](./contracts-ts/RoleControl.ts)
-* `contracts/cl/CredentialDefinitionRegistry` - contract to manage (create/resolve) credential definitions
-    * [CredentialDefinitionRegistry TS contract wrapper class](./contracts-ts/CredentialDefinitionRegistry.ts)
-* `contracts/cl/SchemaRegistry` - contract to manager (create/resolve) schemas
+* [EthereumExtDidRegistry](./contracts/did/EthereumExtDidRegistry.sol) - [Ethereum DID Registry](https://github.com/uport-project/ethr-did-registry/tree/master) extended with permission checks
+    * [DidRegistry TS contract wrapper class](./contracts-ts/EthereumExtDidRegistry.ts)
+* [SchemaRegistry](./contracts/cl/SchemaRegistryInterface.sol) - contract to manage Schemas
     * [SchemaRegistry TS contract wrapper class](./contracts-ts/SchemaRegistry.ts)
-* `contracts/did/DidRegistry` - contract to manage (create/update/deactivate/resolve) DID doucments
-    * [DidRegistry TS contract wrapper class](./contracts-ts/DidRegistry.ts)
-* `contracts/network/ValidatorControl.sol` - contract to manage network validator nodes.
+* [CredentialDefinitionRegistry](./contracts/cl/CredentialDefinitionRegistryInterface.sol) - contract to manage CL Credential Definitions
+    * [CredentialDefinitionRegistry TS contract wrapper class](./contracts-ts/CredentialDefinitionRegistry.ts)
+* [ValidatorControl](./contracts/network/ValidatorControlInterface.sol) - contract to manage network validator nodes.
     * [ValidatorControl TS contract wrapper class](./contracts-ts/ValidatorControl.ts)
+* [UpgradeControl](./contracts/upgrade/UpgradeControlInterface.sol) - contract to control deployed smart contracts and their versions (proposing and approving new versions).
+    * [Upgrading TS contract wrapper class](./contracts-ts/UpgradeControl.ts)
 
 ### Demos
 
@@ -51,13 +53,9 @@ You can find sample scripts demonstrating the usage of deployed contracts in the
     ```
     > yarn demo/account
     ```
-* [Demo flow](./demos/flow.ts) - create/resolve DID/Schema/Credential Definition using `did:indy2` method.
+* [Demo flow](./demos/flow.ts) - create/resolve DID/Schema/Credential Definition.
     ```
     > yarn demo/flow
-    ```
-* [Demo flow](./demos/flow-with-did-ethr.ts) - create/resolve DID/Schema/Credential Definition using `did:ethr` method.
-    ```
-    > yarn demo/flow-with-did-ethr
     ```
 * [Roles management](./demos/role-control.ts) - get/assign/revoke role to/from account.
     ```
@@ -74,18 +72,11 @@ You can find sample scripts demonstrating the usage of deployed contracts in the
 
 ### Helper Scripts
 
-* `genesis` - helper scripts to generate genesis blocks for injecting contracts.
+* [Genesis](./scripts/genesis) - helper scripts to generate genesis state for injecting smart contracts.
 
-  > Find more details regarding the scripts in the [genesis section](#inject-contracts-into-network-genesis) of this
-  document.
+> `socl` tool must be installed on the machine.
 
-## Inject contracts into network genesis
-
-### Prerequisites
-
-* `socl` tool must be installed on the machine.
-
-This section describes how to inject smart contracts into the genesis state of the network.
+#### Steps
 
 1. Prepare the [input file](scripts/genesis/config.ts) with the initial state of each contract.
 

@@ -67,11 +67,11 @@ cargo +nightly fmt
   RUST_TEST_THREADS=1 cargo test --features "ledger_test"
   ```
 
-# Logging
+## Logging
 
 - To see the logs, please set `RUST_LOG` environment variable to desired log level: `info`, `debug`, `trace` etc.
 
-## FFI
+## Wrappers
 
 ### Kotlin, Python, Swift
 
