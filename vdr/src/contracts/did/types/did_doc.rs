@@ -108,6 +108,7 @@ pub enum VerificationKeyType {
     JsonWebKey2020,
     EcdsaSecp256k1VerificationKey2019,
     EcdsaSecp256k1VerificationKey2020,
+    EcdsaSecp256k1RecoveryMethod2020,
 }
 
 impl ToString for VerificationKeyType {
@@ -130,6 +131,9 @@ impl ToString for VerificationKeyType {
             | VerificationKeyType::EcdsaSecp256k1VerificationKey2020 => {
                 "EcdsaSecp256k1VerificationKey2019".to_string()
             }
+            VerificationKeyType::EcdsaSecp256k1RecoveryMethod2020 => {
+                "EcdsaSecp256k1RecoveryMethod2020".to_string()
+            }
         }
     }
 }
@@ -144,6 +148,9 @@ impl TryFrom<&str> for VerificationKeyType {
             "Ed25519VerificationKey2020" => Ok(VerificationKeyType::Ed25519VerificationKey2020),
             "X25519KeyAgreementKey2020" => Ok(VerificationKeyType::X25519KeyAgreementKey2020),
             "JsonWebKey2020" => Ok(VerificationKeyType::JsonWebKey2020),
+            "EcdsaSecp256k1RecoveryMethod2020" => {
+                Ok(VerificationKeyType::EcdsaSecp256k1RecoveryMethod2020)
+            }
             "EcdsaSecp256k1VerificationKey2019" => {
                 Ok(VerificationKeyType::EcdsaSecp256k1VerificationKey2020)
             }
