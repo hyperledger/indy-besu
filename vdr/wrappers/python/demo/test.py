@@ -4,7 +4,7 @@ import secrets
 import string
 
 from eth_keys import keys
-from indy2_vdr import *
+from indy_besu_vdr import *
 
 # chain id of the running network
 chain_id = 1337

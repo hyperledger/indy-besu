@@ -1,5 +1,5 @@
 use crate::ffi::{client::LedgerClient, error::VdrResult, transaction::Transaction};
-use indy2_vdr::{validator_control, Address};
+use indy_besu_vdr::{validator_control, Address};
 use serde_json::json;
 
 #[uniffi::export(async_runtime = "tokio")]

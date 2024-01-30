@@ -1,4 +1,4 @@
-use indy2_vdr::{
+use indy_besu_vdr::{
     did_ethr_registry, Address, Block, DelegateType, DidDocAttribute, DidResolutionOptions,
     EventLog, SignatureData, Validity, DID,
 };

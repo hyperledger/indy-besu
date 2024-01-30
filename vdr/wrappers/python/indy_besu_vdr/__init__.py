@@ -1,5 +1,5 @@
 """Indy2 VDR Python wrapper"""
-from .indy2_vdr import (
+from .indy_besu_vdr import (
     InternalError,
     Status,
     TransactionType,

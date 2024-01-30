@@ -1,4 +1,4 @@
-use indy2_vdr::{schema_registry, Address, Block, EventLog, Schema, SchemaId, SignatureData};
+use indy_besu_vdr::{schema_registry, Address, Block, EventLog, Schema, SchemaId, SignatureData};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 

@@ -1,4 +1,4 @@
-use indy2_vdr::{
+use indy_besu_vdr::{
     credential_definition_registry, Address, Block, CredentialDefinition, CredentialDefinitionId,
     EventLog, SignatureData,
 };

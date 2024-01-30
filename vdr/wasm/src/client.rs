@@ -3,7 +3,7 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use indy2_vdr::{ContractConfig, LedgerClient, QuorumConfig};
+use indy_besu_vdr::{ContractConfig, LedgerClient, QuorumConfig};
 
 use crate::{
     error::{JsResult, Result},

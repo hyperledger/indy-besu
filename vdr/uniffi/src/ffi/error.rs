@@ -1,4 +1,4 @@
-use indy2_vdr::VdrError as VdrError_;
+use indy_besu_vdr::VdrError as VdrError_;
 
 #[derive(thiserror::Error, Debug, uniffi::Error)]
 pub enum VdrError {

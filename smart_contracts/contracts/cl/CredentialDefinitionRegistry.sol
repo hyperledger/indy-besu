@@ -16,7 +16,7 @@ contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, 
     SchemaRegistryInterface private _schemaRegistry;
 
     /**
-     * Mapping to track created created credential definitions by their id to block number.
+     * Mapping to track created credential definitions by their id to block number.
      */
     mapping(bytes32 id => uint block) public created;
 

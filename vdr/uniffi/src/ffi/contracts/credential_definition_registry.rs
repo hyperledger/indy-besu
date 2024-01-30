@@ -5,9 +5,7 @@ use crate::ffi::{
     transaction::{Transaction, TransactionEndorsingData},
     types::SignatureData,
 };
-use indy2_vdr::{
-    credential_definition_registry, Address, Block, CredentialDefinitionId,
-};
+use indy_besu_vdr::{credential_definition_registry, Address, Block, CredentialDefinitionId};
 use serde_json::json;
 
 #[uniffi::export(async_runtime = "tokio")]

@@ -1,4 +1,4 @@
-use indy2_vdr::EventQuery;
+use indy_besu_vdr::EventQuery;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 

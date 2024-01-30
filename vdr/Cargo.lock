@@ -1232,7 +1232,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "indy2_vdr"
+name = "indy-besu-vdr"
 version = "0.0.1"
 dependencies = [
  "async-std",

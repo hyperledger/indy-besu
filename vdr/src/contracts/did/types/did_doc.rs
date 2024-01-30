@@ -277,8 +277,8 @@ pub mod test {
     pub const ISSUER_ID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const CONTEXT: &str = "https://www.w3.org/ns/did/v1";
     pub const MULTIBASE_KEY: &str = "zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf";
-    pub const SERVICE_ENDPOINT: &str = "127.0.0.1:5555";
-    pub const SERVICE_TYPE: &str = "DIDCommService";
+    pub const SERVICE_ENDPOINT: &str = "http://example.com";
+    pub const SERVICE_TYPE: &str = "Service";
     pub const KEY_1: &str = "KEY-1";
 
     pub fn verification_method(id: &str) -> VerificationMethod {
@@ -298,7 +298,7 @@ pub mod test {
         VerificationMethodOrReference::String(format!("{}#{}", id, KEY_1))
     }
 
-    pub fn service(id: &str) -> Service {
+    pub fn _service(id: &str) -> Service {
         Service {
             id: id.to_string(),
             type_: SERVICE_TYPE.to_string(),
@@ -308,7 +308,7 @@ pub mod test {
 
     pub fn new_id() -> String {
         format!(
-            "did:indy2:testnet:{}",
+            "did:ethr:testnet:{}",
             &bs58::encode(rand_bytes()).into_string()
         )
     }

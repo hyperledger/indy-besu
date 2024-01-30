@@ -51,11 +51,11 @@ Contract name: **SchemaRegistry**
 #### Create a new schema
 
 * Method: `createSchema`
-    * Description: Transaction to create a new AnonCreds Schema
+    * Description: Transaction to create a new AnonCreds Schema matching to the [specification](https://hyperledger.github.io/anoncreds-spec/#schema-publisher-publish-schema-object)
     * Parameters:
         * `identity` - Account address of schema issuer
         * `id` - KECCAK256 hash of schema id to be created
-        * `schema` - AnonCreds schema object as bytes
+        * `schema` - AnonCreds Schema object as bytes 
     * Restrictions:
         * Schema id must be unique.
         * Corresponding issuer account must exist and owned by sender.
@@ -172,7 +172,7 @@ Contract name: **CredentialDefinitionRegistry**
 #### Create a new credential definition
 
 * Method: `createCredentialDefinition`
-    * Description: Transaction to create a new AnonCreds Credential Definition
+    * Description: Transaction to create a new AnonCreds Credential Definition matching to the [specification](https://hyperledger.github.io/anoncreds-spec/#generating-a-credential-definition-without-revocation-support)
     * Parameters:
         * `identity` - Account address of credential definition issuer
         * `id` - KECCAK256 hash of credential definition id to be created

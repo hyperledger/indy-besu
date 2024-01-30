@@ -1,7 +1,7 @@
 import fs from "fs";
 import secp256k1 from "secp256k1";
 
-import { LedgerClient, EthrDidRegistry, SchemaRegistry } from "indy2-vdr";
+import { LedgerClient, EthrDidRegistry, SchemaRegistry } from "indy-besu-vdr";
 
 const chainId = 1337
 const nodeAddress = 'http://127.0.0.1:8545'

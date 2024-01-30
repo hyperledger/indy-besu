@@ -1,5 +1,5 @@
 [package]
-name = "indy2_vdr"
+name = "indy-besu-vdr"
 description = "A client library for interacting with Indy Ledger 2.0."
 version = "0.0.1"
 authors = ["Artem Ivanov <artem.ivanov@dsr-corporation.com>"]
@@ -8,7 +8,7 @@ license = "Apache-2.0"
 readme = "./README.md"
 
 [lib]
-name = "indy2_vdr"
+name = "indy_besu_vdr"
 path = "src/lib.rs"
 crate-type = ["rlib", "cdylib"]
 

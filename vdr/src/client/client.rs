@@ -260,11 +260,6 @@ pub mod test {
 
     fn contracts() -> Vec<ContractConfig> {
         vec![
-            // ContractConfig {
-            //     address: DID_REGISTRY_ADDRESS.to_string(),
-            //     spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
-            //     spec: None,
-            // },
             ContractConfig {
                 address: SCHEMA_REGISTRY_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),

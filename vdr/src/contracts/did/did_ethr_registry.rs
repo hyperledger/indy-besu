@@ -893,9 +893,7 @@ pub async fn resolve_did(
     // TODO: support the case when DID identifier is public key
 
     // Query block number when DID was changed last time
-    let transaction = build_get_did_changed_transaction(client, &did).await?;
-    let response = client.submit_transaction(&transaction).await?;
-    let did_changed_block = parse_did_changed_result(client, &response)?;
+    let did_changed_block = get_did_changed_block(client, &did).await?;
 
     // if DID has not been ever changed, we do not need to query events and just return base did document
     if did_changed_block.is_none() {
@@ -911,38 +909,11 @@ pub async fn resolve_did(
     let now = Utc::now().timestamp() as u64;
 
     // request events for a specific block until previous exists
-    let mut history: Vec<DidEvents> = Vec::new();
-    let mut previous_block: Option<Block> = Some(did_changed_block);
-    while previous_block.is_some() {
-        let transaction = build_get_did_events_query(
-            client,
-            &did,
-            previous_block.as_ref(),
-            previous_block.as_ref(),
-        )
-        .await?;
-        let logs = client.query_events(&transaction).await?;
-
-        // if no logs, break the loop as nothing to add to the change history
-        if logs.is_empty() {
-            break;
-        }
-
-        // parse events
-        let events = logs
-            .iter()
-            .rev()
-            .map(|log| parse_did_event_response(client, log))
-            .collect::<VdrResult<Vec<DidEvents>>>()?;
-
-        history.extend_from_slice(&events);
-
-        previous_block = events.last().map(|event| event.previous_change())
-    }
+    let did_history: Vec<DidEvents> = receive_did_history(client, &did, did_changed_block).await?;
 
     // assemble Did Document from the history events
     //  iterate in the reverse order -> oldest to newest
-    for history_item in history.iter().rev() {
+    for history_item in did_history.iter().rev() {
         match history_item {
             DidEvents::OwnerChanged(_event) => {
                 // TODO: Handle DID Owner changes event as described:
@@ -1009,6 +980,48 @@ pub async fn resolve_did(
     Ok(did_with_meta)
 }
 
+async fn get_did_changed_block(client: &LedgerClient, did: &DID) -> VdrResult<Block> {
+    let transaction = build_get_did_changed_transaction(client, &did).await?;
+    let response = client.submit_transaction(&transaction).await?;
+    parse_did_changed_result(client, &response)
+}
+
+async fn receive_did_history(
+    client: &LedgerClient,
+    did: &DID,
+    first_block: Block,
+) -> VdrResult<Vec<DidEvents>> {
+    let mut history: Vec<DidEvents> = Vec::new();
+    let mut previous_block: Option<Block> = Some(first_block);
+    while previous_block.is_some() {
+        let transaction = build_get_did_events_query(
+            client,
+            did,
+            previous_block.as_ref(),
+            previous_block.as_ref(),
+        )
+        .await?;
+        let logs = client.query_events(&transaction).await?;
+
+        // if no logs, break the loop as nothing to add to the change history
+        if logs.is_empty() {
+            break;
+        }
+
+        // parse events
+        let events = logs
+            .iter()
+            .rev()
+            .map(|log| parse_did_event_response(client, log))
+            .collect::<VdrResult<Vec<DidEvents>>>()?;
+
+        history.extend_from_slice(&events);
+
+        previous_block = events.last().map(|event| event.previous_change())
+    }
+    Ok(history)
+}
+
 #[cfg(test)]
 pub mod test {
     use super::*;
@@ -1020,6 +1033,7 @@ pub mod test {
         contracts::{
             did::types::{
                 did::DID,
+                did_doc::test::{SERVICE_ENDPOINT, SERVICE_TYPE},
                 did_doc_attribute::{PublicKeyAttribute, PublicKeyType, ServiceAttribute},
             },
             ServiceEndpoint,
@@ -1034,8 +1048,8 @@ pub mod test {
 
     pub fn service() -> DidDocAttribute {
         DidDocAttribute::Service(ServiceAttribute {
-            type_: "Service".to_string(),
-            service_endpoint: ServiceEndpoint::String("http://example.com".to_string()),
+            type_: SERVICE_TYPE.to_string(),
+            service_endpoint: ServiceEndpoint::String(SERVICE_ENDPOINT.to_string()),
         })
     }
 

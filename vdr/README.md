@@ -35,7 +35,7 @@ To use vdr, add this to your `Cargo.toml`:
 
 ```
 [dependencies]
-indy2_vdr = { path = "../path/to/crate" }
+indy_besu_vdr = { path = "../path/to/crate" }
 ```
 
 ## Code formatting
