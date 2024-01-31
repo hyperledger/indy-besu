@@ -59,7 +59,7 @@ impl CredentialDefinitionId {
 
             vdr_error
         })?;
-        let issuer_did = DID::build(DID_METHOD, NETWORK, id);
+        let issuer_did = DID::build(DID_METHOD, Some(NETWORK), id);
 
         let cred_def_id = CredentialDefinitionId::build(&issuer_did, schema_id, tag);
         Ok(cred_def_id)
@@ -92,7 +92,7 @@ impl TryFrom<IndyCredentialDefinitionFormat> for CredentialDefinition {
 
             vdr_error
         })?;
-        let issuer_id = DID::build(DID_METHOD, NETWORK, id);
+        let issuer_id = DID::build(DID_METHOD, Some(NETWORK), id);
         // TODO: How to deal with schema_id - now it's just sequence number?
         let schema_id = cred_def.schema_id.to_string();
 

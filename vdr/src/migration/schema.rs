@@ -56,7 +56,7 @@ impl SchemaId {
 
             vdr_error
         })?;
-        let issuer_did = DID::build(DID_METHOD, NETWORK, id);
+        let issuer_did = DID::build(DID_METHOD, Some(NETWORK), id);
 
         let besu_schema_id = SchemaId::build(&issuer_did, name, version);
         Ok(besu_schema_id)
@@ -99,7 +99,7 @@ impl TryFrom<IndySchemaFormat> for Schema {
 
             vdr_error
         })?;
-        let issuer_id = DID::build(DID_METHOD, NETWORK, id);
+        let issuer_id = DID::build(DID_METHOD, Some(NETWORK), id);
 
         let besu_schema = Schema {
             issuer_id,

@@ -31,7 +31,9 @@ pub use contracts::{
         did_ethr_registry,
         types::{
             did::DID,
-            did_doc::{DidDocument, DidResolutionOptions, VerificationKeyType},
+            did_doc::{
+                DidDocument, DidResolutionAcceptType, DidResolutionOptions, VerificationKeyType,
+            },
             did_doc_attribute::{DelegateType, DidDocAttribute, Validity},
             did_doc_builder::DidDocumentBuilder,
             did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},

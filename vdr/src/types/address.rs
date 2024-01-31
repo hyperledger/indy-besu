@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 const PREFIX: &str = "0x";
+const NULL_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Address(String);
@@ -20,6 +21,14 @@ impl Address {
 
     pub fn as_blockchain_id(&self, chain_id: u64) -> String {
         format!("eip155:{}:{}", chain_id, self.as_ref())
+    }
+
+    pub fn null() -> Address {
+        Address::from(NULL_ADDRESS)
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.as_ref() == NULL_ADDRESS
     }
 }
 

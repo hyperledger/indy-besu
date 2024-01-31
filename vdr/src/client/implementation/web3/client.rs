@@ -1,8 +1,8 @@
 use crate::{
     client::Client,
     error::{VdrError, VdrResult},
-    types::{EventQuery, PingStatus},
-    Address, Transaction,
+    types::EventQuery,
+    Address, Block, BlockDetails, Transaction,
 };
 
 use async_trait::async_trait;
@@ -21,7 +21,8 @@ use web3::{
     api::Eth,
     transports::Http,
     types::{
-        Address as EthAddress, BlockNumber, Bytes, CallRequest, FilterBuilder, TransactionId, H256,
+        Address as EthAddress, BlockId, BlockNumber, Bytes, CallRequest, FilterBuilder,
+        TransactionId, H256,
     },
     Web3,
 };
@@ -32,7 +33,8 @@ use web3_wasm::{
     api::Eth,
     transports::Http,
     types::{
-        Address as EthAddress, BlockNumber, Bytes, CallRequest, FilterBuilder, TransactionId, H256,
+        Address as EthAddress, BlockId, BlockNumber, Bytes, CallRequest, FilterBuilder,
+        TransactionId, H256,
     },
     Web3,
 };
@@ -203,6 +205,7 @@ impl Client for Web3Client {
             .map(|log| EventLog {
                 topics: log.topics,
                 data: log.data.0,
+                block: Block::from(log.block_number.unwrap_or_default().as_u64()),
             })
             .collect();
 
@@ -232,16 +235,23 @@ impl Client for Web3Client {
         Ok(receipt)
     }
 
-    async fn ping(&self) -> VdrResult<PingStatus> {
+    async fn get_block(&self, block: Option<u64>) -> VdrResult<BlockDetails> {
         trace!("Web3Client::ping()");
 
-        let ping_result = match self.client.eth().block_number().await {
-            Ok(_current_block) => PingStatus::ok(),
-            Err(_) => PingStatus::err("Could not get current network block"),
+        let block_id = match block {
+            Some(block) => BlockId::Number(BlockNumber::Number(U64::from(block))),
+            None => BlockId::Number(BlockNumber::Latest),
         };
 
-        trace!("Web3Client::ping() -> {:?}", ping_result);
-        Ok(ping_result)
+        match self.client.eth().block(block_id).await {
+            Ok(Some(block)) => Ok(BlockDetails {
+                number: block.number.unwrap().as_u64(),
+                timestamp: block.timestamp.as_u64(),
+            }),
+            _ => Err(VdrError::ClientInvalidState(
+                "Could not get current network block".to_string(),
+            )),
+        }
     }
 
     async fn get_transaction(&self, transaction_hash: &[u8]) -> VdrResult<Option<Transaction>> {

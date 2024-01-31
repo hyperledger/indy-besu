@@ -8,8 +8,8 @@ use crate::ffi::{
 use indy_besu_vdr::{
     did_ethr_registry, Address, Block, DelegateType, DidAttributeChanged as DidAttributeChanged_,
     DidDelegateChanged as DidDelegateChanged_, DidDocAttribute, DidEvents as DidEvents_,
-    DidOwnerChanged as DidOwnerChanged_, DidResolutionOptions as DidResolutionOptions_, Validity,
-    DID,
+    DidOwnerChanged as DidOwnerChanged_, DidResolutionAcceptType,
+    DidResolutionOptions as DidResolutionOptions_, Validity, DID,
 };
 use serde_json::json;
 
@@ -446,12 +446,12 @@ pub async fn resolve_did(
     did: &str,
     options: Option<DidResolutionOptions>,
 ) -> VdrResult<String> {
-    let did_with_meta = did_ethr_registry::resolve_did(
-        &client.client,
-        &DID::from(did),
-        options.map(DidResolutionOptions_::from).as_ref(),
-    )
-    .await?;
+    let options = match options {
+        Some(options) => Some(DidResolutionOptions_::try_from(&options)?),
+        None => None,
+    };
+    let did_with_meta =
+        did_ethr_registry::resolve_did(&client.client, &DID::from(did), options.as_ref()).await?;
     Ok(json!(did_with_meta).to_string())
 }
 
@@ -540,12 +540,17 @@ impl From<DidEvents_> for DidEvents {
 #[derive(uniffi::Record)]
 pub struct DidResolutionOptions {
     pub accept: String,
+    pub block_tag: Option<u64>,
 }
 
-impl From<DidResolutionOptions> for DidResolutionOptions_ {
-    fn from(options: DidResolutionOptions) -> Self {
-        DidResolutionOptions_ {
-            accept: options.accept,
-        }
+impl TryFrom<&DidResolutionOptions> for DidResolutionOptions_ {
+    type Error = VdrError;
+
+    fn try_from(value: &DidResolutionOptions) -> Result<Self, Self::Error> {
+        Ok(DidResolutionOptions_ {
+            accept: DidResolutionAcceptType::try_from(value.accept.as_str())
+                .map_err(VdrError::from)?,
+            block_tag: value.block_tag.map(|block_tag| Block::from(block_tag)),
+        })
     }
 }

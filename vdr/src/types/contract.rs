@@ -48,7 +48,7 @@ impl ContractSpec {
 
             vdr_error
         })?;
-        let contract_spec = serde_json::from_str(&contract_spec).map_err(|err| {
+        serde_json::from_str(&contract_spec).map_err(|err| {
             let vdr_error = VdrError::ContractInvalidSpec(format!(
                 "Unable to parse contract specification. Err: {:?}",
                 err.to_string()
@@ -60,9 +60,7 @@ impl ContractSpec {
             );
 
             vdr_error
-        });
-
-        contract_spec
+        })
     }
 }
 
@@ -83,6 +81,7 @@ impl ContractOutput {
         self.0.is_empty()
     }
 
+    #[allow(unused)]
     pub fn get_tuple(&self, index: usize) -> VdrResult<ContractOutput> {
         self.0
             .get(index)
@@ -152,17 +151,6 @@ impl ContractOutput {
             .as_u64())
     }
 
-    pub fn get_u128(&self, index: usize) -> VdrResult<u128> {
-        Ok(self
-            .0
-            .get(index)
-            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
-            .clone()
-            .into_uint()
-            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
-            .as_u128())
-    }
-
     pub fn get_address_array(&self, index: usize) -> VdrResult<Vec<Address>> {
         Ok(self
             .0
@@ -213,10 +201,9 @@ impl ContractEvent {
             .into_address()
             .ok_or_else(|| {
                 VdrError::ContractInvalidResponseData("Missing address value".to_string())
-            })?
-            .to_string();
+            })?;
 
-        Ok(Address::from(address_str.as_str()))
+        Ok(Address::from(hex::encode(address_str.0).as_str()))
     }
 
     pub fn get_fixed_bytes(&self, index: usize) -> VdrResult<Vec<u8>> {

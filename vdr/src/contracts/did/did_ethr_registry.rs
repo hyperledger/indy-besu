@@ -1,16 +1,15 @@
-use chrono::Utc;
 use log_derive::{logfn, logfn_inputs};
 
 use crate::{
     client::LedgerClient,
     contracts::{
         did::{
+            did_ethr_resolver,
             types::{
-                did_doc_attribute::{DelegateType, DidDocAttribute, PublicKeyPurpose, Validity},
+                did_doc_attribute::{DelegateType, DidDocAttribute, Validity},
                 did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},
             },
-            DidDocumentBuilder, DidMetadata, DidResolutionMetadata, DidResolutionOptions,
-            KEYS_CONTEXT, SECPK_CONTEXT,
+            DidResolutionOptions,
         },
         DidDocumentWithMeta,
     },
@@ -20,7 +19,7 @@ use crate::{
         TransactionBuilder, TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
         UintBytesParam,
     },
-    Block, Nonce, SignatureData, TransactionEndorsingData, VdrError, VerificationKeyType, DID,
+    Block, Nonce, SignatureData, TransactionEndorsingData, VdrError, DID,
 };
 
 const CONTRACT_NAME: &str = "EthereumExtDidRegistry";
@@ -868,158 +867,7 @@ pub async fn resolve_did(
     did: &DID,
     options: Option<&DidResolutionOptions>,
 ) -> VdrResult<DidDocumentWithMeta> {
-    // DID without network identifier
-    let did = did.short()?;
-
-    // Build base DID document for ethr DID
-    let identity = Address::try_from(&did)?;
-    let mut did_doc_builder = DidDocumentBuilder::new()
-        .add_context(SECPK_CONTEXT)
-        .add_context(KEYS_CONTEXT)
-        .set_id(&did)
-        .add_verification_method(
-            Some(format!("{}#controller", did.as_ref()).as_str()),
-            &VerificationKeyType::EcdsaSecp256k1VerificationKey2020,
-            &did,
-            Some(identity.as_blockchain_id(client.chain_id()).as_str()),
-            None,
-            None,
-            None,
-            None,
-        )
-        .add_authentication_reference(0)?
-        .add_assertion_method_reference(0)?;
-
-    // TODO: support the case when DID identifier is public key
-
-    // Query block number when DID was changed last time
-    let did_changed_block = get_did_changed_block(client, &did).await?;
-
-    // if DID has not been ever changed, we do not need to query events and just return base did document
-    if did_changed_block.is_none() {
-        let did_with_meta = DidDocumentWithMeta {
-            did_document: did_doc_builder.build(),
-            did_document_metadata: DidMetadata::default(),
-            did_resolution_metadata: DidResolutionMetadata::default(),
-        };
-        return Ok(did_with_meta);
-    }
-
-    // current time in seconds for attributes validity check
-    let now = Utc::now().timestamp() as u64;
-
-    // request events for a specific block until previous exists
-    let did_history: Vec<DidEvents> = receive_did_history(client, &did, did_changed_block).await?;
-
-    // assemble Did Document from the history events
-    //  iterate in the reverse order -> oldest to newest
-    for history_item in did_history.iter().rev() {
-        match history_item {
-            DidEvents::OwnerChanged(_event) => {
-                // TODO: Handle DID Owner changes event as described:
-                //  https://github.com/decentralized-identity/ethr-did-resolver/blob/master/doc/did-method-spec.md#controller-changes-didownerchanged
-                //  https://github.com/decentralized-identity/ethr-did-resolver/blob/master/src/resolver.ts#L107
-            }
-            DidEvents::DelegateChanged(_event) => {
-                // TODO: Handle DID Delegate changes event as described:
-                //  https://github.com/decentralized-identity/ethr-did-resolver/blob/master/doc/did-method-spec.md#delegate-keys-diddelegatechanged
-                //  https://github.com/decentralized-identity/ethr-did-resolver/blob/master/src/resolver.ts#L107
-            }
-            DidEvents::AttributeChangedEvent(event) => {
-                // attribute expired
-                if event.valid_to < now {
-                    continue;
-                }
-
-                match DidDocAttribute::try_from(event)? {
-                    DidDocAttribute::PublicKey(key) => {
-                        did_doc_builder = did_doc_builder.add_verification_method(
-                            None,
-                            &key.type_.into(),
-                            &did,
-                            None,
-                            None,
-                            key.public_key_hex.as_deref(),
-                            key.public_key_base58.as_deref(),
-                            key.public_key_base64.as_deref(),
-                        );
-                        let reference = did_doc_builder.verification_keys() - 1;
-                        did_doc_builder = match key.purpose {
-                            PublicKeyPurpose::VeriKey => {
-                                did_doc_builder.add_assertion_method_reference(reference)?
-                            }
-                            PublicKeyPurpose::SigAuth => {
-                                did_doc_builder.add_authentication_reference(reference)?
-                            }
-                            PublicKeyPurpose::Enc => {
-                                did_doc_builder.add_key_agreement_reference(reference)?
-                            }
-                        };
-                    }
-                    DidDocAttribute::Service(service) => {
-                        did_doc_builder = did_doc_builder.add_service(
-                            None,
-                            &service.type_,
-                            &service.service_endpoint,
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    let did_with_meta = DidDocumentWithMeta {
-        did_document: did_doc_builder.build(),
-        did_document_metadata: DidMetadata::default(),
-        did_resolution_metadata: DidResolutionMetadata::default(),
-    };
-
-    // TODO: Handle revoked attributes
-    // TODO: Handle DID deactivation case
-    // TODO: Assemble DID metadata
-    Ok(did_with_meta)
-}
-
-async fn get_did_changed_block(client: &LedgerClient, did: &DID) -> VdrResult<Block> {
-    let transaction = build_get_did_changed_transaction(client, &did).await?;
-    let response = client.submit_transaction(&transaction).await?;
-    parse_did_changed_result(client, &response)
-}
-
-async fn receive_did_history(
-    client: &LedgerClient,
-    did: &DID,
-    first_block: Block,
-) -> VdrResult<Vec<DidEvents>> {
-    let mut history: Vec<DidEvents> = Vec::new();
-    let mut previous_block: Option<Block> = Some(first_block);
-    while previous_block.is_some() {
-        let transaction = build_get_did_events_query(
-            client,
-            did,
-            previous_block.as_ref(),
-            previous_block.as_ref(),
-        )
-        .await?;
-        let logs = client.query_events(&transaction).await?;
-
-        // if no logs, break the loop as nothing to add to the change history
-        if logs.is_empty() {
-            break;
-        }
-
-        // parse events
-        let events = logs
-            .iter()
-            .rev()
-            .map(|log| parse_did_event_response(client, log))
-            .collect::<VdrResult<Vec<DidEvents>>>()?;
-
-        history.extend_from_slice(&events);
-
-        previous_block = events.last().map(|event| event.previous_change())
-    }
-    Ok(history)
+    did_ethr_resolver::resolve_did(client, did, options).await
 }
 
 #[cfg(test)]
@@ -1034,7 +882,9 @@ pub mod test {
             did::types::{
                 did::DID,
                 did_doc::test::{SERVICE_ENDPOINT, SERVICE_TYPE},
-                did_doc_attribute::{PublicKeyAttribute, PublicKeyType, ServiceAttribute},
+                did_doc_attribute::{
+                    PublicKeyAttribute, PublicKeyPurpose, PublicKeyType, ServiceAttribute,
+                },
             },
             ServiceEndpoint,
         },

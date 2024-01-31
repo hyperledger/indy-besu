@@ -3,7 +3,7 @@ use crate::{
     contracts::{
         auth::Role,
         cl::types::{credential_definition::test::credential_definition, schema::test::schema},
-        did::ETHR_DID_METHOD,
+        did::{PublicKeyAttribute, ETHR_DID_METHOD},
     },
     error::VdrResult,
     signer::basic_signer::{
@@ -29,17 +29,84 @@ async fn sign_and_submit_transaction(
 mod did {
     use super::*;
     use crate::{
-        contracts::did::{
-            did_ethr_registry,
-            did_ethr_registry::test::{public_key, service, validity},
-            types::did_doc_attribute::DidDocAttribute,
-            DID,
+        contracts::{
+            did::{
+                did_ethr_registry,
+                did_ethr_registry::test::{public_key, service, validity},
+                types::did_doc_attribute::DidDocAttribute,
+                DID,
+            },
+            PublicKeyPurpose, PublicKeyType,
         },
-        Address,
+        Address, LedgerClient, Validity, VdrResult,
     };
+    use serde_json::json;
 
     pub(crate) fn did(address: &Address) -> DID {
-        DID::build(ETHR_DID_METHOD, TEST_NETWORK, address.as_ref())
+        DID::build(ETHR_DID_METHOD, Some(TEST_NETWORK), address.as_ref())
+    }
+
+    async fn endorse_set_did_attribute(
+        client: &LedgerClient,
+        identity: &Address,
+        did: &DID,
+        attribute: &DidDocAttribute,
+        validity: &Validity,
+        signer: &BasicSigner,
+    ) {
+        let transaction_endorsing_data = did_ethr_registry::build_did_set_attribute_endorsing_data(
+            client, did, attribute, validity,
+        )
+        .await
+        .unwrap();
+
+        let endorsing_sign_bytes = transaction_endorsing_data.get_signing_bytes().unwrap();
+        let signature = signer
+            .sign(&endorsing_sign_bytes, &identity.to_string())
+            .unwrap();
+
+        let transaction = did_ethr_registry::build_did_set_attribute_signed_transaction(
+            client,
+            &TRUSTEE_ACC,
+            did,
+            attribute,
+            validity,
+            &signature,
+        )
+        .await
+        .unwrap();
+        let receipt = sign_and_submit_transaction(&client, transaction, &signer).await;
+        println!("Receipt: {}", receipt);
+    }
+
+    async fn endorse_revoke_did_attribute(
+        client: &LedgerClient,
+        identity: &Address,
+        did: &DID,
+        attribute: &DidDocAttribute,
+        signer: &BasicSigner,
+    ) {
+        let transaction_endorsing_data =
+            did_ethr_registry::build_did_revoke_attribute_endorsing_data(client, did, attribute)
+                .await
+                .unwrap();
+
+        let endorsing_sign_bytes = transaction_endorsing_data.get_signing_bytes().unwrap();
+        let signature = signer
+            .sign(&endorsing_sign_bytes, &identity.to_string())
+            .unwrap();
+
+        let transaction = did_ethr_registry::build_did_revoke_attribute_signed_transaction(
+            client,
+            &TRUSTEE_ACC,
+            did,
+            attribute,
+            &signature,
+        )
+        .await
+        .unwrap();
+        let receipt = sign_and_submit_transaction(&client, transaction, &signer).await;
+        println!("Receipt: {}", receipt);
     }
 
     #[async_std::test]
@@ -47,7 +114,7 @@ mod did {
         let signer = basic_signer();
         let client = client();
 
-        // write
+        // write service
         let did = super::did::did(&TRUSTEE_ACC.clone());
         let transaction = did_ethr_registry::build_did_set_attribute_transaction(
             &client,
@@ -88,11 +155,16 @@ mod did {
         .unwrap();
         let _receipt = sign_and_submit_transaction(&client, transaction, &signer).await;
 
-        let did_doc = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
             .await
             .unwrap();
-        assert_eq!(1, did_doc.did_document.service.len());
-        assert_eq!(2, did_doc.did_document.verification_method.len());
+        let did_document = did_doc_with_meta.did_document.unwrap();
+        assert_eq!(1, did_document.service.len());
+        assert_eq!(2, did_document.verification_method.len());
+        assert_eq!(
+            false,
+            did_doc_with_meta.did_document_metadata.deactivated.unwrap()
+        );
 
         Ok(())
     }
@@ -103,40 +175,158 @@ mod did {
         let client = client();
         let (identity, _) = signer.create_key(None)?;
 
-        // write
         let did = super::did::did(&identity);
 
+        // endorse service attribute
         let service = service();
         let validity = validity();
+        endorse_set_did_attribute(&client, &identity, &did, &service, &validity, &signer).await;
 
-        let transaction_endorsing_data = did_ethr_registry::build_did_set_attribute_endorsing_data(
-            &client, &did, &service, &validity,
-        )
-        .await
-        .unwrap();
+        // resolve DID
+        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+            .await
+            .unwrap();
+        let did_document = did_doc_with_meta.did_document.unwrap();
+        assert_eq!(1, did_document.service.len());
+        assert_eq!(
+            false,
+            did_doc_with_meta.did_document_metadata.deactivated.unwrap()
+        );
 
-        let endorsing_sign_bytes = transaction_endorsing_data.get_signing_bytes()?;
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn demo_did_ethr_deactivate() -> VdrResult<()> {
+        let mut signer = basic_signer();
+        let client = client();
+        let (identity, _) = signer.create_key(None)?;
+
+        let did = super::did::did(&identity);
+
+        // endorse service attribute
+        let service = service();
+        let validity = validity();
+        endorse_set_did_attribute(&client, &identity, &did, &service, &validity, &signer).await;
+
+        // deactivate DID
+        let new_owner = Address::null();
+        let transaction_endorsing_data =
+            did_ethr_registry::build_did_change_owner_endorsing_data(&client, &did, &new_owner)
+                .await
+                .unwrap();
+
         let signature = signer
-            .sign(&endorsing_sign_bytes, &identity.to_string())
+            .sign(
+                &transaction_endorsing_data.get_signing_bytes()?,
+                &identity.to_string(),
+            )
             .unwrap();
 
-        let transaction = did_ethr_registry::build_did_set_attribute_signed_transaction(
+        let transaction = did_ethr_registry::build_did_change_owner_signed_transaction(
             &client,
             &TRUSTEE_ACC,
             &did,
-            &service,
-            &validity,
+            &new_owner,
             &signature,
         )
         .await
         .unwrap();
         let receipt = sign_and_submit_transaction(&client, transaction, &signer).await;
-        println!("Receipt: {}", receipt);
+        println!("Change owner Receipt: {}", receipt);
 
-        let did_doc = did_ethr_registry::resolve_did(&client, &did, None)
+        // Resole DID
+        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
             .await
             .unwrap();
-        assert_eq!(1, did_doc.did_document.service.len());
+        let did_document = did_doc_with_meta.did_document.unwrap();
+
+        assert!(did_doc_with_meta.did_document_metadata.deactivated.unwrap());
+
+        assert_eq!(did.short().unwrap(), did_document.id);
+        assert_eq!(0, did_document.service.len());
+        assert_eq!(0, did_document.verification_method.len());
+        assert_eq!(0, did_document.authentication.len());
+        assert_eq!(0, did_document.assertion_method.len());
+
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn demo_did_add_remove_attribute() -> VdrResult<()> {
+        let mut signer = basic_signer();
+        let client = client();
+        let (identity, _) = signer.create_key(None)?;
+
+        let did = super::did::did(&identity);
+
+        // endorse service attribute
+        let service = service();
+        let validity = validity();
+        endorse_set_did_attribute(&client, &identity, &did, &service, &validity, &signer).await;
+
+        // endorse first key attribute
+        let public_key = public_key();
+        endorse_set_did_attribute(&client, &identity, &did, &public_key, &validity, &signer).await;
+
+        // endorse second key attribute
+        let public_key_2 = DidDocAttribute::PublicKey(PublicKeyAttribute {
+            purpose: PublicKeyPurpose::Enc,
+            type_: PublicKeyType::Ed25519VerificationKey2020,
+            public_key_base58: Some("H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV".to_string()),
+            ..PublicKeyAttribute::default()
+        });
+        endorse_set_did_attribute(&client, &identity, &did, &public_key_2, &validity, &signer)
+            .await;
+
+        // resolve DID
+        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+            .await
+            .unwrap();
+        let did_document_before_remove = did_doc_with_meta.did_document.unwrap();
+        assert_eq!(1, did_document_before_remove.service.len());
+        assert_eq!(3, did_document_before_remove.verification_method.len());
+        assert_eq!(2, did_document_before_remove.key_agreement.len());
+        assert_eq!(1, did_document_before_remove.authentication.len());
+        assert_eq!(1, did_document_before_remove.assertion_method.len());
+
+        // remove service and second ley
+        endorse_revoke_did_attribute(&client, &identity, &did, &public_key, &signer).await;
+        endorse_revoke_did_attribute(&client, &identity, &did, &service, &signer).await;
+
+        // resolve DID
+        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+            .await
+            .unwrap();
+        let did_document_after_remove = did_doc_with_meta.did_document.unwrap();
+        assert_eq!(0, did_document_after_remove.service.len());
+        assert_eq!(2, did_document_after_remove.verification_method.len());
+        assert_eq!(1, did_document_after_remove.key_agreement.len());
+        assert_eq!(1, did_document_after_remove.authentication.len());
+        assert_eq!(1, did_document_after_remove.assertion_method.len());
+
+        // add one more key
+        let public_key_3 = DidDocAttribute::PublicKey(PublicKeyAttribute {
+            purpose: PublicKeyPurpose::VeriKey,
+            type_: PublicKeyType::EcdsaSecp256k1VerificationKey2020,
+            public_key_hex: Some(
+                "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71".to_string(),
+            ),
+            ..PublicKeyAttribute::default()
+        });
+        endorse_set_did_attribute(&client, &identity, &did, &public_key_3, &validity, &signer)
+            .await;
+
+        // resolve DID
+        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+            .await
+            .unwrap();
+        let did_document_after_add = did_doc_with_meta.did_document.unwrap();
+        assert_eq!(0, did_document_after_add.service.len());
+        assert_eq!(3, did_document_after_add.verification_method.len());
+        assert_eq!(1, did_document_after_add.key_agreement.len());
+        assert_eq!(1, did_document_after_add.authentication.len());
+        assert_eq!(2, did_document_after_add.assertion_method.len());
 
         Ok(())
     }

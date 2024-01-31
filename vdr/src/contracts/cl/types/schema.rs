@@ -62,7 +62,7 @@ impl TryFrom<ContractEvent> for SchemaCreatedEvent {
         })?;
 
         Ok(SchemaCreatedEvent {
-            id_hash: hex::encode(&id),
+            id_hash: hex::encode(id),
             identity,
             schema,
         })

@@ -22,6 +22,12 @@ pub struct DidAttributeChanged {
     pub previous_change: Block,
 }
 
+impl DidAttributeChanged {
+    pub(crate) fn key(&self) -> String {
+        format!("DidDocAttribute-{}-{:?}", self.name, self.value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDelegateChanged {
@@ -30,6 +36,16 @@ pub struct DidDelegateChanged {
     pub delegate_type: Vec<u8>,
     pub valid_to: u64,
     pub previous_change: Block,
+}
+
+impl DidDelegateChanged {
+    pub(crate) fn key(&self) -> String {
+        format!(
+            "DelegateChanged-{:?}-{}",
+            self.delegate_type,
+            self.delegate.to_string()
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

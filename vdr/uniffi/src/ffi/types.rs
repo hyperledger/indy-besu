@@ -12,8 +12,13 @@ pub struct PingStatus {
 
 #[derive(uniffi::Enum)]
 pub enum Status {
-    Ok,
-    Err { msg: String },
+    Ok {
+        block_number: u64,
+        block_timestamp: u64,
+    },
+    Err {
+        msg: String,
+    },
 }
 
 #[derive(uniffi::Record)]
@@ -67,7 +72,13 @@ impl From<PingStatus_> for PingStatus {
 impl From<Status_> for Status {
     fn from(status: Status_) -> Self {
         match status {
-            Status_::Ok => Status::Ok,
+            Status_::Ok {
+                block_number,
+                block_timestamp,
+            } => Status::Ok {
+                block_number,
+                block_timestamp,
+            },
             Status_::Err { msg } => Status::Err { msg },
         }
     }

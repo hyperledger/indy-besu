@@ -1,7 +1,7 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
-    Address,
+    Block,
 };
 
 use crate::contracts::did::types::did::DID;
@@ -16,20 +16,72 @@ pub const KEYS_CONTEXT: &str = "https://w3id.org/security/v3-unstable";
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocumentWithMeta {
-    pub did_document: DidDocument,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub did_document: Option<DidDocument>,
     pub did_document_metadata: DidMetadata,
     pub did_resolution_metadata: DidResolutionMetadata,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DidResolutionOptions {
-    pub accept: String,
+    pub accept: DidResolutionAcceptType,
+    pub block_tag: Option<Block>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DidResolutionMetadata {
-    pub content_type: String,
-    pub error: Option<String>,
+    pub content_type: Option<DidResolutionAcceptType>,
+    pub error: Option<DidResolutionError>,
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub enum DidResolutionAcceptType {
+    #[default]
+    #[serde(rename = "application/did+ld+json")]
+    DidLdJson,
+}
+
+impl TryFrom<&str> for DidResolutionAcceptType {
+    type Error = VdrError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "application/did+ld+json" => Ok(DidResolutionAcceptType::DidLdJson),
+            value => Err(VdrError::CommonInvalidData(format!(
+                "Unsupported `accept` value {} provided for DID resolution type.",
+                value
+            ))),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub enum DidResolutionError {
+    /*
+     * The resolver has failed to construct the DID document.
+     * This can be caused by a network issue, a wrong registry address or malformed logs while parsing the registry
+     * history. Please inspect the `DIDResolutionMetadata.message` to debug further.
+     */
+    #[serde(rename = "notFound")]
+    NotFound,
+    /*
+     * The resolver does not know how to resolve the given DID. Most likely it is not a `did:ethr`.
+     */
+    #[serde(rename = "invalidDid")]
+    InvalidDid,
+    /*
+     * The resolver does not support the 'accept' format requested with `DidResolutionOptions`.
+     */
+    #[serde(rename = "unsupportedFormat")]
+    UnsupportedFormat,
+    /*
+     * The resolver is misconfigured or is being asked to resolve a `DID` anchored on an unknown network
+     */
+    #[serde(rename = "unknownNetwork")]
+    UnknownNetwork,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -41,10 +93,8 @@ pub struct DidDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub controller: Option<StringOrVector>,
     pub verification_method: Vec<VerificationMethod>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(default)]
     pub authentication: Vec<VerificationMethodOrReference>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(default)]
     pub assertion_method: Vec<VerificationMethodOrReference>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -63,20 +113,19 @@ pub struct DidDocument {
     pub also_known_as: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DidRecord {
-    pub document: DidDocument,
-    pub metadata: DidMetadata,
-}
-
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DidMetadata {
-    pub owner: Address,
-    pub sender: Address,
-    pub created: u64,
-    pub updated: u64,
-    pub deactivated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deactivated: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_version_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_update: Option<u64>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -238,41 +287,6 @@ impl TryFrom<&ContractOutput> for DidDocument {
                 err
             ))
         })
-    }
-}
-
-impl TryFrom<ContractOutput> for DidMetadata {
-    type Error = VdrError;
-
-    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        let owner = value.get_address(0)?;
-        let sender = value.get_address(1)?;
-        let created = value.get_u128(2)? as u64;
-        let updated = value.get_u128(3)? as u64;
-        let deactivated = value.get_bool(4)?;
-        let did_metadata = DidMetadata {
-            owner,
-            sender,
-            created,
-            updated,
-            deactivated,
-        };
-        Ok(did_metadata)
-    }
-}
-
-impl TryFrom<ContractOutput> for DidRecord {
-    type Error = VdrError;
-
-    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        let output_tuple = value.get_tuple(0)?;
-        let did_document = DidDocument::try_from(&output_tuple)?;
-        let metadata = output_tuple.get_tuple(1)?;
-        let did_doc_with_metadata = DidRecord {
-            document: did_document,
-            metadata: DidMetadata::try_from(metadata)?,
-        };
-        Ok(did_doc_with_metadata)
     }
 }
 

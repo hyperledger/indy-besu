@@ -1,6 +1,6 @@
 pub mod did_ethr_registry;
+pub mod did_ethr_resolver;
 pub mod types;
 
 pub use did_ethr_registry::*;
-pub(crate) use types::did_doc_builder::DidDocumentBuilder;
-pub use types::{did::DID, did_doc::*};
+pub use types::{did::DID, did_doc::*, did_doc_attribute::*};

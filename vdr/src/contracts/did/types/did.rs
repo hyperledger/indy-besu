@@ -7,14 +7,18 @@ pub struct DID(String);
 impl DID {
     pub const DID_PREFIX: &'static str = "did";
 
-    pub fn build(method: &str, network: &str, id: &str) -> DID {
-        DID(format!(
-            "{}:{}:{}:{}",
-            Self::DID_PREFIX,
-            method,
-            network,
-            id
-        ))
+    pub fn build(method: &str, network: Option<&str>, id: &str) -> DID {
+        if let Some(network) = network {
+            DID(format!(
+                "{}:{}:{}:{}",
+                Self::DID_PREFIX,
+                method,
+                network,
+                id
+            ))
+        } else {
+            DID(format!("{}:{}:{}", Self::DID_PREFIX, method, id))
+        }
     }
 
     pub fn method(&self) -> VdrResult<String> {

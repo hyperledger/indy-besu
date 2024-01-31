@@ -64,7 +64,7 @@ impl TryFrom<ContractEvent> for CredentialDefinitionCreatedEvent {
         })?;
 
         Ok(CredentialDefinitionCreatedEvent {
-            id_hash: hex::encode(&id),
+            id_hash: hex::encode(id),
             identity,
             cred_def,
         })

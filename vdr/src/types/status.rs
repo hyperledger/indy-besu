@@ -8,13 +8,23 @@ pub struct PingStatus {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Status {
-    Ok,
-    Err { msg: String },
+    Ok {
+        block_number: u64,
+        block_timestamp: u64,
+    },
+    Err {
+        msg: String,
+    },
 }
 
 impl PingStatus {
-    pub fn ok() -> PingStatus {
-        PingStatus { status: Status::Ok }
+    pub fn ok(block_number: u64, block_timestamp: u64) -> PingStatus {
+        PingStatus {
+            status: Status::Ok {
+                block_number,
+                block_timestamp,
+            },
+        }
     }
 
     pub fn err(err: &str) -> PingStatus {
