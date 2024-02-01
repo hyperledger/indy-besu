@@ -426,6 +426,7 @@ pub async fn build_did_set_attribute_endorsing_data(
     let nonce = resolve_identity_nonce(client, &identity).await?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
+        .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
         .add_param(MethodParam::from(METHOD_SET_ATTRIBUTE))?
@@ -914,11 +915,31 @@ pub mod test {
         })
     }
 
+    pub fn public_key_2() -> DidDocAttribute {
+        DidDocAttribute::PublicKey(PublicKeyAttribute {
+            purpose: PublicKeyPurpose::Enc,
+            type_: PublicKeyType::Ed25519VerificationKey2020,
+            public_key_base58: Some("H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV".to_string()),
+            ..PublicKeyAttribute::default()
+        })
+    }
+
+    pub fn public_key_3() -> DidDocAttribute {
+        DidDocAttribute::PublicKey(PublicKeyAttribute {
+            purpose: PublicKeyPurpose::VeriKey,
+            type_: PublicKeyType::EcdsaSecp256k1VerificationKey2020,
+            public_key_hex: Some(
+                "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71".to_string(),
+            ),
+            ..PublicKeyAttribute::default()
+        })
+    }
+
     pub fn validity() -> Validity {
         Validity::from(1000)
     }
 
-    mod build_create_did_transaction {
+    mod build_did_change_owner_transaction {
         use super::*;
 
         #[async_std::test]
@@ -1027,7 +1048,7 @@ pub mod test {
         use super::*;
 
         #[async_std::test]
-        async fn build_did_set_attribute_transaction_test() {
+        async fn build_did_set_service_attribute_transaction_test() {
             init_env_logger();
             let client = mock_client();
             let transaction = build_did_set_attribute_transaction(
@@ -1055,6 +1076,43 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 18, 104, 116, 116, 112, 58, 47, 47, 101, 120, 97, 109, 112, 108, 101, 46,
                     99, 111, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                ],
+                signature: RwLock::new(None),
+                hash: None,
+            };
+            assert_eq!(expected_transaction, transaction);
+        }
+
+        #[async_std::test]
+        async fn build_did_set_key_attribute_transaction_test() {
+            init_env_logger();
+            let client = mock_client();
+            let transaction = build_did_set_attribute_transaction(
+                &client,
+                &IDENTITY_ACC,
+                &did(),
+                &public_key(),
+                &validity(),
+            )
+            .await
+            .unwrap();
+            let expected_transaction = Transaction {
+                type_: TransactionType::Write,
+                from: Some(IDENTITY_ACC.clone()),
+                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                nonce: Some(DEFAULT_NONCE.clone()),
+                chain_id: CHAIN_ID,
+                data: vec![
+                    122, 212, 176, 164, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 5, 148, 0, 220,
+                    208, 81, 88, 255, 216, 202, 9, 41, 55, 152, 157, 210, 123, 59, 220, 100, 105,
+                    100, 47, 112, 117, 98, 47, 88, 50, 53, 53, 49, 57, 47, 101, 110, 99, 47, 98,
+                    97, 115, 101, 53, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 232,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 32, 216, 211, 241, 73, 138, 202, 20, 247, 254, 92, 152, 102, 20,
+                    103, 236, 224, 41, 108, 66, 163, 228, 133, 29, 248, 18, 225, 230, 17, 163, 84,
+                    230, 43,
                 ],
                 signature: RwLock::new(None),
                 hash: None,

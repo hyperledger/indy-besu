@@ -1,54 +1,18 @@
-use crate::{ContractParam, VdrError, VdrResult};
+use crate::{ContractParam, VdrError};
 use serde_derive::{Deserialize, Serialize};
+
+pub const DID_PREFIX: &str = "did";
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct DID(String);
 
 impl DID {
-    pub const DID_PREFIX: &'static str = "did";
-
     pub fn build(method: &str, network: Option<&str>, id: &str) -> DID {
         if let Some(network) = network {
-            DID(format!(
-                "{}:{}:{}:{}",
-                Self::DID_PREFIX,
-                method,
-                network,
-                id
-            ))
+            DID(format!("{}:{}:{}:{}", DID_PREFIX, method, network, id))
         } else {
-            DID(format!("{}:{}:{}", Self::DID_PREFIX, method, id))
+            DID(format!("{}:{}:{}", DID_PREFIX, method, id))
         }
-    }
-
-    pub fn method(&self) -> VdrResult<String> {
-        let (method, _, _) = self.parts()?;
-        Ok(method)
-    }
-
-    pub fn identifier(&self) -> VdrResult<String> {
-        let (_, _, identifier) = self.parts()?;
-        Ok(identifier)
-    }
-
-    fn parts(&self) -> VdrResult<(String, Option<String>, String)> {
-        let parts = self.as_ref().split(':').collect::<Vec<&str>>();
-        match parts.len() {
-            3 => Ok((parts[1].to_string(), None, parts[2].to_string())),
-            4 => Ok((
-                parts[1].to_string(),
-                Some(parts[2].to_string()),
-                parts[3].to_string(),
-            )),
-            _ => Err(VdrError::ContractInvalidInputData),
-        }
-    }
-
-    pub fn short(&self) -> VdrResult<DID> {
-        let (method, _, id) = self.parts()?;
-        Ok(DID::from(
-            format!("{}:{}:{}", Self::DID_PREFIX, method, id).as_str(),
-        ))
     }
 }
 
@@ -75,5 +39,39 @@ impl TryFrom<&DID> for ContractParam {
 
     fn try_from(value: &DID) -> Result<Self, Self::Error> {
         Ok(ContractParam::String(value.to_string()))
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub(crate) struct ParsedDid {
+    pub(crate) method: String,
+    pub(crate) network: Option<String>,
+    pub(crate) identifier: String,
+}
+
+impl ParsedDid {
+    pub(crate) fn as_short_did(&self) -> DID {
+        DID::from(format!("{}:{}:{}", DID_PREFIX, self.method, self.identifier).as_str())
+    }
+}
+
+impl TryFrom<&DID> for ParsedDid {
+    type Error = VdrError;
+
+    fn try_from(did: &DID) -> Result<Self, Self::Error> {
+        let parts = did.as_ref().split(':').collect::<Vec<&str>>();
+        match parts.len() {
+            3 => Ok(ParsedDid {
+                method: parts[1].to_string(),
+                network: None,
+                identifier: parts[2].to_string(),
+            }),
+            4 => Ok(ParsedDid {
+                method: parts[1].to_string(),
+                network: Some(parts[2].to_string()),
+                identifier: parts[3].to_string(),
+            }),
+            _ => Err(VdrError::ContractInvalidInputData),
+        }
     }
 }

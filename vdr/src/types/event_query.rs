@@ -12,11 +12,13 @@ use std::fmt::Debug;
 #[serde(rename_all = "camelCase")]
 pub struct EventQuery {
     pub address: Address,
-    #[serde(rename = "fromBlock", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub from_block: Option<Block>,
-    #[serde(rename = "toBlock", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub to_block: Option<Block>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub event_signature: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub event_filter: Option<String>,
 }
 

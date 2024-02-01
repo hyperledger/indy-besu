@@ -43,7 +43,7 @@ impl DidDelegateChanged {
         format!(
             "DelegateChanged-{:?}-{}",
             self.delegate_type,
-            self.delegate.to_string()
+            self.delegate.as_ref()
         )
     }
 }
@@ -56,6 +56,13 @@ pub struct DidOwnerChanged {
     pub previous_change: Block,
 }
 
+impl DidOwnerChanged {
+    #[allow(unused)]
+    pub(crate) fn key(&self) -> String {
+        format!("DidOwnerChanged-{}", self.owner.as_ref())
+    }
+}
+
 impl TryFrom<ContractEvent> for DidAttributeChanged {
     type Error = VdrError;
 
@@ -66,7 +73,7 @@ impl TryFrom<ContractEvent> for DidAttributeChanged {
         let valid_to = log.get_uint(3)?;
         let previous_change = Block::from(log.get_uint(4)?);
 
-        let name = parse_bytes32_string(name.as_slice()).unwrap().to_string();
+        let name = parse_bytes32_string(name.as_slice())?.to_string();
 
         Ok(DidAttributeChanged {
             identity,

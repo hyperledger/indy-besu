@@ -235,7 +235,6 @@ pub mod test {
         "http://127.0.0.1:21004",
     ];
     pub const DEFAULT_NONCE: u64 = 0;
-    pub const TEST_NETWORK: &str = "test";
 
     pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000005555"));

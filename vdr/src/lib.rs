@@ -32,7 +32,7 @@ pub use contracts::{
         types::{
             did::DID,
             did_doc::{
-                DidDocument, DidResolutionAcceptType, DidResolutionOptions, VerificationKeyType,
+                DidDocument, DidResolutionOptions, VerificationKeyType,
             },
             did_doc_attribute::{DelegateType, DidDocAttribute, Validity},
             did_doc_builder::DidDocumentBuilder,

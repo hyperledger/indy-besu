@@ -4,7 +4,7 @@ use log_derive::{logfn, logfn_inputs};
 
 use crate::{VdrError, VdrResult};
 #[cfg(test)]
-pub use common::{init_env_logger, rand_bytes, rand_string};
+pub use common::{init_env_logger, rand_string};
 
 #[logfn(Trace)]
 #[logfn_inputs(Trace)]

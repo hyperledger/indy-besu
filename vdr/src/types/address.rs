@@ -4,6 +4,7 @@ use crate::{
     DID,
 };
 
+use crate::contracts::types::did::ParsedDid;
 use ethereum_types::Address as Address_;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -80,7 +81,7 @@ impl TryFrom<&DID> for Address {
     type Error = VdrError;
 
     fn try_from(did: &DID) -> Result<Self, Self::Error> {
-        let identifier = did.identifier()?;
-        Ok(Address::from(identifier.as_str()))
+        let parsed_did = ParsedDid::try_from(did)?;
+        Ok(Address::from(parsed_did.identifier.as_str()))
     }
 }

@@ -1,5 +1,5 @@
 #[cfg(test)]
-use rand::{distributions::Alphanumeric, Rng, RngCore};
+use rand::{distributions::Alphanumeric, Rng};
 
 #[cfg(test)]
 pub fn rand_string() -> String {
@@ -8,13 +8,6 @@ pub fn rand_string() -> String {
         .take(12)
         .map(char::from)
         .collect()
-}
-
-#[cfg(test)]
-pub fn rand_bytes() -> Vec<u8> {
-    let mut data = [0u8; 16];
-    rand::thread_rng().fill_bytes(&mut data);
-    data.to_vec()
 }
 
 #[cfg(test)]

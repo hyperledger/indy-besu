@@ -4,6 +4,7 @@ use log_derive::{logfn, logfn_inputs};
 use crate::{
     contracts::{
         did::{types::did_doc_attribute::PublicKeyPurpose, DidResolutionError},
+        types::did::ParsedDid,
         DidDocumentWithMeta, DidMetadata, DidResolutionMetadata,
     },
     did_ethr_registry::{
@@ -14,6 +15,7 @@ use crate::{
     DidDocumentBuilder, DidEvents, DidOwnerChanged, DidResolutionOptions, LedgerClient, VdrResult,
     VerificationKeyType, DID,
 };
+use crate::contracts::DID_RESOLUTION_FORMAT;
 
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
@@ -22,9 +24,8 @@ pub(crate) async fn resolve_did(
     did: &DID,
     options: Option<&DidResolutionOptions>,
 ) -> VdrResult<DidDocumentWithMeta> {
-    // TODO: Validate DID
-    // DID without network identifier
-    let did = match did.short() {
+    // Parse DID
+    let parsed_did = match ParsedDid::try_from(did) {
         Ok(did) => did,
         Err(_) => {
             return Ok(DidDocumentWithMeta {
@@ -33,22 +34,57 @@ pub(crate) async fn resolve_did(
                 did_resolution_metadata: DidResolutionMetadata {
                     content_type: None,
                     error: Some(DidResolutionError::InvalidDid),
-                    message: Some(format!("Not a valid did:ethr: {}", did.as_ref())),
+                    message: Some(format!("Not a valid did: {}", did.as_ref())),
                 },
             });
         }
     };
+    if parsed_did.method != ETHR_DID_METHOD {
+        return Ok(DidDocumentWithMeta {
+            did_document: None,
+            did_document_metadata: DidMetadata::default(),
+            did_resolution_metadata: DidResolutionMetadata {
+                content_type: None,
+                error: Some(DidResolutionError::MethodNotSupported),
+                message: Some(format!(
+                    "DID Method is not supported: {}",
+                    parsed_did.method
+                )),
+            },
+        });
+    }
 
-    let content_type = options
-        .map(|options| options.accept.clone())
-        .unwrap_or_default();
+    let did = parsed_did.as_short_did();
 
-    match _resolve_did(client, &did, options).await {
+    let block_tag = options.and_then(|options| options.block_tag.as_ref());
+    let accept = options.and_then(|options| options.accept.as_deref());
+
+    match accept.as_deref() {
+        Some(DID_RESOLUTION_FORMAT) | None => {
+            // ok
+        }
+        Some(accept) => {
+            return Ok(DidDocumentWithMeta {
+                did_document: None,
+                did_document_metadata: DidMetadata::default(),
+                did_resolution_metadata: DidResolutionMetadata {
+                    content_type: None,
+                    error: Some(DidResolutionError::RepresentationNotSupported),
+                    message: Some(format!(
+                        "VDR does not support the requested 'accept' format: {}",
+                        accept
+                    )),
+                },
+            });
+        }
+    }
+
+    match _resolve_did(client, &did, block_tag).await {
         Ok((did_document, did_metadata)) => Ok(DidDocumentWithMeta {
             did_document: Some(did_document),
             did_document_metadata: did_metadata,
             did_resolution_metadata: DidResolutionMetadata {
-                content_type: Some(content_type),
+                content_type: accept.map(String::from),
                 error: None,
                 message: None,
             },
@@ -65,25 +101,13 @@ pub(crate) async fn resolve_did(
     }
 }
 
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
+#[logfn(Trace)]
+#[logfn_inputs(Trace)]
 pub(crate) async fn _resolve_did(
     client: &LedgerClient,
     did: &DID,
-    options: Option<&DidResolutionOptions>,
+    block: Option<&Block>,
 ) -> VdrResult<(DidDocument, DidMetadata)> {
-    // time in seconds for attributes validity check
-    let now = match options.and_then(|options| options.block_tag.as_ref()) {
-        Some(block) => {
-            // request block time if the resolution happens for specific block
-            client.get_block(Some(block)).await?.timestamp
-        }
-        None => {
-            // else current time
-            Utc::now().timestamp() as u64
-        }
-    };
-
     // Build base DID document for ethr DID
     let mut did_doc_builder = DidDocumentBuilder::base_for_did(did, client.chain_id())?;
 
@@ -98,41 +122,56 @@ pub(crate) async fn _resolve_did(
         return Ok((did_document, DidMetadata::default()));
     }
 
-    let block_height: i64 = match options.and_then(|options| options.block_tag.as_ref()) {
-        Some(block_tag) => block_tag.value() as i64,
-        None => -1, // latest
+    let mut version_id: Option<Block> = None;
+    let mut next_version_id: Option<Block> = None;
+
+    // time in seconds for attributes validity check
+    let now = match block {
+        Some(block) => {
+            // request block time if the resolution happens for specific block
+            client.get_block(Some(block)).await?.timestamp
+        }
+        None => {
+            // else current time
+            Utc::now().timestamp() as u64
+        }
     };
-    let mut version_id = 0;
-    let mut next_version_id = u64::MAX;
 
     // request events for a specific block until previous exists
     let did_history = receive_did_history(client, did, did_changed_block).await?;
 
     // assemble Did Document from the history events
     //  iterate in the reverse order -> oldest to newest
-    for (event_block, event) in did_history.iter().rev() {
-        if block_height != -1 && event_block.value() as i64 > block_height {
-            if next_version_id > event_block.value() {
-                next_version_id = event_block.value()
+    for (event_block, event) in did_history.into_iter().rev() {
+        match block {
+            // if we resolve DID for specific block we need to skip all blocks higher
+            Some(block) if event_block.value() > block.value() => {
+                if next_version_id.is_none() {
+                    next_version_id = Some(event_block)
+                }
+                continue;
             }
-        } else {
-            version_id = event_block.value();
+            _ => {
+                version_id = Some(event_block);
+            }
         }
 
-        handle_did_event(&mut did_doc_builder, event, client, now)?;
+        // handle event
+        handle_did_event(&mut did_doc_builder, &event, client, now)?;
 
-        if did_doc_builder.deactivated {
+        // break for deactivate DID -> minimal DID Document will be returned
+        if did_doc_builder.deactivated() {
             break;
         }
     }
 
     let did_document_metadata = build_did_metadata(
         client,
-        did_doc_builder.deactivated,
-        version_id,
-        next_version_id,
+        did_doc_builder.deactivated(),
+        version_id.as_ref(),
+        next_version_id.as_ref(),
     )
-    .await?;
+        .await?;
     let did_document = did_doc_builder.build();
     Ok((did_document, did_document_metadata))
 }
@@ -161,7 +200,7 @@ async fn receive_did_history(
             previous_block.as_ref(),
             previous_block.as_ref(),
         )
-        .await?;
+            .await?;
         let logs = client.query_events(&transaction).await?;
 
         // if no logs, break the loop as nothing to add to the change history
@@ -187,7 +226,7 @@ fn handle_did_owner_changed(
 ) -> VdrResult<()> {
     if event.owner.is_null() {
         // DID is considered to be deactivated
-        did_doc_builder.deactivated();
+        did_doc_builder.deactivate();
         return Ok(());
     }
 
@@ -206,16 +245,11 @@ fn handle_did_delegate_changed(
 ) -> VdrResult<()> {
     let event_index = event.key();
     let delegate_type = DelegateType::try_from(event.delegate_type.as_slice())?;
-    let controller = did_doc_builder.id.clone();
-
-    did_doc_builder.increment_key_index();
 
     if event.valid_to > now {
-        did_doc_builder.add_verification_method(
+        did_doc_builder.add_delegate_key(
             &event_index,
-            None,
             &VerificationKeyType::EcdsaSecp256k1RecoveryMethod2020,
-            &controller,
             Some(event.delegate.as_blockchain_id(client.chain_id()).as_str()),
             None,
             None,
@@ -233,13 +267,13 @@ fn handle_did_delegate_changed(
         }
     } else {
         // delegate expired
-        did_doc_builder.remove_verification_method(&event_index);
+        did_doc_builder.remove_delegate_key(&event_index)?;
         match delegate_type {
             DelegateType::VeriKey => {
-                did_doc_builder.remove_assertion_method_reference(&event_index);
+                did_doc_builder.remove_assertion_method_reference(&event_index)?;
             }
             DelegateType::SigAuth => {
-                did_doc_builder.remove_authentication_reference(&event_index);
+                did_doc_builder.remove_authentication_reference(&event_index)?;
             }
         }
     };
@@ -254,18 +288,14 @@ fn handle_did_attribute_changed(
     now: u64,
 ) -> VdrResult<()> {
     let event_index = event.key();
+    let attribute = DidDocAttribute::try_from(event)?;
 
-    match DidDocAttribute::try_from(event)? {
+    match attribute {
         DidDocAttribute::PublicKey(key) => {
-            did_doc_builder.increment_key_index();
-            let controller = did_doc_builder.id.clone();
-
             if event.valid_to > now {
-                did_doc_builder.add_verification_method(
+                did_doc_builder.add_delegate_key(
                     &event_index,
-                    None,
                     &key.type_.into(),
-                    &controller,
                     None,
                     None,
                     key.public_key_hex.as_deref(),
@@ -286,23 +316,21 @@ fn handle_did_attribute_changed(
                 }
             } else {
                 // key expired
-                did_doc_builder.remove_verification_method(&event_index);
+                did_doc_builder.remove_delegate_key(&event_index)?;
                 match key.purpose {
                     PublicKeyPurpose::VeriKey => {
-                        did_doc_builder.remove_assertion_method_reference(&event_index);
+                        did_doc_builder.remove_assertion_method_reference(&event_index)?;
                     }
                     PublicKeyPurpose::SigAuth => {
-                        did_doc_builder.remove_authentication_reference(&event_index);
+                        did_doc_builder.remove_authentication_reference(&event_index)?;
                     }
                     PublicKeyPurpose::Enc => {
-                        did_doc_builder.remove_key_agreement_reference(&event_index);
+                        did_doc_builder.remove_key_agreement_reference(&event_index)?;
                     }
                 }
             }
         }
         DidDocAttribute::Service(service) => {
-            did_doc_builder.increment_service_index();
-
             if event.valid_to > now {
                 did_doc_builder.add_service(
                     &event_index,
@@ -311,7 +339,7 @@ fn handle_did_attribute_changed(
                     &service.service_endpoint,
                 );
             } else {
-                did_doc_builder.remove_service(&event_index);
+                did_doc_builder.remove_service(&event_index)?;
             }
         }
     };
@@ -342,27 +370,30 @@ fn handle_did_event(
 async fn build_did_metadata(
     client: &LedgerClient,
     deactivated: bool,
-    version_id: u64,
-    next_version_id: u64,
+    version_id: Option<&Block>,
+    next_version_id: Option<&Block>,
 ) -> VdrResult<DidMetadata> {
-    let mut did_document_metadata = DidMetadata {
-        deactivated: Some(deactivated),
-        ..DidMetadata::default()
+    let (updated, version_id) = match version_id {
+        Some(version_id) => {
+            let block = client.get_block(Some(version_id)).await?;
+            (Some(block.timestamp), Some(block.number))
+        }
+        None => (None, None),
     };
 
-    if version_id != 0 {
-        let block = client.get_block(Some(&Block::from(version_id))).await?;
-        did_document_metadata.updated = Some(block.timestamp);
-        did_document_metadata.version_id = Some(block.number);
-    }
+    let (next_update, next_version_id) = match next_version_id {
+        Some(next_version_id) => {
+            let block = client.get_block(Some(next_version_id)).await?;
+            (Some(block.timestamp), Some(block.number))
+        }
+        None => (None, None),
+    };
 
-    if next_version_id != u64::MAX {
-        let block = client
-            .get_block(Some(&Block::from(next_version_id)))
-            .await?;
-        did_document_metadata.next_update = Some(block.timestamp);
-        did_document_metadata.next_version_id = Some(block.number);
-    }
-
-    Ok(did_document_metadata)
+    Ok(DidMetadata {
+        deactivated: Some(deactivated),
+        updated,
+        version_id,
+        next_update,
+        next_version_id,
+    })
 }
