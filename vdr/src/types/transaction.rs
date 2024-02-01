@@ -489,3 +489,9 @@ impl TryFrom<&Nonce> for ContractParam {
         UintBytesParam::from(value.0).try_into()
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct BlockDetails {
+    pub number: u64,
+    pub timestamp: u64,
+}

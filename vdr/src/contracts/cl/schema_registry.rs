@@ -225,7 +225,7 @@ pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<S
         build_get_schema_query(client, id, Some(&created_block), Some(&created_block)).await?;
     let events = client.query_events(&schema_query).await?;
 
-    if events.len() == 0 {
+    if events.is_empty() {
         return Err(VdrError::ClientInvalidResponse(format!(
             "Schema not found for id: {:?}",
             id

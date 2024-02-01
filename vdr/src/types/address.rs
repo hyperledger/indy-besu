@@ -4,11 +4,13 @@ use crate::{
     DID,
 };
 
+use crate::contracts::types::did::ParsedDid;
 use ethereum_types::Address as Address_;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 const PREFIX: &str = "0x";
+const NULL_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Address(String);
@@ -20,6 +22,14 @@ impl Address {
 
     pub fn as_blockchain_id(&self, chain_id: u64) -> String {
         format!("eip155:{}:{}", chain_id, self.as_ref())
+    }
+
+    pub fn null() -> Address {
+        Address::from(NULL_ADDRESS)
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.as_ref() == NULL_ADDRESS
     }
 }
 
@@ -71,7 +81,7 @@ impl TryFrom<&DID> for Address {
     type Error = VdrError;
 
     fn try_from(did: &DID) -> Result<Self, Self::Error> {
-        let identifier = did.identifier()?;
-        Ok(Address::from(identifier.as_str()))
+        let parsed_did = ParsedDid::try_from(did)?;
+        Ok(Address::from(parsed_did.identifier.as_str()))
     }
 }

@@ -37,6 +37,7 @@ impl From<EventQuery_> for EventQuery {
 pub struct EventLog {
     pub topics: Vec<Vec<u8>>,
     pub data: Vec<u8>,
+    pub block: u64,
 }
 
 impl From<EventLog_> for EventLog {
@@ -48,12 +49,13 @@ impl From<EventLog_> for EventLog {
                 .map(|topic| topic.0.to_vec())
                 .collect(),
             data: log.data,
+            block: log.block.value(),
         }
     }
 }
 
 impl Into<EventLog_> for EventLog {
     fn into(self) -> EventLog_ {
-        EventLog_::new(self.topics, self.data)
+        EventLog_::new(self.topics, self.data, self.block)
     }
 }

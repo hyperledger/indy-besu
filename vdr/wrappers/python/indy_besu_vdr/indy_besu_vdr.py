@@ -2314,15 +2314,19 @@ class _UniffiConverterTypeDidOwnerChanged(_UniffiConverterRustBuffer):
 
 class DidResolutionOptions:
     accept: "str"
+    block_tag: "typing.Optional[int]"
     @typing.no_type_check
-    def __init__(self, accept: "str"):
+    def __init__(self, accept: "str", block_tag: "typing.Optional[int]"):
         self.accept = accept
+        self.block_tag = block_tag
 
     def __str__(self):
-        return "DidResolutionOptions(accept={})".format(self.accept)
+        return "DidResolutionOptions(accept={}, block_tag={})".format(self.accept, self.block_tag)
 
     def __eq__(self, other):
         if self.accept != other.accept:
+            return False
+        if self.block_tag != other.block_tag:
             return False
         return True
 
@@ -2331,32 +2335,39 @@ class _UniffiConverterTypeDidResolutionOptions(_UniffiConverterRustBuffer):
     def read(buf):
         return DidResolutionOptions(
             accept=_UniffiConverterString.read(buf),
+            block_tag=_UniffiConverterOptionalUInt64.read(buf),
         )
 
     @staticmethod
     def check_lower(value):
         _UniffiConverterString.check_lower(value.accept)
+        _UniffiConverterOptionalUInt64.check_lower(value.block_tag)
 
     @staticmethod
     def write(value, buf):
         _UniffiConverterString.write(value.accept, buf)
+        _UniffiConverterOptionalUInt64.write(value.block_tag, buf)
 
 
 class EventLog:
     topics: "typing.List[bytes]"
     data: "bytes"
+    block: "int"
     @typing.no_type_check
-    def __init__(self, topics: "typing.List[bytes]", data: "bytes"):
+    def __init__(self, topics: "typing.List[bytes]", data: "bytes", block: "int"):
         self.topics = topics
         self.data = data
+        self.block = block
 
     def __str__(self):
-        return "EventLog(topics={}, data={})".format(self.topics, self.data)
+        return "EventLog(topics={}, data={}, block={})".format(self.topics, self.data, self.block)
 
     def __eq__(self, other):
         if self.topics != other.topics:
             return False
         if self.data != other.data:
+            return False
+        if self.block != other.block:
             return False
         return True
 
@@ -2366,17 +2377,20 @@ class _UniffiConverterTypeEventLog(_UniffiConverterRustBuffer):
         return EventLog(
             topics=_UniffiConverterSequenceBytes.read(buf),
             data=_UniffiConverterBytes.read(buf),
+            block=_UniffiConverterUInt64.read(buf),
         )
 
     @staticmethod
     def check_lower(value):
         _UniffiConverterSequenceBytes.check_lower(value.topics)
         _UniffiConverterBytes.check_lower(value.data)
+        _UniffiConverterUInt64.check_lower(value.block)
 
     @staticmethod
     def write(value, buf):
         _UniffiConverterSequenceBytes.write(value.topics, buf)
         _UniffiConverterBytes.write(value.data, buf)
+        _UniffiConverterUInt64.write(value.block, buf)
 
 
 class PingStatus:
@@ -2679,18 +2693,25 @@ class Status:
 
     # Each enum variant is a nested class of the enum itself.
     class OK:
+        block_number: "int"
+        block_timestamp: "int"
 
         @typing.no_type_check
-        def __init__(self,):
+        def __init__(self,block_number: "int", block_timestamp: "int"):
             
-            pass
+            self.block_number = block_number
+            self.block_timestamp = block_timestamp
             
 
         def __str__(self):
-            return "Status.OK()".format()
+            return "Status.OK(block_number={}, block_timestamp={})".format(self.block_number, self.block_timestamp)
 
         def __eq__(self, other):
             if not other.is_ok():
+                return False
+            if self.block_number != other.block_number:
+                return False
+            if self.block_timestamp != other.block_timestamp:
                 return False
             return True
     class ERR:
@@ -2736,6 +2757,8 @@ class _UniffiConverterTypeStatus(_UniffiConverterRustBuffer):
         variant = buf.read_i32()
         if variant == 1:
             return Status.OK(
+                _UniffiConverterUInt64.read(buf),
+                _UniffiConverterUInt64.read(buf),
             )
         if variant == 2:
             return Status.ERR(
@@ -2746,6 +2769,8 @@ class _UniffiConverterTypeStatus(_UniffiConverterRustBuffer):
     @staticmethod
     def check_lower(value):
         if value.is_ok():
+            _UniffiConverterUInt64.check_lower(value.block_number)
+            _UniffiConverterUInt64.check_lower(value.block_timestamp)
             return
         if value.is_err():
             _UniffiConverterString.check_lower(value.msg)
@@ -2755,6 +2780,8 @@ class _UniffiConverterTypeStatus(_UniffiConverterRustBuffer):
     def write(value, buf):
         if value.is_ok():
             buf.write_i32(1)
+            _UniffiConverterUInt64.write(value.block_number, buf)
+            _UniffiConverterUInt64.write(value.block_timestamp, buf)
         if value.is_err():
             buf.write_i32(2)
             _UniffiConverterString.write(value.msg, buf)

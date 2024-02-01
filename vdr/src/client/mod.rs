@@ -3,11 +3,7 @@ pub mod constants;
 pub mod implementation;
 pub mod quorum;
 
-use crate::{
-    error::VdrResult,
-    types::{Address, PingStatus},
-    Transaction,
-};
+use crate::{error::VdrResult, types::Address, BlockDetails, Transaction};
 use async_trait::async_trait;
 use ethabi::{Event, Function};
 use std::fmt::Debug;
@@ -71,11 +67,11 @@ pub trait Client: Sync + Send + Debug {
     /// receipt as JSON string for the requested block
     async fn get_receipt(&self, hash: &[u8]) -> VdrResult<String>;
 
-    /// Check client connection (passed node is alive and return valid ledger data)
+    /// Get details for the given block
     ///
     /// # Returns
-    /// ledger status
-    async fn ping(&self) -> VdrResult<PingStatus>;
+    ///  Block details
+    async fn get_block(&self, block: Option<u64>) -> VdrResult<BlockDetails>;
 
     /// Get the transaction for the given transaction hash
     ///

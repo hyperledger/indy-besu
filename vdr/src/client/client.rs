@@ -13,10 +13,10 @@ use crate::{
     },
     error::{VdrError, VdrResult},
     types::{
-        ContractConfig, ContractSpec, EventLog, EventQuery, PingStatus, Transaction,
+        Block, ContractConfig, ContractSpec, EventLog, EventQuery, PingStatus, Transaction,
         TransactionType,
     },
-    Address, QuorumConfig,
+    Address, BlockDetails, QuorumConfig,
 };
 
 pub struct LedgerClient {
@@ -70,7 +70,10 @@ impl LedgerClient {
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub async fn ping(&self) -> VdrResult<PingStatus> {
-        self.client.ping().await
+        match self.client.get_block(None).await {
+            Ok(block) => Ok(PingStatus::ok(block.number, block.timestamp)),
+            Err(err) => Ok(PingStatus::err(err.to_string().as_str())),
+        }
     }
 
     /// Submit prepared transaction to the ledger
@@ -191,6 +194,14 @@ impl LedgerClient {
 
         Ok(contracts)
     }
+
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
+    pub(crate) async fn get_block(&self, block: Option<&Block>) -> VdrResult<BlockDetails> {
+        self.client
+            .get_block(block.map(|block| block.value()))
+            .await
+    }
 }
 
 impl Debug for LedgerClient {
@@ -224,7 +235,6 @@ pub mod test {
         "http://127.0.0.1:21004",
     ];
     pub const DEFAULT_NONCE: u64 = 0;
-    pub const TEST_NETWORK: &str = "test";
 
     pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000005555"));
@@ -322,7 +332,7 @@ pub mod test {
             todo!()
         }
 
-        async fn ping(&self) -> VdrResult<PingStatus> {
+        async fn get_block(&self, _block: Option<u64>) -> VdrResult<BlockDetails> {
             todo!()
         }
 
@@ -360,7 +370,10 @@ pub mod test {
         #[async_std::test]
         async fn client_ping_test() {
             let client = client();
-            assert_eq!(PingStatus::ok(), client.ping().await.unwrap())
+            match client.ping().await.unwrap().status {
+                Status::Ok { .. } => {}
+                Status::Err { .. } => assert!(false, "Ping status expected to be `Ok`."),
+            }
         }
 
         #[async_std::test]
@@ -375,7 +388,7 @@ pub mod test {
             .unwrap();
             match client.ping().await.unwrap().status {
                 Status::Err { .. } => {}
-                Status::Ok => assert!(false, "Ping status expected to be `Err`."),
+                Status::Ok { .. } => assert!(false, "Ping status expected to be `Err`."),
             }
         }
     }

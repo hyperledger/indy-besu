@@ -4,7 +4,7 @@ use crate::{
         ServiceEndpoint,
     },
     types::ContractParam,
-    utils::format_bytes32_string,
+    utils::{format_bytes32_string, parse_bytes32_string},
     VdrError, VdrResult, VerificationKeyType,
 };
 use base64::Engine;
@@ -150,6 +150,15 @@ impl TryFrom<&DelegateType> for ContractParam {
     fn try_from(value: &DelegateType) -> Result<Self, Self::Error> {
         let name = format_bytes32_string(value.as_ref())?.to_vec();
         Ok(ContractParam::FixedBytes(name))
+    }
+}
+
+impl TryFrom<&[u8]> for DelegateType {
+    type Error = VdrError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let str = parse_bytes32_string(value)?;
+        Self::try_from(str)
     }
 }
 

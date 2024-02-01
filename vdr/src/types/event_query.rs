@@ -12,11 +12,13 @@ use std::fmt::Debug;
 #[serde(rename_all = "camelCase")]
 pub struct EventQuery {
     pub address: Address,
-    #[serde(rename = "fromBlock", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub from_block: Option<Block>,
-    #[serde(rename = "toBlock", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub to_block: Option<Block>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub event_signature: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub event_filter: Option<String>,
 }
 
@@ -155,18 +157,20 @@ impl EventParser {
 pub struct EventLog {
     pub topics: Vec<Hash>,
     pub data: Vec<u8>,
+    pub block: Block,
 }
 
 impl EventLog {
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
-    pub fn new(topics: Vec<Vec<u8>>, data: Vec<u8>) -> EventLog {
+    pub fn new(topics: Vec<Vec<u8>>, data: Vec<u8>, block: u64) -> EventLog {
         EventLog {
             topics: topics
                 .iter()
                 .map(|topic| ethereum_types::H256::from_slice(topic))
                 .collect(),
             data,
+            block: Block::from(block),
         }
     }
 }

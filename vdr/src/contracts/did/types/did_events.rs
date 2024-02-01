@@ -22,6 +22,12 @@ pub struct DidAttributeChanged {
     pub previous_change: Block,
 }
 
+impl DidAttributeChanged {
+    pub(crate) fn key(&self) -> String {
+        format!("DidDocAttribute-{}-{:?}", self.name, self.value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDelegateChanged {
@@ -32,12 +38,29 @@ pub struct DidDelegateChanged {
     pub previous_change: Block,
 }
 
+impl DidDelegateChanged {
+    pub(crate) fn key(&self) -> String {
+        format!(
+            "DelegateChanged-{:?}-{}",
+            self.delegate_type,
+            self.delegate.as_ref()
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidOwnerChanged {
     pub identity: Address,
     pub owner: Address,
     pub previous_change: Block,
+}
+
+impl DidOwnerChanged {
+    #[allow(unused)]
+    pub(crate) fn key(&self) -> String {
+        format!("DidOwnerChanged-{}", self.owner.as_ref())
+    }
 }
 
 impl TryFrom<ContractEvent> for DidAttributeChanged {
@@ -50,7 +73,7 @@ impl TryFrom<ContractEvent> for DidAttributeChanged {
         let valid_to = log.get_uint(3)?;
         let previous_change = Block::from(log.get_uint(4)?);
 
-        let name = parse_bytes32_string(name.as_slice()).unwrap().to_string();
+        let name = parse_bytes32_string(name.as_slice())?.to_string();
 
         Ok(DidAttributeChanged {
             identity,
