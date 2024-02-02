@@ -17,16 +17,9 @@ x-besu-def:
       /opt/besu/bin/besu \
       --config-file=/config/config.toml \
       --p2p-host=$$(hostname -i) \
+      --revert-reason-enabled=true \
       --rpc-http-api=EEA,WEB3,ETH,NET,TRACE,DEBUG,ADMIN,TXPOOL,PERM,${BESU_CONS_ALGO:-QBFT} \
       --rpc-ws-api=EEA,WEB3,ETH,NET,TRACE,DEBUG,ADMIN,TXPOOL,PERM,${BESU_CONS_ALGO:-QBFT} ;
-
-
-
-
-
-
-
-
 
 x-ethsignerProxy-def:
   &ethsignerProxy-def
@@ -176,16 +169,6 @@ services:
       quorum-dev-quickstart:
         ipv4_address: 172.16.239.40
 
-
-
-
-
-
-
-
-
-
-
   prometheus:
     image: "prom/prometheus"
     volumes:
@@ -233,11 +216,6 @@ services:
     networks:
       quorum-dev-quickstart:
         ipv4_address: 172.16.239.35
-
-
-
-
-
 
 volumes:
   public-keys:

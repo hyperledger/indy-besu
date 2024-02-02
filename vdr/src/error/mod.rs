@@ -68,6 +68,7 @@ impl From<Web3Error> for VdrError {
             Web3Error::Unreachable => VdrError::ClientNodeUnreachable,
             Web3Error::InvalidResponse(err) => VdrError::ClientInvalidResponse(err),
             Web3Error::Rpc(err) => VdrError::ClientTransactionReverted(json!(err).to_string()),
+            Web3Error::Revert(err) => VdrError::ClientTransactionReverted(err),
             _ => VdrError::ClientUnexpectedError(value.to_string()),
         };
 
