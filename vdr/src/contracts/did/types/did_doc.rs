@@ -9,7 +9,6 @@ pub const SECPK_CONTEXT: &str = "https://w3id.org/security/suites/secp256k1recov
 pub const KEYS_CONTEXT: &str = "https://w3id.org/security/v3-unstable";
 pub const DID_RESOLUTION_FORMAT: &str = "application/did+ld+json";
 
-
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocumentWithMeta {
