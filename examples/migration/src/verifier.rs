@@ -1,27 +1,21 @@
-use crate::{
-    ledger::{BesuLedger, IndyLedger, Ledgers},
-    wallet::BesuWallet,
-};
-use indy2_vdr::{
-    migration::{IndyCredentialDefinitionFormat, IndySchemaFormat},
-    CredentialDefinitionId, SchemaId,
+use crate::ledger::{BesuLedger, IndyLedger, Ledgers};
+use indy_credx::types::{
+    CredentialDefinition, CredentialDefinitionId, Presentation, PresentationRequest, Schema,
+    SchemaId,
 };
 use serde_json::json;
-use vdrtoolsrs::future::Future;
+use std::collections::HashMap;
 
 pub struct Verifier {
-    indy_ledger: IndyLedger,
-    besu_ledger: BesuLedger,
-    used_ledger: Ledgers,
+    pub indy_ledger: IndyLedger,
+    pub besu_ledger: BesuLedger,
+    pub used_ledger: Ledgers,
 }
 
 impl Verifier {
-    const NAME: &'static str = "verifier";
-
     pub async fn setup() -> Verifier {
-        let indy_ledger = IndyLedger::new(Self::NAME);
-        let besu_wallet = BesuWallet::new(None);
-        let besu_ledger = BesuLedger::new(besu_wallet).await;
+        let indy_ledger = IndyLedger::new();
+        let besu_ledger = BesuLedger::new().await;
         Verifier {
             indy_ledger,
             besu_ledger,
@@ -29,60 +23,61 @@ impl Verifier {
         }
     }
 
-    pub fn request() -> String {
-        json!({
+    async fn get_schema(&self, schema_id: &str) -> Schema {
+        match self.used_ledger {
+            Ledgers::Indy => self.indy_ledger.get_schema(schema_id).await,
+            Ledgers::Besu => self.besu_ledger.get_schema(schema_id).await,
+        }
+    }
+
+    async fn get_cred_def(&self, cred_def_id: &str) -> CredentialDefinition {
+        match self.used_ledger {
+            Ledgers::Indy => self.indy_ledger.get_cred_def(cred_def_id).await,
+            Ledgers::Besu => self.besu_ledger.get_cred_def(cred_def_id).await,
+        }
+    }
+
+    pub fn request() -> PresentationRequest {
+        serde_json::from_value(json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
            "version":"0.1",
            "requested_attributes": {
                 "attr1_referent": {
-                    "name": "first_name"
+                    "name": "name"
                 }
            },
            "requested_predicates": {}
-        })
-        .to_string()
+        }))
+        .unwrap()
     }
 
-    pub async fn verify_proof(&self, proof_request: &str, proof: &str) -> bool {
-        let parsed_proof = serde_json::from_str::<serde_json::Value>(proof).unwrap();
-        let identifier = parsed_proof["identifiers"][0].as_object().unwrap();
-        let schema_id = identifier["schema_id"].as_str().unwrap();
-        let cred_def_id = identifier["cred_def_id"].as_str().unwrap();
+    pub async fn verify_proof(
+        &self,
+        proof_request: &PresentationRequest,
+        proof: &Presentation,
+    ) -> bool {
+        let identifier = proof.identifiers[0].clone();
+        let schema_id = identifier.schema_id;
+        let cred_def_id = identifier.cred_def_id;
 
-        let (schema, cred_def) = match self.used_ledger {
-            Ledgers::Indy => {
-                let (_, schema) = self.indy_ledger.get_schema(&schema_id);
-                let (_, cred_def) = self.indy_ledger.get_cred_def(&cred_def_id);
-                (schema, cred_def)
-            }
-            Ledgers::Besu => {
-                let schema_id = SchemaId::from_indy_format(schema_id).unwrap();
-                let cred_def_id = CredentialDefinitionId::from_indy_format(cred_def_id).unwrap();
-                let schema = self.besu_ledger.get_schema(&schema_id).await;
-                let cred_def = self.besu_ledger.get_cred_def(&cred_def_id).await;
-                let schema: IndySchemaFormat = schema.into();
-                let cred_def: IndyCredentialDefinitionFormat = cred_def.into();
-                (json!(schema).to_string(), json!(cred_def).to_string())
-            }
-        };
+        let schema = self.get_schema(&schema_id).await;
+        let cred_def = self.get_cred_def(&cred_def_id).await;
 
-        let schemas_json =
-            json!({schema_id: serde_json::from_str::<serde_json::Value>(&schema).unwrap()})
-                .to_string();
-        let cred_defs_json =
-            json!({cred_def_id: serde_json::from_str::<serde_json::Value>(&cred_def).unwrap()})
-                .to_string();
+        let mut schemas: HashMap<SchemaId, &Schema> = HashMap::new();
+        schemas.insert(schema_id, &schema);
 
-        vdrtoolsrs::anoncreds::verifier_verify_proof(
-            &proof_request,
+        let mut cred_defs: HashMap<CredentialDefinitionId, &CredentialDefinition> = HashMap::new();
+        cred_defs.insert(cred_def_id, &cred_def);
+
+        indy_credx::verifier::verify_presentation(
             proof,
-            &schemas_json,
-            &cred_defs_json,
-            "{}",
-            "{}",
+            proof_request,
+            &schemas,
+            &cred_defs,
+            None,
+            None,
         )
-        .wait()
         .unwrap()
     }
 

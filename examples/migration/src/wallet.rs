@@ -1,29 +1,28 @@
-use indy2_vdr::{Address, BasicSigner};
-use serde_json::json;
-use vdrtoolsrs::{future::Future, WalletHandle};
+use aries_askar::kms::{KeyAlg, LocalKey};
+use indy_besu_vdr::{Address, BasicSigner};
 
 pub struct IndyWallet {
-    pub handle: WalletHandle,
+    pub did: String,
+    pub edkey: String,
+    key: LocalKey,
 }
 
 impl IndyWallet {
-    pub const KEY: &'static str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY";
-    pub const KEY_DERIVATION: &'static str = "RAW";
+    pub async fn new(seed: Option<&str>) -> IndyWallet {
+        let key = match seed {
+            Some(seed) => LocalKey::from_secret_bytes(KeyAlg::Ed25519, seed.as_bytes()).unwrap(),
+            None => LocalKey::generate(KeyAlg::Ed25519, false).unwrap(),
+        };
 
-    pub fn new(name: &str) -> IndyWallet {
-        let config = json!({ "id": format!("{}_wallet", name) }).to_string();
-        let credentials = json!({
-            "key": Self::KEY,
-            "key_derivation_method": Self::KEY_DERIVATION
-        })
-        .to_string();
-        vdrtoolsrs::wallet::create_wallet(&config, &credentials)
-            .wait()
-            .ok();
-        let handle = vdrtoolsrs::wallet::open_wallet(&config, &credentials)
-            .wait()
-            .unwrap();
-        IndyWallet { handle }
+        let verkey_bytes = key.to_public_bytes().unwrap();
+        let did = bs58::encode(&verkey_bytes[0..16]).into_string();
+        let edkey = bs58::encode(verkey_bytes.as_ref()).into_string();
+
+        IndyWallet { did, edkey, key }
+    }
+
+    pub async fn sign(&self, bytes: &[u8]) -> Vec<u8> {
+        self.key.sign_message(bytes, None).unwrap()
     }
 }
 
