@@ -218,6 +218,22 @@ pub mod test {
     use once_cell::sync::Lazy;
     use std::{env, fs};
 
+    pub const CONTRACT_NAME_EXAMPLE: &str = "ValidatorControl";
+    pub const CONTRACT_METHOD_EXAMPLE: &str = "addValidator";
+    pub const VALIDATOR_LIST_BYTES: Lazy<Vec<u8>> = Lazy::new(|| {
+        vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 147, 145, 124, 173, 186, 206, 93,
+            252, 225, 50, 185, 145, 115, 44, 108, 218, 155, 204, 91, 138, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 39, 169, 124, 154, 175, 4, 241, 143, 48, 20, 195, 46, 3, 109, 208, 172,
+            118, 218, 95, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 206, 65, 47, 152, 131, 119, 227,
+            31, 77, 15, 241, 45, 116, 223, 115, 181, 28, 66, 208, 202, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 152, 193, 51, 68, 150, 97, 74, 237, 73, 210, 232, 21, 38, 208, 137, 247, 38,
+            79, 237, 156,
+        ]
+    });
+
     pub const CHAIN_ID: u64 = 1337;
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
     pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
@@ -302,63 +318,266 @@ pub mod test {
         LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contracts(), None).unwrap()
     }
 
-    pub struct MockClient {}
-
-    impl Debug for MockClient {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            write!(f, r#"MockClient {{ }}"#)
-        }
-    }
-
-    #[async_trait]
-    impl Client for MockClient {
-        async fn get_transaction_count(&self, _address: &Address) -> VdrResult<u64> {
-            Ok(0)
-        }
-
-        async fn submit_transaction(&self, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
-            todo!()
-        }
-
-        async fn call_transaction(&self, _to: &str, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
-            todo!()
-        }
-
-        async fn query_events(&self, _query: &EventQuery) -> VdrResult<Vec<EventLog>> {
-            todo!()
-        }
-
-        async fn get_receipt(&self, _hash: &[u8]) -> VdrResult<String> {
-            todo!()
-        }
-
-        async fn get_block(&self, _block: Option<u64>) -> VdrResult<BlockDetails> {
-            todo!()
-        }
-
-        async fn get_transaction(&self, _hash: &[u8]) -> VdrResult<Option<Transaction>> {
-            todo!()
-        }
-    }
-
     pub fn mock_client() -> LedgerClient {
-        let mut client = LedgerClient::new(
+        let mut ledger_client = LedgerClient::new(
             CHAIN_ID,
             RPC_NODE_ADDRESS,
             &contracts(),
             Some(&QuorumConfig::default()),
         )
-        .unwrap();
-        client.client = Box::new(MockClient {});
+            .unwrap();
+
+        let mut client = MockClient::new();
+        client.expect_ping().returning(|| Ok(PingStatus::ok()));
         client
+            .expect_get_transaction_count()
+            .returning(|_| Ok(0));
+
+        ledger_client.client = Box::new(client);
+        ledger_client
+    }
+
+    pub fn write_transaction() -> Transaction {
+        let transaction = Transaction {
+            type_: TransactionType::Write,
+            from: Some(TRUSTEE_ACC.clone()),
+            to: VALIDATOR_CONTROL_ADDRESS.clone(),
+            nonce: Some(DEFAULT_NONCE.clone()),
+            chain_id: CHAIN_ID,
+            data: vec![],
+            signature: RwLock::new(None),
+            hash: None,
+        };
+        let signer = basic_signer();
+        let sign_bytes = transaction.get_signing_bytes().unwrap();
+        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
+        transaction.set_signature(signature);
+
+        transaction
+    }
+
+    pub fn read_transaction() -> Transaction {
+        Transaction {
+            type_: TransactionType::Read,
+            from: None,
+            to: VALIDATOR_CONTROL_ADDRESS.clone(),
+            nonce: None,
+            chain_id: CHAIN_ID,
+            data: vec![],
+            signature: RwLock::new(None),
+            hash: None,
+        }
+    }
+
+    pub fn mock_custom_client(client: Box<dyn Client>) -> LedgerClient {
+        let mut ledger_client = LedgerClient::new(
+            CHAIN_ID,
+            RPC_NODE_ADDRESS,
+            &contracts(),
+            Some(&QuorumConfig::default()),
+        )
+            .unwrap();
+
+        ledger_client.client = client;
+        ledger_client
     }
 
     mod create {
+        use mockall::predicate::eq;
+
         use super::*;
 
         #[test]
         fn create_client_test() {
             client();
+        }
+
+        #[test]
+        fn create_client_invalid_contract_data() {
+            let contract_config = vec![ContractConfig {
+                address: DID_REGISTRY_ADDRESS.to_string(),
+                spec_path: None,
+                spec: Some(ContractSpec {
+                    name: "IndyDidRegistry".to_string(),
+                    abi: Value::String("".to_string()),
+                }),
+            }];
+
+            let client_err = LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contract_config, None)
+                .err()
+                .unwrap();
+
+            assert!(matches!(
+                client_err,  | VdrError::ContractInvalidInputData { .. }
+            ));
+        }
+
+        #[test]
+        fn create_client_invalid_node_address() {
+            let client_err = LedgerClient::new(CHAIN_ID, "..", &contracts(), None)
+                .err()
+                .unwrap();
+
+            assert!(matches!(
+                client_err,  | VdrError::ClientNodeUnreachable { .. }
+            ));
+        }
+
+        #[test]
+        fn create_client_contract_path_and_spec_provided() {
+            let contract_config = vec![ContractConfig {
+                address: DID_REGISTRY_ADDRESS.to_string(),
+                spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
+                spec: Some(ContractSpec {
+                    name: "IndyDidRegistry".to_string(),
+                    abi: Value::Array(vec![]),
+                }),
+            }];
+
+            let client_err = LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contract_config, None)
+                .err()
+                .unwrap();
+
+            assert!(matches!(
+                client_err,  | VdrError::ContractInvalidSpec { .. }
+            ));
+        }
+
+        #[test]
+        fn create_client_empty_contract_spec() {
+            let contract_config = vec![ContractConfig {
+                address: DID_REGISTRY_ADDRESS.to_string(),
+                spec_path: None,
+                spec: None,
+            }];
+
+            let client_err = LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contract_config, None)
+                .err()
+                .unwrap();
+
+            assert!(matches!(
+                client_err,  | VdrError::ContractInvalidSpec { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn create_client_invalid_contract_address() {
+            let contract_config = vec![ContractConfig {
+                address: "123".to_string(),
+                spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
+                spec: None,
+            }];
+
+            let client_err = LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contract_config, None)
+                .err()
+                .unwrap();
+
+            assert!(matches!(
+                client_err,  | VdrError::CommonInvalidData { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn call_transaction_empty_recipient_address() {
+            let transaction = Transaction {
+                to: Address::from(""),
+                ..read_transaction()
+            };
+            let client = client();
+
+            let submit_err = client.submit_transaction(&transaction).await.unwrap_err();
+
+            assert!(matches!(
+                submit_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn call_transaction_invalid_recipient_address() {
+            let transaction = Transaction {
+                to: Address::from("123"),
+                ..read_transaction()
+            };
+            let client = client();
+
+            let call_err = client.submit_transaction(&transaction).await.unwrap_err();
+
+            assert!(matches!(
+                call_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_receipt_invalid_transaction_hash() {
+            let client = client();
+            let txn_hash = vec![1; 4];
+
+            let receipt_err = client.get_receipt(&txn_hash).await.unwrap_err();
+
+            assert!(matches!(
+                receipt_err,  | VdrError::CommonInvalidData { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_receipt_transcation_does_not_exist() {
+            let mut client_mock = MockClient::new();
+            let txn_hash = vec![1; 32];
+            client_mock
+                .expect_get_receipt()
+                .with(eq(txn_hash.clone()))
+                .returning(|_| {
+                    Err(VdrError::ClientInvalidResponse(
+                        "Missing transaction receipt".to_string(),
+                    ))
+                });
+
+            let client = mock_custom_client(Box::new(client_mock));
+
+            let receipt_err = client.get_receipt(&txn_hash).await.unwrap_err();
+
+            assert!(matches!(
+                receipt_err,  | VdrError::ClientInvalidResponse { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_receipt_positive() {
+            let mut client_mock = MockClient::new();
+            let txn_hash = vec![1; 32];
+            client_mock
+                .expect_get_receipt()
+                .with(eq(txn_hash.clone()))
+                .returning(|_| Ok("".to_string()));
+
+            let client = mock_custom_client(Box::new(client_mock));
+
+            client.get_receipt(&txn_hash).await.unwrap();
+        }
+
+        #[async_std::test]
+        async fn get_transaction_count_invalid_address() {
+            let client = client();
+
+            let get_nonce_err = client
+                .get_transaction_count(&Address::from("123"))
+                .await
+                .unwrap_err();
+
+            assert!(matches!(
+                get_nonce_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_contract_does_not_exist() {
+            let client = client();
+
+            let contract_err = client.contract("123").err().unwrap();
+
+            assert!(matches!(
+                contract_err,  | VdrError::ContractInvalidName { .. }
+            ));
         }
     }
 
@@ -384,8 +603,7 @@ pub mod test {
                 wrong_node_address,
                 &contracts(),
                 Some(&QuorumConfig::default()),
-            )
-            .unwrap();
+            ).unwrap();
             match client.ping().await.unwrap().status {
                 Status::Err { .. } => {}
                 Status::Ok { .. } => assert!(false, "Ping status expected to be `Err`."),
