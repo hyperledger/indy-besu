@@ -115,3 +115,34 @@ impl Debug for Web3Contract {
         write!(f, r#"Web3Contract {{ address: {:?} }}"#, self.address)
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use crate::client::client::test::{mock_client, CONTRACT_NAME_EXAMPLE};
+
+    use super::*;
+
+    #[async_std::test]
+    async fn encode_input_method_does_not_exist() {
+        let client = mock_client();
+        let contract = client.contract(&CONTRACT_NAME_EXAMPLE.to_string()).unwrap();
+
+        let encode_err = contract.encode_input("123", &[]).unwrap_err();
+
+        assert!(matches!(
+            encode_err,  | VdrError::ContractInvalidName { .. }
+        ));
+    }
+
+    #[async_std::test]
+    async fn decode_output_method_does_not_exist() {
+        let client = mock_client();
+        let contract = client.contract(&CONTRACT_NAME_EXAMPLE.to_string()).unwrap();
+
+        let decode_err = contract.decode_output("123", &[]).unwrap_err();
+
+        assert!(matches!(
+            decode_err,  | VdrError::ContractInvalidName { .. }
+        ));
+    }
+}
