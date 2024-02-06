@@ -153,12 +153,13 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<R
         .parse::<Role>(client, bytes)
 }
 
+    }
 #[cfg(test)]
 pub mod test {
     use super::*;
     use crate::{
         client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TRUSTEE_ACC,
+            mock_client, ACCOUNT_ROLES, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TRUSTEE_ACC,
         },
         utils::init_env_logger,
     };
@@ -171,6 +172,7 @@ pub mod test {
     }
 
     mod build_assign_role_transaction {
+
         use super::*;
 
         #[async_std::test]
@@ -200,6 +202,41 @@ pub mod test {
             };
 
             assert_eq!(expected_transaction, transaction);
+        }
+
+        #[async_std::test]
+        async fn build_assign_role_transaction_all_roles_test() {
+            init_env_logger();
+            let client = mock_client();
+            let account = account();
+
+            for role in ACCOUNT_ROLES.iter() {
+                let transaction =
+                    build_assign_role_transaction(&client, &TRUSTEE_ACC, &role, &account)
+                        .await
+                        .unwrap();
+
+                let contract = client.contract(CONTRACT_NAME).unwrap();
+                let expected_data = contract
+                    .encode_input(
+                        METHOD_ASSIGN_ROLE,
+                        &[(*role).into(), (&account).try_into().unwrap()],
+                    )
+                    .unwrap();
+
+                let expected_transaction = Transaction {
+                    type_: TransactionType::Write,
+                    from: Some(TRUSTEE_ACC.clone()),
+                    to: ROLE_CONTROL_ADDRESS.clone(),
+                    nonce: Some(DEFAULT_NONCE.clone()),
+                    chain_id: CHAIN_ID,
+                    data: expected_data,
+                    signature: RwLock::new(None),
+                    hash: None,
+                };
+
+                assert_eq!(expected_transaction, transaction);
+            }
         }
     }
 
@@ -233,6 +270,41 @@ pub mod test {
             };
 
             assert_eq!(expected_transaction, transaction);
+        }
+
+        #[async_std::test]
+        async fn build_revoke_role_transaction_all_roles_test() {
+            init_env_logger();
+            let client = mock_client();
+            let account = account();
+
+            for role in ACCOUNT_ROLES.iter() {
+                let transaction =
+                    build_revoke_role_transaction(&client, &TRUSTEE_ACC, &role, &account)
+                        .await
+                        .unwrap();
+
+                let contract = client.contract(CONTRACT_NAME).unwrap();
+                let expected_data = contract
+                    .encode_input(
+                        METHOD_REVOKE_ROLE,
+                        &[(*role).into(), (&account).try_into().unwrap()],
+                    )
+                    .unwrap();
+
+                let expected_transaction = Transaction {
+                    type_: TransactionType::Write,
+                    from: Some(TRUSTEE_ACC.clone()),
+                    to: ROLE_CONTROL_ADDRESS.clone(),
+                    nonce: Some(DEFAULT_NONCE.clone()),
+                    chain_id: CHAIN_ID,
+                    data: expected_data,
+                    signature: RwLock::new(None),
+                    hash: None,
+                };
+
+                assert_eq!(expected_transaction, transaction);
+            }
         }
     }
 
@@ -312,6 +384,40 @@ pub mod test {
             };
 
             assert_eq!(expected_transaction, transaction);
+        }
+
+        #[async_std::test]
+        async fn build_revoke_role_transaction_all_roles_test() {
+            init_env_logger();
+            let client = mock_client();
+            let account = account();
+
+            for role in ACCOUNT_ROLES.iter() {
+                let transaction = build_has_role_transaction(&client, &role, &account)
+                    .await
+                    .unwrap();
+
+                let contract = client.contract(CONTRACT_NAME).unwrap();
+                let expected_data = contract
+                    .encode_input(
+                        METHOD_HAS_ROLE,
+                        &[(*role).into(), (&account).try_into().unwrap()],
+                    )
+                    .unwrap();
+
+                let expected_transaction = Transaction {
+                    type_: TransactionType::Read,
+                    from: None,
+                    to: ROLE_CONTROL_ADDRESS.clone(),
+                    nonce: None,
+                    chain_id: CHAIN_ID,
+                    data: expected_data,
+                    signature: RwLock::new(None),
+                    hash: None,
+                };
+
+                assert_eq!(expected_transaction, transaction);
+            }
         }
     }
 
