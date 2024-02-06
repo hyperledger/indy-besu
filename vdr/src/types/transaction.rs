@@ -495,3 +495,295 @@ pub struct BlockDetails {
     pub number: u64,
     pub timestamp: u64,
 }
+
+
+#[cfg(test)]
+pub mod test {
+
+    use super::*;
+    use crate::{
+        client::client::test::{
+            client, mock_client, write_transaction, CONTRACT_METHOD_EXAMPLE, CONTRACT_NAME_EXAMPLE,
+            VALIDATOR_LIST_BYTES,
+        },
+        contracts::{
+            cl::types::credential_definition::test::_CREDENTIAL_DEFINITION_ID,
+            network::ValidatorAddresses,
+        },
+    };
+
+    #[cfg(test)]
+    pub mod txn_test {
+        use super::*;
+
+        #[async_std::test]
+        async fn get_to_invalid() {
+            let transaction = Transaction {
+                to: Address::from("123"),
+                ..write_transaction()
+            };
+
+            let get_to_err = transaction.get_to().unwrap_err();
+
+            assert!(matches!(
+                get_to_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_nonce_not_set() {
+            let transaction = Transaction {
+                nonce: None,
+                ..write_transaction()
+            };
+
+            let get_nonce_err = transaction.get_nonce().unwrap_err();
+
+            assert!(matches!(
+                get_nonce_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_nonce_invalid() {
+            let transaction = Transaction {
+                nonce: Some(vec![1, 1]),
+                ..write_transaction()
+            };
+
+            let get_nonce_err = transaction.get_nonce().unwrap_err();
+
+            assert!(matches!(
+                get_nonce_err,  | VdrError::CommonInvalidData { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_transaction_signature_not_set() {
+            let transaction = Transaction {
+                signature: RwLock::new(None),
+                ..write_transaction()
+            };
+
+            let get_sig_err = transaction.get_transaction_signature().unwrap_err();
+
+            assert!(matches!(
+                get_sig_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_transaction_signature_invalid() {
+            let transaction = Transaction {
+                signature: RwLock::new(Some(TransactionSignature {
+                    v: 1,
+                    r: vec![1; 32],
+                    s: vec![1; 32],
+                })),
+                ..write_transaction()
+            };
+
+            let get_sig_err = transaction.get_transaction_signature().unwrap_err();
+
+            assert!(matches!(
+                get_sig_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+    }
+
+    #[cfg(test)]
+    pub mod txn_builder_test {
+
+        use super::*;
+
+        #[async_std::test]
+        async fn build_txn_contract_not_set() {
+            let client = client();
+
+            let build_txn_err = TransactionBuilder::new()
+                .set_method(CONTRACT_NAME_EXAMPLE)
+                .add_param(ContractParam::String(String::from(
+                    _CREDENTIAL_DEFINITION_ID,
+                )))
+                .set_type(TransactionType::Read)
+                .build(&client)
+                .await
+                .unwrap_err();
+
+            assert!(matches!(
+                build_txn_err,  | VdrError::ContractInvalidName { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn build_txn_contract_method_does_not_exist() {
+            let client = client();
+
+            let build_txn_err = TransactionBuilder::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .set_method("123")
+                .add_param(ContractParam::String(String::from(
+                    _CREDENTIAL_DEFINITION_ID,
+                )))
+                .set_type(TransactionType::Read)
+                .build(&client)
+                .await
+                .unwrap_err();
+
+            assert!(matches!(
+                build_txn_err,  | VdrError::ContractInvalidName { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn build_txn_write_sender_does_not_set() {
+            let validator_address = &Address::from("0x93917cadbace5dfce132b991732c6cda9bcc5b8a");
+            let client = client();
+
+            let build_txn_err = TransactionBuilder::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .set_method(CONTRACT_METHOD_EXAMPLE)
+                .add_param(validator_address.try_into().unwrap())
+                .set_type(TransactionType::Write)
+                .build(&client)
+                .await
+                .unwrap_err();
+
+            assert!(matches!(
+                build_txn_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn build_txn_invalid_account_address() {
+            let validator_address = &Address::from("0x93917cadbace5dfce132b991732c6cda9bcc5b8a");
+            let client = client();
+
+            let build_txn_err = TransactionBuilder::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .set_method(CONTRACT_METHOD_EXAMPLE)
+                .add_param(validator_address.try_into().unwrap())
+                .set_type(TransactionType::Write)
+                .set_from(&Address::default())
+                .build(&client)
+                .await
+                .unwrap_err();
+
+            assert!(matches!(
+                build_txn_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn build_txn_address_with_0x_prefix() {
+            let validator_address = &Address::from("0x93917cadbace5dfce132b991732c6cda9bcc5b8a");
+            let client = mock_client();
+
+            TransactionBuilder::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .set_method(CONTRACT_METHOD_EXAMPLE)
+                .add_param(validator_address.try_into().unwrap())
+                .set_type(TransactionType::Write)
+                .set_from(&Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"))
+                .build(&client)
+                .await
+                .unwrap();
+        }
+
+        #[async_std::test]
+        async fn build_txn_address_without_0x_prefix() {
+            let validator_address = &Address::from("93917cadbace5dfce132b991732c6cda9bcc5b8a");
+            let client = mock_client();
+
+            TransactionBuilder::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .set_method(CONTRACT_METHOD_EXAMPLE)
+                .add_param(validator_address.try_into().unwrap())
+                .set_type(TransactionType::Write)
+                .set_from(&Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"))
+                .build(&client)
+                .await
+                .unwrap();
+        }
+    }
+
+    #[cfg(test)]
+    pub mod txn_parser_test {
+
+        use super::*;
+
+        #[async_std::test]
+        async fn parse_txn_empty_response_bytes() {
+            let response = [];
+            let client = mock_client();
+
+            let parse_txn_err = TransactionParser::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .set_method(CONTRACT_METHOD_EXAMPLE)
+                .parse::<ValidatorAddresses>(&client, &response)
+                .unwrap_err();
+
+            assert!(matches!(
+                parse_txn_err,  | VdrError::ContractInvalidResponseData { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn parse_txn_contract_not_set() {
+            let client = mock_client();
+
+            let parse_txn_err = TransactionParser::new()
+                .set_method(CONTRACT_METHOD_EXAMPLE)
+                .parse::<ValidatorAddresses>(&client, &VALIDATOR_LIST_BYTES)
+                .unwrap_err();
+
+            assert!(matches!(
+                parse_txn_err,  | VdrError::ContractInvalidName { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn parse_txn_contract_does_not_exist() {
+            let client = mock_client();
+
+            let parse_txn_err = TransactionParser::new()
+                .set_contract("123")
+                .set_method(CONTRACT_METHOD_EXAMPLE)
+                .parse::<ValidatorAddresses>(&client, &VALIDATOR_LIST_BYTES)
+                .unwrap_err();
+
+            assert!(matches!(
+                parse_txn_err,  | VdrError::ContractInvalidName { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn parse_txn_contract_method_not_set() {
+            let client = mock_client();
+
+            let parse_txn_err = TransactionParser::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .parse::<ValidatorAddresses>(&client, &VALIDATOR_LIST_BYTES)
+                .unwrap_err();
+
+            assert!(matches!(
+                parse_txn_err,  | VdrError::ContractInvalidName { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn parse_txn_contract_method_does_not_exist() {
+            let client = mock_client();
+
+            let parse_txn_err = TransactionParser::new()
+                .set_contract(CONTRACT_NAME_EXAMPLE)
+                .set_method("123")
+                .parse::<ValidatorAddresses>(&client, &VALIDATOR_LIST_BYTES)
+                .unwrap_err();
+
+            assert!(matches!(
+                parse_txn_err,  | VdrError::ContractInvalidName { .. }
+            ));
+        }
+    }
+}
