@@ -5,7 +5,7 @@ use crate::{
     contracts::{
         did::{types::did_doc_attribute::PublicKeyPurpose, DidResolutionError},
         types::did::ParsedDid,
-        DidDocumentWithMeta, DidMetadata, DidResolutionMetadata,
+        DidDocumentWithMeta, DidMetadata, DidResolutionMetadata, DID_RESOLUTION_FORMAT,
     },
     did_ethr_registry::{
         build_get_did_changed_transaction, build_get_did_events_query, parse_did_changed_result,
@@ -15,7 +15,6 @@ use crate::{
     DidDocumentBuilder, DidEvents, DidOwnerChanged, DidResolutionOptions, LedgerClient, VdrResult,
     VerificationKeyType, DID,
 };
-use crate::contracts::DID_RESOLUTION_FORMAT;
 
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
@@ -171,7 +170,7 @@ pub(crate) async fn _resolve_did(
         version_id.as_ref(),
         next_version_id.as_ref(),
     )
-        .await?;
+    .await?;
     let did_document = did_doc_builder.build();
     Ok((did_document, did_document_metadata))
 }
@@ -200,7 +199,7 @@ async fn receive_did_history(
             previous_block.as_ref(),
             previous_block.as_ref(),
         )
-            .await?;
+        .await?;
         let logs = client.query_events(&transaction).await?;
 
         // if no logs, break the loop as nothing to add to the change history
