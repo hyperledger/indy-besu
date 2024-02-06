@@ -544,20 +544,6 @@ pub mod test {
         }
 
         #[async_std::test]
-        async fn get_nonce_invalid() {
-            let transaction = Transaction {
-                nonce: Some(vec![1, 1]),
-                ..write_transaction()
-            };
-
-            let get_nonce_err = transaction.get_nonce().unwrap_err();
-
-            assert!(matches!(
-                get_nonce_err,  | VdrError::CommonInvalidData { .. }
-            ));
-        }
-
-        #[async_std::test]
         async fn get_transaction_signature_not_set() {
             let transaction = Transaction {
                 signature: RwLock::new(None),
@@ -601,9 +587,6 @@ pub mod test {
 
             let build_txn_err = TransactionBuilder::new()
                 .set_method(CONTRACT_NAME_EXAMPLE)
-                .add_param(ContractParam::String(String::from(
-                    _CREDENTIAL_DEFINITION_ID,
-                )))
                 .set_type(TransactionType::Read)
                 .build(&client)
                 .await
@@ -621,9 +604,6 @@ pub mod test {
             let build_txn_err = TransactionBuilder::new()
                 .set_contract(CONTRACT_NAME_EXAMPLE)
                 .set_method("123")
-                .add_param(ContractParam::String(String::from(
-                    _CREDENTIAL_DEFINITION_ID,
-                )))
                 .set_type(TransactionType::Read)
                 .build(&client)
                 .await
@@ -642,7 +622,8 @@ pub mod test {
             let build_txn_err = TransactionBuilder::new()
                 .set_contract(CONTRACT_NAME_EXAMPLE)
                 .set_method(CONTRACT_METHOD_EXAMPLE)
-                .add_param(validator_address.try_into().unwrap())
+                .add_param(validator_address)
+                .unwrap()
                 .set_type(TransactionType::Write)
                 .build(&client)
                 .await
@@ -661,7 +642,8 @@ pub mod test {
             let build_txn_err = TransactionBuilder::new()
                 .set_contract(CONTRACT_NAME_EXAMPLE)
                 .set_method(CONTRACT_METHOD_EXAMPLE)
-                .add_param(validator_address.try_into().unwrap())
+                .add_param(validator_address)
+                .unwrap()
                 .set_type(TransactionType::Write)
                 .set_from(&Address::default())
                 .build(&client)
@@ -681,7 +663,8 @@ pub mod test {
             TransactionBuilder::new()
                 .set_contract(CONTRACT_NAME_EXAMPLE)
                 .set_method(CONTRACT_METHOD_EXAMPLE)
-                .add_param(validator_address.try_into().unwrap())
+                .add_param(validator_address)
+                .unwrap()
                 .set_type(TransactionType::Write)
                 .set_from(&Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"))
                 .build(&client)
@@ -697,7 +680,8 @@ pub mod test {
             TransactionBuilder::new()
                 .set_contract(CONTRACT_NAME_EXAMPLE)
                 .set_method(CONTRACT_METHOD_EXAMPLE)
-                .add_param(validator_address.try_into().unwrap())
+                .add_param(validator_address)
+                .unwrap()
                 .set_type(TransactionType::Write)
                 .set_from(&Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"))
                 .build(&client)

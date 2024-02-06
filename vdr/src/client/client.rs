@@ -213,10 +213,12 @@ impl Debug for LedgerClient {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::types::EventLog;
+    use crate::{
+        client::MockClient, signer::basic_signer::test::basic_signer, types::EventLog, Role,
+    };
     use async_trait::async_trait;
     use once_cell::sync::Lazy;
-    use std::{env, fs};
+    use std::{env, fs, sync::RwLock};
 
     pub const CONTRACT_NAME_EXAMPLE: &str = "ValidatorControl";
     pub const CONTRACT_METHOD_EXAMPLE: &str = "addValidator";
@@ -251,6 +253,8 @@ pub mod test {
         "http://127.0.0.1:21004",
     ];
     pub const DEFAULT_NONCE: u64 = 0;
+    pub static ACCOUNT_ROLES: [Role; 4] =
+        [Role::Empty, Role::Trustee, Role::Steward, Role::Endorser];
 
     pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000005555"));
@@ -328,7 +332,6 @@ pub mod test {
         .unwrap();
 
         let mut client = MockClient::new();
-        client.expect_ping().returning(|| Ok(PingStatus::ok()));
         client.expect_get_transaction_count().returning(|_| Ok(0));
 
         ledger_client.client = Box::new(client);
@@ -382,6 +385,7 @@ pub mod test {
 
     mod create {
         use mockall::predicate::eq;
+        use serde_json::Value;
 
         use super::*;
 
@@ -393,10 +397,10 @@ pub mod test {
         #[test]
         fn create_client_invalid_contract_data() {
             let contract_config = vec![ContractConfig {
-                address: DID_REGISTRY_ADDRESS.to_string(),
+                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
                 spec_path: None,
                 spec: Some(ContractSpec {
-                    name: "IndyDidRegistry".to_string(),
+                    name: CONTRACT_NAME_EXAMPLE.to_string(),
                     abi: Value::String("".to_string()),
                 }),
             }];
@@ -424,10 +428,10 @@ pub mod test {
         #[test]
         fn create_client_contract_path_and_spec_provided() {
             let contract_config = vec![ContractConfig {
-                address: DID_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
+                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+                spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
                 spec: Some(ContractSpec {
-                    name: "IndyDidRegistry".to_string(),
+                    name: CONTRACT_NAME_EXAMPLE.to_string(),
                     abi: Value::Array(vec![]),
                 }),
             }];
@@ -444,7 +448,7 @@ pub mod test {
         #[test]
         fn create_client_empty_contract_spec() {
             let contract_config = vec![ContractConfig {
-                address: DID_REGISTRY_ADDRESS.to_string(),
+                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
                 spec_path: None,
                 spec: None,
             }];
@@ -462,7 +466,7 @@ pub mod test {
         async fn create_client_invalid_contract_address() {
             let contract_config = vec![ContractConfig {
                 address: "123".to_string(),
-                spec_path: Some(build_contract_path(DID_REGISTRY_SPEC_PATH)),
+                spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
                 spec: None,
             }];
 

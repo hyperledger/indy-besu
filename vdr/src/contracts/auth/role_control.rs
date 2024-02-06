@@ -171,7 +171,6 @@ pub mod test {
     }
 
     mod build_assign_role_transaction {
-
         use super::*;
 
         #[async_std::test]
@@ -217,10 +216,9 @@ pub mod test {
 
                 let contract = client.contract(CONTRACT_NAME).unwrap();
                 let expected_data = contract
-                    .encode_input(
-                        METHOD_ASSIGN_ROLE,
-                        &[(*role).into(), (&account).try_into().unwrap()],
-                    )
+                    .function(METHOD_ASSIGN_ROLE)
+                    .unwrap()
+                    .encode_input(&[role.try_into().unwrap(), (&account).try_into().unwrap()])
                     .unwrap();
 
                 let expected_transaction = Transaction {
@@ -241,6 +239,7 @@ pub mod test {
 
     mod build_revoke_role_transaction {
         use super::*;
+        use crate::types::ContractParam;
 
         #[async_std::test]
         async fn build_revoke_role_transaction_test() {
@@ -285,10 +284,9 @@ pub mod test {
 
                 let contract = client.contract(CONTRACT_NAME).unwrap();
                 let expected_data = contract
-                    .encode_input(
-                        METHOD_REVOKE_ROLE,
-                        &[(*role).into(), (&account).try_into().unwrap()],
-                    )
+                    .function(METHOD_REVOKE_ROLE)
+                    .unwrap()
+                    .encode_input(&[role.try_into().unwrap(), (&account).try_into().unwrap()])
                     .unwrap();
 
                 let expected_transaction = Transaction {
@@ -398,10 +396,9 @@ pub mod test {
 
                 let contract = client.contract(CONTRACT_NAME).unwrap();
                 let expected_data = contract
-                    .encode_input(
-                        METHOD_HAS_ROLE,
-                        &[(*role).into(), (&account).try_into().unwrap()],
-                    )
+                    .function(METHOD_HAS_ROLE)
+                    .unwrap()
+                    .encode_input(&[role.try_into().unwrap(), (&account).try_into().unwrap()])
                     .unwrap();
 
                 let expected_transaction = Transaction {
