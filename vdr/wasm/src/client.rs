@@ -3,10 +3,11 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use indy2_vdr::{ContractConfig, LedgerClient, QuorumConfig};
+use indy_besu_vdr::{ContractConfig, LedgerClient, QuorumConfig};
 
 use crate::{
     error::{JsResult, Result},
+    event_query::EventQueryWrapper,
     transaction::TransactionWrapper,
 };
 
@@ -52,6 +53,17 @@ impl LedgerClientWrapper {
         let transaction = transaction.0.clone();
         future_to_promise(async move {
             let response = client.submit_transaction(&transaction).await.as_js()?;
+            let result: JsValue = serde_wasm_bindgen::to_value(&response)?;
+            Ok(result)
+        })
+    }
+
+    #[wasm_bindgen(js_name = queryEvents)]
+    pub async fn query_events(&self, query: &EventQueryWrapper) -> Promise {
+        let client = self.0.clone();
+        let query = query.0.clone();
+        future_to_promise(async move {
+            let response = client.query_events(&query).await.as_js()?;
             let result: JsValue = serde_wasm_bindgen::to_value(&response)?;
             Ok(result)
         })

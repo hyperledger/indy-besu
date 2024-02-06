@@ -1,3 +1,3 @@
 fn main() {
-    uniffi::generate_scaffolding("src/indy2_vdr.udl").unwrap();
+    uniffi::generate_scaffolding("src/indy_besu_vdr.udl").unwrap();
 }

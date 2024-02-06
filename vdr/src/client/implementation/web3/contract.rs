@@ -1,23 +1,26 @@
 use crate::{
     client::{implementation::web3::client::Web3Client, Contract},
     error::{VdrError, VdrResult},
-    types::{ContractOutput, ContractSpec},
+    types::ContractSpec,
     Address,
 };
+use std::fmt::{Debug, Formatter};
 
+use ethabi::Event;
 use log::{trace, warn};
+use log_derive::{logfn, logfn_inputs};
 use std::str::FromStr;
 
 #[cfg(not(feature = "wasm"))]
 use web3::{
     contract::Contract as Web3ContractImpl,
-    ethabi::{Address as EthAddress, Function, Token},
+    ethabi::{Address as EthAddress, Function},
     transports::Http,
 };
 #[cfg(feature = "wasm")]
 use web3_wasm::{
     contract::Contract as Web3ContractImpl,
-    ethabi::{Address as EthAddress, Function, Token},
+    ethabi::{Address as EthAddress, Function},
     transports::Http,
 };
 
@@ -32,7 +35,11 @@ impl Web3Contract {
         address: &str,
         contract_spec: &ContractSpec,
     ) -> VdrResult<Web3Contract> {
-        trace!("Started creating new Web3Contract. Address: {:?}", address);
+        trace!(
+            "Web3Contract::new >>> address: {:?}, address: {:?}",
+            address,
+            contract_spec
+        );
 
         let abi = serde_json::to_vec(&contract_spec.abi).map_err(|err| {
             let vdr_error = VdrError::CommonInvalidData(format!(
@@ -57,14 +64,23 @@ impl Web3Contract {
         let contract =
             Web3ContractImpl::from_json(web3_client.eth(), parsed_address, abi.as_slice())?;
 
-        trace!("Created new contract: {:?}", contract);
-
+        trace!("Web3Contract::new <<< contract: {:?}", contract);
         Ok(Web3Contract {
             contract,
             address: Address::from(address),
         })
     }
+}
 
+impl Contract for Web3Contract {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    fn address(&self) -> &Address {
+        &self.address
+    }
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn function(&self, name: &str) -> VdrResult<&Function> {
         self.contract.abi().function(name).map_err(|err| {
             let vdr_error = VdrError::from(err);
@@ -77,51 +93,25 @@ impl Web3Contract {
             vdr_error
         })
     }
-}
 
-impl Contract for Web3Contract {
-    fn address(&self) -> &Address {
-        &self.address
-    }
-
-    fn encode_input(&self, method: &str, params: &[Token]) -> VdrResult<Vec<u8>> {
-        trace!("Input params: {:?} encoding has started", params);
-
-        let encoded_input = self.function(method)?.encode_input(params).map_err(|err| {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    fn event(&self, name: &str) -> VdrResult<&Event> {
+        self.contract.abi().event(name).map_err(|err| {
             let vdr_error = VdrError::from(err);
 
             warn!(
-                "Error: {:?} during encoding input params: {:?}",
-                vdr_error, params
+                "Error: {:?} during getting smart contract function: {}",
+                vdr_error, name
             );
 
             vdr_error
-        });
-
-        trace!(
-            "Input params: {:?} encoding has finished. Result: {:?}",
-            params,
-            encoded_input
-        );
-
-        encoded_input
+        })
     }
+}
 
-    fn decode_output(&self, method: &str, output: &[u8]) -> VdrResult<ContractOutput> {
-        trace!("Output: {:?} decoding has started", output);
-
-        let decoded_output = self
-            .function(method)?
-            .decode_output(output)
-            .map_err(VdrError::from)
-            .map(ContractOutput::from);
-
-        trace!(
-            "Output: {:?} decoding has finished. Result: {:?}",
-            output,
-            decoded_output
-        );
-
-        decoded_output
+impl Debug for Web3Contract {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, r#"Web3Contract {{ address: {:?} }}"#, self.address)
     }
 }

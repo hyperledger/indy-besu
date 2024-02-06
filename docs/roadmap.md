@@ -31,23 +31,20 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
 
 ## Phase 1: MVP
 
-* DID Method:
-    * Publish final version of Indy2 DID Method specification 
-    * Ability for easy integration of DID methods into the network infrastructures
-    * Possibility of integration with `did:ethr` method
-    * Compatibility with `did:indy` and `did:sov` methods
 * Network identity implementation:
-    * Indy2 DID method
-      * More strict validation of DID Document format
-        *  Implement a validation to check VerificationRelationship format (Can accept only id or verificationMethod)
-    * CL Registry:
-      * Implement owner verification
+    * Deprecate Indy2 method in favor of using `did:ethr` contract and specification
+    * CL Registry: implement event approach matching to `did:ethr` design
+    * Endorsement support for DID Documents and CL entities
 * Network Permission implementation:
     * Restrict execution of transactions exclusively to users with specific roles
+* Network configuration
+    * Improve error handling
+    * Add transaction explorer
 * Demo:
     * Integration into Aries Frameworks Javascript
 * Migration:
     * Tooling implementation
+    * Mapping of legacy identifiers to ethereum account
 * Ready for experiments and testing
 * Documentation:
     * Network operators:
@@ -60,8 +57,10 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
         * How to issue and verify credentials
 * VDR:
     * Support `did:ethr` DID method
+    * Support endorsement flow
+    * Implement additional validations to replace checks removed from contracts.
     * Wrappers for foreign languages: Python + JavaScript
-    * `indy-vdr` integration
+    * Quorum handling for read and write transactions
 
 ## Phase 2: Beta
 
@@ -71,29 +70,25 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
   * Implement IaC for setting up a network monitor and explorer
 * Network configuration:
     * Tooling for configuration of specific networks
+    * Add Transaction Author Agreement
 * Network Permission:
     * Logic for assigning roles (Trustee) by consensus
 * Network identity:
-  * DID ownership verification:
-    * Validate Verification Methods with EcdsaSecp256k1Signature2019 keys
-    * Validation of the DID identifier using its associated verification key (will probably need to be implemented
-              sha2 hash and Base58 encoder)
   * Restrict the creation of DID, Schema, and Cred Def exclusively to users with Trustee and Endorser roles
-  * Add `DidUniversalResolver` contract so that adding a support for new DID method
 * Aries Frameworks:
   * Support Indy 2.0 in Aries Framework Javascript
   * Support Indy 2.0 in ACA-Py
 * Migration:
     * Process finalization
-* DID Method:
-    * Advanced format and ownership validation
 * CL Registry:
     * Revocation entities support
 * Command Line Interface
 * CI/CD
     * Advanced: testing and deployment
 * VDR
+  * `indy-vdr` integration
   * Revocation support
+  * Improve client API in more user-friendly way
 
 ## Phase 3: New features
 

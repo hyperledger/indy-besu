@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log_derive::{logfn, logfn_inputs};
 
 use crate::{
     error::VdrResult,
@@ -22,31 +22,21 @@ const METHOD_GET_VALIDATORS: &str = "getValidators";
 ///
 /// # Returns
 /// Write transaction to sign and submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_add_validator_transaction(
     client: &LedgerClient,
     from: &Address,
     validator_address: &Address,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Sender: {:?}, validator address: {:?}",
-        METHOD_ADD_VALIDATOR, from, validator_address
-    );
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_ADD_VALIDATOR)
-        .add_param(validator_address.try_into()?)
+        .add_param(validator_address)?
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_ADD_VALIDATOR, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Build transaction to execute ValidatorControl.removeValidator contract method to remove an existing Validator
@@ -58,31 +48,21 @@ pub async fn build_add_validator_transaction(
 ///
 /// # Returns
 /// Write transaction to sign and submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_remove_validator_transaction(
     client: &LedgerClient,
     from: &Address,
     validator_address: &Address,
 ) -> VdrResult<Transaction> {
-    debug!(
-        "{} txn build has started. Sender: {:?}, validator address: {:?}",
-        METHOD_REMOVE_VALIDATOR, from, validator_address
-    );
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_REMOVE_VALIDATOR)
-        .add_param(validator_address.try_into()?)
+        .add_param(validator_address)?
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_REMOVE_VALIDATOR, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Build transaction to execute ValidatorControl.getValidators contract method to get existing validators
@@ -92,22 +72,15 @@ pub async fn build_remove_validator_transaction(
 ///
 /// # Returns
 /// Read transaction to submit
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResult<Transaction> {
-    debug!("{} txn build has started", METHOD_GET_VALIDATORS,);
-
-    let transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_VALIDATORS)
         .set_type(TransactionType::Read)
         .build(client)
-        .await?;
-
-    info!(
-        "{} txn build has finished. Result: {:?}",
-        METHOD_GET_VALIDATORS, transaction
-    );
-
-    Ok(transaction)
+        .await
 }
 
 /// Parse the result of execution ValidatorControl.getValidators contract method to get existing validators
@@ -118,26 +91,16 @@ pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResul
 ///
 /// # Returns
 /// Parsed validator addresses
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
 pub fn parse_get_validators_result(
     client: &LedgerClient,
     bytes: &[u8],
 ) -> VdrResult<ValidatorAddresses> {
-    debug!(
-        "{} result parse has started. Bytes to parse: {:?}",
-        METHOD_GET_VALIDATORS, bytes
-    );
-
-    let result = TransactionParser::new()
+    TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_GET_VALIDATORS)
-        .parse::<ValidatorAddresses>(client, bytes)?;
-
-    info!(
-        "{} result parse has finished. Result: {:?}",
-        METHOD_GET_VALIDATORS, result
-    );
-
-    Ok(result)
+        .parse::<ValidatorAddresses>(client, bytes)
 }
 
 #[cfg(test)]

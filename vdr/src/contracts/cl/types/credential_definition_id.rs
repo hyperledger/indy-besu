@@ -1,6 +1,7 @@
-use crate::{contracts::did::types::did::DID, types::ContractParam};
-use log::trace;
+use crate::{contracts::did::types::did::DID, types::ContractParam, VdrError};
+
 use serde_derive::{Deserialize, Serialize};
+use sha3::Digest;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct CredentialDefinitionId(String);
@@ -9,7 +10,7 @@ impl CredentialDefinitionId {
     const ID_PATH: &'static str = "anoncreds/v0/CLAIM_DEF";
 
     pub fn build(issuer_id: &DID, schema_id: &str, tag: &str) -> CredentialDefinitionId {
-        let cred_def_id = CredentialDefinitionId::from(
+        CredentialDefinitionId::from(
             format!(
                 "{}/{}/{}/{}",
                 issuer_id.as_ref(),
@@ -18,17 +19,23 @@ impl CredentialDefinitionId {
                 tag
             )
             .as_str(),
-        );
+        )
+    }
 
-        trace!("Created new CredentialDefinitionId: {:?}", cred_def_id);
+    pub fn hash(&self) -> Vec<u8> {
+        sha3::Keccak256::digest(self.0.as_bytes()).to_vec()
+    }
 
-        cred_def_id
+    pub(crate) fn to_filter(&self) -> String {
+        hex::encode(self.hash())
     }
 }
 
-impl From<&CredentialDefinitionId> for ContractParam {
-    fn from(id: &CredentialDefinitionId) -> Self {
-        ContractParam::String(id.to_string())
+impl TryFrom<&CredentialDefinitionId> for ContractParam {
+    type Error = VdrError;
+
+    fn try_from(value: &CredentialDefinitionId) -> Result<Self, Self::Error> {
+        Ok(ContractParam::FixedBytes(value.hash()))
     }
 }
 

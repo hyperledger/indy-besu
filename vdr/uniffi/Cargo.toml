@@ -1,5 +1,5 @@
 [package]
-name = "indy2-vdr-uniffi"
+name = "indy-besu-vdr-uniffi"
 description = "Uni-FFI bindings for Indy 2.0 VDR"
 version = "0.1.0"
 authors = [
@@ -10,7 +10,7 @@ license = "Apache-2.0"
 readme = "./README.md"
 
 [lib]
-name = "indy2_vdr_uniffi"
+name = "indy_besu_vdr_uniffi"
 path = "src/lib.rs"
 crate-type = ["rlib", "cdylib"]
 
@@ -22,7 +22,7 @@ path = "src/bin.rs"
 default = []
 
 [dependencies]
-indy2_vdr = { path = ".." }
+indy-besu-vdr = { path = ".." }
 serde = "1.0.188"
 serde_derive = "1.0.188"
 serde_json = "1.0.107"

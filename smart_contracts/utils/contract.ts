@@ -4,10 +4,10 @@ import { host } from '../environment'
 
 export class Contract {
   public address?: string
+  public instance: any
 
   protected readonly name: string
   protected readonly signer?: Signer
-  protected instance: any
 
   constructor(name: string, sender?: any) {
     this.name = name

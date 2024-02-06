@@ -2,7 +2,9 @@ use crate::ffi::{
     error::{VdrError, VdrResult},
     types::{SignatureData, TransactionSignature, TransactionType},
 };
-use indy2_vdr::{Address, Transaction as Transaction_};
+use indy_besu_vdr::{
+    Address, Transaction as Transaction_, TransactionEndorsingData as TransactionEndorsingData_,
+};
 
 #[derive(uniffi::Object)]
 pub struct Transaction {
@@ -18,7 +20,7 @@ impl Transaction {
         to: String,
         chain_id: u64,
         data: Vec<u8>,
-        nonce: Option<Vec<u64>>,
+        nonce: Option<u64>,
         signature: Option<TransactionSignature>,
     ) -> Transaction {
         Transaction {
@@ -40,5 +42,29 @@ impl Transaction {
 
     pub fn set_signature(&self, signature_data: SignatureData) {
         self.transaction.set_signature(signature_data.into())
+    }
+}
+
+impl From<Transaction_> for Transaction {
+    fn from(transaction: Transaction_) -> Self {
+        Transaction { transaction }
+    }
+}
+
+#[derive(uniffi::Object)]
+pub struct TransactionEndorsingData {
+    pub data: TransactionEndorsingData_,
+}
+
+#[uniffi::export]
+impl TransactionEndorsingData {
+    pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
+        self.data.get_signing_bytes().map_err(VdrError::from)
+    }
+}
+
+impl From<TransactionEndorsingData_> for TransactionEndorsingData {
+    fn from(data: TransactionEndorsingData_) -> Self {
+        TransactionEndorsingData { data }
     }
 }

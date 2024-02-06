@@ -1,4 +1,4 @@
-use indy2_vdr::VdrError as VdrError_;
+use indy_besu_vdr::VdrError as VdrError_;
 
 #[derive(thiserror::Error, Debug, uniffi::Error)]
 pub enum VdrError {
@@ -60,9 +60,7 @@ impl From<VdrError_> for VdrError {
     fn from(error: VdrError_) -> Self {
         match error {
             VdrError_::ClientNodeUnreachable => VdrError::ClientNodeUnreachable,
-            VdrError_::ClientInvalidTransaction(msg) => {
-                VdrError::ClientInvalidTransaction { msg }
-            }
+            VdrError_::ClientInvalidTransaction(msg) => VdrError::ClientInvalidTransaction { msg },
             VdrError_::ClientInvalidResponse(msg) => VdrError::ClientInvalidResponse { msg },
             VdrError_::ClientTransactionReverted(msg) => {
                 VdrError::ClientTransactionReverted { msg }

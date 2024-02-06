@@ -4,7 +4,8 @@ use crate::{
     migration::{DID_METHOD, NETWORK},
     Schema, SchemaId,
 };
-use log::{trace, warn};
+use log::warn;
+use log_derive::{logfn, logfn_inputs};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -21,9 +22,9 @@ pub struct IndySchemaFormat {
 }
 
 impl SchemaId {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn from_indy_format(id: &str) -> VdrResult<SchemaId> {
-        trace!("SchemaId convert from Indy format: {} has started", id);
-
         let parts: Vec<&str> = id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
             let vdr_error = VdrError::CommonInvalidData("Invalid indy schema id".to_string());
@@ -55,24 +56,17 @@ impl SchemaId {
 
             vdr_error
         })?;
-        let issuer_did = DID::build(DID_METHOD, NETWORK, id);
+        let issuer_did = DID::build(DID_METHOD, Some(NETWORK), id);
 
         let besu_schema_id = SchemaId::build(&issuer_did, name, version);
-
-        trace!(
-            "SchemaId convert from Indy format: {} has finished. Result: {:?}",
-            id,
-            besu_schema_id
-        );
-
         Ok(besu_schema_id)
     }
 }
 
 impl Schema {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn from_indy_format(schema: &str) -> VdrResult<Schema> {
-        trace!("Schema convert from Indy format: {} has started", schema);
-
         let indy_schema: IndySchemaFormat = serde_json::from_str(&schema).map_err(|_err| {
             let vdr_error = VdrError::CommonInvalidData("Invalid indy schema".to_string());
 
@@ -84,27 +78,16 @@ impl Schema {
             vdr_error
         })?;
 
-        let besu_schema = Schema::try_from(indy_schema);
-
-        trace!(
-            "Schema convert from Indy format: {} has finished. Result: {:?}",
-            schema,
-            besu_schema
-        );
-
-        besu_schema
+        Schema::try_from(indy_schema)
     }
 }
 
 impl TryFrom<IndySchemaFormat> for Schema {
     type Error = VdrError;
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn try_from(schema: IndySchemaFormat) -> Result<Self, Self::Error> {
-        trace!(
-            "Schema convert from IndySchemaFormat: {:?} has started",
-            schema
-        );
-
         let parts: Vec<&str> = schema.id.split(':').collect();
         let id = parts.get(0).ok_or_else(|| {
             let vdr_error = VdrError::CommonInvalidData("Invalid indy schema".to_string());
@@ -116,34 +99,23 @@ impl TryFrom<IndySchemaFormat> for Schema {
 
             vdr_error
         })?;
-        let issuer_id = DID::build(DID_METHOD, NETWORK, id);
+        let issuer_id = DID::build(DID_METHOD, Some(NETWORK), id);
 
         let besu_schema = Schema {
-            id: SchemaId::build(&issuer_id, &schema.name, &schema.version),
             issuer_id,
             name: schema.name.to_string(),
             version: schema.version.to_string(),
             attr_names: schema.attr_names.clone(),
         };
-
-        trace!(
-            "Schema convert from IndySchemaFormat: {:?} has finished. Result: {:?}",
-            schema,
-            besu_schema
-        );
-
         Ok(besu_schema)
     }
 }
 
 impl Into<IndySchemaFormat> for &Schema {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn into(self) -> IndySchemaFormat {
-        trace!(
-            "Schema: {:?} convert into IndySchemaFormat has started",
-            self
-        );
-
-        let indy_schema = IndySchemaFormat {
+        IndySchemaFormat {
             id: format!(
                 "{}:2:{}:{}",
                 self.issuer_id.as_ref(),
@@ -155,14 +127,6 @@ impl Into<IndySchemaFormat> for &Schema {
             attr_names: self.attr_names.clone(),
             seq_no: None,
             ver: "1.0".to_string(),
-        };
-
-        trace!(
-            "Schema: {:?} convert into IndySchemaFormat has finished. Result: {:?}",
-            self,
-            indy_schema
-        );
-
-        indy_schema
+        }
     }
 }

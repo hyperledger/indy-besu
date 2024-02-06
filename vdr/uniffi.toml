@@ -1,2 +1,2 @@
 [bindings.kotlin]
-cdylib_name = "indy2_vdr_uniffi"
+cdylib_name = "indy_besu_vdr_uniffi"

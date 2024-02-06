@@ -3,7 +3,7 @@ use crate::ffi::{
     error::{VdrError, VdrResult},
     transaction::Transaction,
 };
-use indy2_vdr::{role_control, Address, Role};
+use indy_besu_vdr::{role_control, Address, Role};
 
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn build_assign_role_transaction(

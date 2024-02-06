@@ -6,7 +6,7 @@ import { buildProxySection, slots } from '../helpers'
 export interface CredentialDefinitionsConfig extends ContractConfig {
   data: {
     credentialDefinitions: Array<{ id: string; data: { name: string } }>
-    universalDidResolverAddress: string
+    ethereumDidRegistry: string
     schemaRegistryAddress: string
     upgradeControlAddress: string
   }
@@ -19,7 +19,7 @@ export function credentialDefinitionRegistry() {
   // address of upgrade control contact stored in slot 0
   storage[slots['0']] = padLeft(data.upgradeControlAddress, 64)
   // address of DID registry contact stored in slot 1
-  storage[slots['1']] = padLeft(data.universalDidResolverAddress, 64)
+  storage[slots['1']] = padLeft(data.ethereumDidRegistry, 64)
   // address of schema registry contact stored in slot 2
   storage[slots['2']] = padLeft(data.schemaRegistryAddress, 64)
   return buildProxySection(name, address, description, storage)

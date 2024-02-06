@@ -1,19 +1,10 @@
+use crate::{error::VdrError, types::ContractParam, Address};
+
 use crate::{
-    error::VdrError,
-    types::{ContractOutput, ContractParam},
+    contracts::{cl::types::schema_id::SchemaId, did::types::did::DID},
+    types::ContractEvent,
 };
-
-use crate::contracts::{cl::types::schema_id::SchemaId, did::types::did::DID};
-use log::trace;
 use serde_derive::{Deserialize, Serialize};
-use serde_json::json;
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CredentialDefinitionRecord {
-    pub credential_definition: CredentialDefinition,
-    pub metadata: CredentialDefinitionMetadata,
-}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CredentialDefinition {
@@ -33,103 +24,50 @@ pub enum CredentialDefinitionTypes {
     CL,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct CredentialDefinitionMetadata {
-    pub created: u64,
-}
-
-impl From<&CredentialDefinition> for ContractParam {
-    fn from(value: &CredentialDefinition) -> Self {
-        trace!(
-            "CredentialDefinition: {:?} convert into ContractParam has started",
-            value
-        );
-
-        let cred_def_contract_param = ContractParam::String(json!(value).to_string());
-
-        trace!(
-            "CredentialDefinition: {:?} convert into ContractParam has finished. Result: {:?}",
-            value,
-            cred_def_contract_param
-        );
-
-        cred_def_contract_param
+impl AsRef<str> for CredentialDefinitionTypes {
+    fn as_ref(&self) -> &str {
+        match self {
+            CredentialDefinitionTypes::CL => "CL",
+        }
     }
 }
 
-impl TryFrom<&ContractOutput> for CredentialDefinition {
+impl TryFrom<&CredentialDefinition> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: &ContractOutput) -> Result<Self, Self::Error> {
-        trace!(
-            "CredentialDefinition convert from ContractOutput: {:?} has started",
-            value
-        );
+    fn try_from(value: &CredentialDefinition) -> Result<Self, Self::Error> {
+        serde_json::to_vec(value)
+            .map(ContractParam::Bytes)
+            .map_err(|_| VdrError::ContractInvalidInputData)
+    }
+}
 
-        let cred_def = serde_json::from_str(&value.get_string(0)?).map_err(|err| {
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct CredentialDefinitionCreatedEvent {
+    pub id_hash: String,
+    pub identity: Address,
+    pub cred_def: CredentialDefinition,
+}
+
+impl TryFrom<ContractEvent> for CredentialDefinitionCreatedEvent {
+    type Error = VdrError;
+
+    fn try_from(log: ContractEvent) -> Result<Self, Self::Error> {
+        let id = log.get_fixed_bytes(0)?;
+        let identity = log.get_address(1)?;
+        let schema_bytes = log.get_bytes(2)?;
+        let cred_def = serde_json::from_slice(&schema_bytes).map_err(|err| {
             VdrError::ContractInvalidResponseData(format!(
-                "Unable to parse CredentialDefinition from the response. Err: {:?}",
+                "Unable to parse credential definition from contract event. Err: {:?}",
                 err
             ))
         })?;
 
-        trace!(
-            "CredentialDefinition convert from ContractOutput: {:?} has finished. Result: {:?}",
-            value,
-            cred_def
-        );
-
-        Ok(cred_def)
-    }
-}
-
-impl TryFrom<ContractOutput> for CredentialDefinitionMetadata {
-    type Error = VdrError;
-
-    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        trace!(
-            "CredentialDefinitionMetadata convert from ContractOutput: {:?} has started",
-            value
-        );
-
-        let created = value.get_u128(0)?;
-        let cred_def_metadata = CredentialDefinitionMetadata {
-            created: created as u64,
-        };
-
-        trace!(
-            "CredentialDefinitionMetadata convert from ContractOutput: {:?} has finished. Result: {:?}",
-            value, cred_def_metadata
-        );
-
-        Ok(cred_def_metadata)
-    }
-}
-
-impl TryFrom<ContractOutput> for CredentialDefinitionRecord {
-    type Error = VdrError;
-
-    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        trace!(
-            "CredentialDefinitionWithMeta convert from ContractOutput: {:?} has started",
-            value
-        );
-
-        let output_tuple = value.get_tuple(0)?;
-        let credential_definition = CredentialDefinition::try_from(&output_tuple)?;
-        let metadata = output_tuple.get_tuple(1)?;
-
-        let cred_def_with_metadata = CredentialDefinitionRecord {
-            credential_definition,
-            metadata: CredentialDefinitionMetadata::try_from(metadata)?,
-        };
-
-        trace!(
-            "CredentialDefinitionWithMeta convert from ContractOutput: {:?} has finished. Result: {:?}",
-            value, cred_def_with_metadata
-        );
-
-        Ok(cred_def_with_metadata)
+        Ok(CredentialDefinitionCreatedEvent {
+            id_hash: hex::encode(id),
+            identity,
+            cred_def,
+        })
     }
 }
 
@@ -147,7 +85,7 @@ pub mod test {
     };
     use serde_json::json;
 
-    pub const _CREDENTIAL_DEFINITION_ID: &str = "did:indy2:testnet:3LpjszkgTmE3qThge25FZw/anoncreds/v0/CLAIM_DEF/did:indy2:testnet:3LpjszkgTmE3qThge25FZw/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0/default";
+    pub const _CREDENTIAL_DEFINITION_ID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/CLAIM_DEF/did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0/default";
     pub const CREDENTIAL_DEFINITION_TAG: &str = "default";
 
     pub fn credential_definition_id(
@@ -191,7 +129,7 @@ pub mod test {
             &SchemaId::from(SCHEMA_ID),
             Some(CREDENTIAL_DEFINITION_TAG),
         );
-        ContractParam::String(json!(cred_def).to_string())
+        ContractParam::Bytes(serde_json::to_vec(&cred_def).unwrap())
     }
 
     mod convert_into_contract_param {
@@ -204,24 +142,8 @@ pub mod test {
                 &SchemaId::from(SCHEMA_ID),
                 Some(CREDENTIAL_DEFINITION_TAG),
             );
-            let param: ContractParam = (&credential_definition).into();
+            let param: ContractParam = (&credential_definition).try_into().unwrap();
             assert_eq!(cred_def_param(), param);
-        }
-    }
-
-    mod convert_into_object {
-        use super::*;
-
-        #[test]
-        fn convert_contract_output_into_cred_def() {
-            let data = ContractOutput::new(vec![cred_def_param()]);
-            let converted = CredentialDefinition::try_from(&data).unwrap();
-            let (_, credential_definition) = credential_definition(
-                &DID::from(ISSUER_ID),
-                &SchemaId::from(SCHEMA_ID),
-                Some(CREDENTIAL_DEFINITION_TAG),
-            );
-            assert_eq!(credential_definition, converted);
         }
     }
 }

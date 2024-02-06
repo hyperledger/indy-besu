@@ -3,7 +3,31 @@
 General design for smart contracts oriented for storing objects like DID Document, Schema, Credential Definition.
 The main question is whether we need to validate storing object or not? 
 
-### Current Option: Strict object definition
+### Option 1 (Current): Arbitrary objects as JSON string
+
+#### Pros
+
+* Simplicity: accept objects (Did Document, Schema, CredDef) as JSON strings (bytes) and store them in transaction log events
+* Spec compliant objects stored on the ledger
+* Small contract size
+* Gas efficient
+* Different versions and formats of object can be stored without an upgrade
+
+#### Cons
+
+* Invalid data can be written on the Ledger
+    * JSON string may contain not owned data:
+        * VDR must perform validation and be reliable by client
+    * JSON string may contain bad formatted objects
+* Duplication:
+    * Some fields must be passed as an independent parameters for doing obligatory state checks
+        * Like issuer DID for schema and cred def
+* Strong relationship with VDR library?
+    * VDR must perform the validation of sending data
+
+### Option 2 (Outdated): Strict object definition
+
+Define data types for accepting and storing objects, and perform validation of input data. 
 
 #### Pros
 
@@ -60,27 +84,4 @@ The main question is whether we need to validate storing object or not?
     * Type is `CL`
     * Type is not empty
     * Value is not empty
-
-### Option 2: Arbitrary objects as JSON string
-
-#### Pros
-
-* Simplicity: accept objects (Did Document, Schema, CredDef) as JSON strings and store them as is
-* Spec compliant objects stored on the ledger
-* We can return state proof for spec compliant objects
-* Small contract size
-* Gas efficient
-* Different versions and formats of object can be stored without an upgrade
-
-#### Cons
-
-* Invalid data can be written on the Ledger
-  * JSON string may contain not owned data: 
-    * VDR must perform validation and be reliable by client  
-  * JSON string may contain bad formatted objects
-* Duplication:
-  * Some fields must be passed as an independent parameters for doing obligatory state checks
-    * Like issuer DID for schema and cred def 
-* Strong relationship with VDR library?
-  * VDR must perform the validation of sending data
 

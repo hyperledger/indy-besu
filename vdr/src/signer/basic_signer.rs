@@ -1,8 +1,12 @@
 use crate::error::{VdrError, VdrResult};
 
 use log::warn;
+use log_derive::{logfn, logfn_inputs};
 use secp256k1::{All, Message, PublicKey, Secp256k1, SecretKey};
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+};
 
 use crate::types::{Address, SignatureData};
 use std::str::FromStr;
@@ -19,6 +23,8 @@ pub struct BasicSigner {
 }
 
 impl BasicSigner {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn new() -> VdrResult<BasicSigner> {
         Ok(BasicSigner {
             secp: Secp256k1::new(),
@@ -26,6 +32,8 @@ impl BasicSigner {
         })
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn create_key(&mut self, private_key: Option<&str>) -> VdrResult<(Address, Vec<u8>)> {
         let (account, key_pair) = self.create_account(private_key)?;
         let public_key_bytes = key_pair.public_key.serialize_uncompressed().to_vec();
@@ -33,6 +41,8 @@ impl BasicSigner {
         Ok((account, public_key_bytes))
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn key_for_account(&self, account: &str) -> VdrResult<&KeyPair> {
         self.keys.get(account).ok_or_else(|| {
             let vdr_error = VdrError::SignerMissingKey(account.to_string());
@@ -46,11 +56,15 @@ impl BasicSigner {
         })
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     fn account_from_key(&self, public_key: &PublicKey) -> String {
         let hash = keccak256(&public_key.serialize_uncompressed()[1..]);
         format!("0x{}", hex::encode(&hash[12..]))
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn create_account(&self, private_key: Option<&str>) -> VdrResult<(Address, KeyPair)> {
         let private_key = match private_key {
             Some(private_key) => SecretKey::from_str(private_key)?,
@@ -65,6 +79,8 @@ impl BasicSigner {
         Ok((address, key_pair))
     }
 
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn sign(&self, message: &[u8], account: &str) -> VdrResult<SignatureData> {
         let key = self.key_for_account(account)?;
         let message = Message::from_digest_slice(message)?;
@@ -76,6 +92,18 @@ impl BasicSigner {
             recovery_id: recovery_id.to_i32() as u64,
             signature: signature.to_vec(),
         })
+    }
+}
+
+impl Debug for BasicSigner {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, r#"BasicSigner {{ }}"#)
+    }
+}
+
+impl Debug for KeyPair {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, r#"KeyPair {{ }}"#)
     }
 }
 

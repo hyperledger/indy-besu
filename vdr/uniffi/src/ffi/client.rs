@@ -1,12 +1,13 @@
 use crate::{
     ffi::{
         error::VdrResult,
+        event_query::{EventLog, EventQuery},
         transaction::Transaction,
         types::{ContractConfig, PingStatus, QuorumConfig},
     },
     VdrError,
 };
-use indy2_vdr::{ContractConfig as ContractConfig_, LedgerClient as LedgerClient_};
+use indy_besu_vdr::{ContractConfig as ContractConfig_, LedgerClient as LedgerClient_};
 
 #[derive(uniffi::Object)]
 pub struct LedgerClient {
@@ -46,6 +47,16 @@ impl LedgerClient {
             .submit_transaction(&transaction.transaction)
             .await
             .map_err(VdrError::from)
+    }
+
+    pub async fn query_events(&self, query: &EventQuery) -> VdrResult<Vec<EventLog>> {
+        Ok(self
+            .client
+            .query_events(&query.query)
+            .await?
+            .into_iter()
+            .map(EventLog::from)
+            .collect())
     }
 
     pub async fn get_receipt(&self, hash: Vec<u8>) -> VdrResult<String> {

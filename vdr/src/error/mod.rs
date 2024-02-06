@@ -1,4 +1,3 @@
-use log::trace;
 use serde_json::json;
 
 #[cfg(not(feature = "wasm"))]
@@ -64,36 +63,22 @@ pub type VdrResult<T> = Result<T, VdrError>;
 
 impl From<Web3Error> for VdrError {
     fn from(value: Web3Error) -> Self {
-        let vdr_error = match value {
+        match value {
             Web3Error::Unreachable => VdrError::ClientNodeUnreachable,
             Web3Error::InvalidResponse(err) => VdrError::ClientInvalidResponse(err),
             Web3Error::Rpc(err) => VdrError::ClientTransactionReverted(json!(err).to_string()),
             Web3Error::Revert(err) => VdrError::ClientTransactionReverted(err),
             _ => VdrError::ClientUnexpectedError(value.to_string()),
-        };
-
-        trace!(
-            "VdrError convert from web3::Error has finished. Result: {:?}",
-            vdr_error
-        );
-
-        vdr_error
+        }
     }
 }
 
 impl From<Web3EthabiError> for VdrError {
     fn from(value: Web3EthabiError) -> Self {
-        let vdr_error = match value {
+        match value {
             Web3EthabiError::InvalidName(name) => VdrError::ContractInvalidName(name),
             _ => VdrError::ContractInvalidInputData,
-        };
-
-        trace!(
-            "VdrError convert from web3::ethabi::Error has finished. Result: {:?}",
-            vdr_error
-        );
-
-        vdr_error
+        }
     }
 }
 

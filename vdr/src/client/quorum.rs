@@ -1,5 +1,3 @@
-use std::{sync::Arc, time::Duration};
-
 use futures::{
     channel::{
         mpsc,
@@ -7,17 +5,21 @@ use futures::{
     },
     StreamExt,
 };
-
 use log::trace;
+use log_derive::{logfn, logfn_inputs};
+use serde_derive::{Deserialize, Serialize};
+use std::{
+    fmt::{Debug, Formatter},
+    sync::Arc,
+    time::Duration,
+};
 
 use crate::{
     client::implementation::web3::client::Web3Client, Client, Transaction, TransactionType,
     VdrError, VdrResult,
 };
 
-use serde_derive::{Deserialize, Serialize};
-
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QuorumConfig {
     pub nodes: Vec<String>,
     pub request_retries: Option<u8>,
@@ -37,6 +39,8 @@ pub struct QuorumHandler {
 }
 
 impl QuorumHandler {
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     pub fn new(config: QuorumConfig) -> VdrResult<QuorumHandler> {
         let clients = config
             .nodes
@@ -47,7 +51,7 @@ impl QuorumHandler {
             })
             .collect::<Result<Vec<_>, VdrError>>()?;
 
-        Ok(QuorumHandler {
+        let handler = QuorumHandler {
             clients,
             request_retries: config.request_retries.unwrap_or(DEFAULT_REQUEST_RETRIES),
             request_timeout: Duration::from_millis(
@@ -56,9 +60,12 @@ impl QuorumHandler {
             retry_interval: Duration::from_millis(
                 config.retry_interval.unwrap_or(DEFAULT_RETRY_INTERVAL),
             ),
-        })
+        };
+        Ok(handler)
     }
 
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     #[allow(clippy::too_many_arguments)]
     async fn send_transaction_with_retries(
         mut sender: Sender<Vec<u8>>,
@@ -70,8 +77,6 @@ impl QuorumHandler {
         request_timeout: Duration,
         retry_interval: Duration,
     ) {
-        trace!("Started eth_call task for transaction: {:?}", data);
-
         for _ in 1..request_retries {
             match type_ {
                 TransactionType::Write => {
@@ -113,10 +118,10 @@ impl QuorumHandler {
                 }
             };
         }
-
-        trace!("Finished eth_call task for transaction: {:?}", data);
     }
 
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     async fn wait_for_quorum(
         &self,
         mut receiver: Receiver<Vec<u8>>,
@@ -140,13 +145,13 @@ impl QuorumHandler {
         quorum_reached
     }
 
+    #[logfn(Info)]
+    #[logfn_inputs(Debug)]
     pub async fn check(
         &self,
         transaction: &Transaction,
         expected_result: &[u8],
     ) -> VdrResult<bool> {
-        trace!("Started quorum check for transaction: {:?}", transaction);
-
         let clients_count = self.clients.len();
         let (sender, receiver) = mpsc::channel::<Vec<u8>>(clients_count);
 
@@ -196,15 +201,27 @@ impl QuorumHandler {
 
         let quorum_reached = self.wait_for_quorum(receiver, expected_result).await;
         if quorum_reached {
-            trace!("Quorum succeed for transaction: {:?}", transaction);
             Ok(quorum_reached)
         } else {
-            trace!("Quorum failed for transaction: {:?}", transaction);
             Err(VdrError::QuorumNotReached(format!(
                 "Quorum not reached for transaction: {:?}",
                 transaction
             )))
         }
+    }
+}
+
+impl Debug for QuorumHandler {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"QuorumHandler {{
+            request_retries: {},
+            request_timeout: {:?},
+            retry_interval: {:?}
+        }}"#,
+            self.request_retries, self.request_timeout, self.retry_interval
+        )
     }
 }
 

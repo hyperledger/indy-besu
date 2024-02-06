@@ -3,24 +3,23 @@ pub mod constants;
 pub mod implementation;
 pub mod quorum;
 
-use crate::{
-    error::VdrResult,
-    types::{Address, ContractOutput, ContractParam, PingStatus},
-    Transaction,
-};
+use crate::{error::VdrResult, types::Address, BlockDetails, Transaction};
 use async_trait::async_trait;
+use ethabi::{Event, Function};
+use std::fmt::Debug;
 
 pub use client::LedgerClient;
 pub use constants::*;
 pub use quorum::{QuorumConfig, QuorumHandler};
 
+use crate::types::{EventLog, EventQuery};
 #[cfg(test)]
 use mockall::automock;
 
 #[cfg_attr(test, automock)]
 #[cfg_attr(not(feature = "wasm"), async_trait)]
 #[cfg_attr(feature = "wasm", async_trait(?Send))]
-pub trait Client: Sync + Send {
+pub trait Client: Sync + Send + Debug {
     /// Retrieve count of transaction for the given account
     ///
     /// # Params
@@ -28,7 +27,7 @@ pub trait Client: Sync + Send {
     ///
     /// # Returns
     /// number of transactions
-    async fn get_transaction_count(&self, address: &Address) -> VdrResult<[u64; 4]>;
+    async fn get_transaction_count(&self, address: &Address) -> VdrResult<u64>;
 
     /// Submit transaction to the ledger
     ///
@@ -49,6 +48,16 @@ pub trait Client: Sync + Send {
     /// result data of transaction execution
     async fn call_transaction(&self, to: &str, transaction: &[u8]) -> VdrResult<Vec<u8>>;
 
+    /// Send a prepared query for retrieving log events on the ledger
+    ///
+    /// #Params
+    ///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+    ///  param: query: EventQuery - query to send
+    ///
+    /// #Returns
+    ///   logs - list of received events
+    async fn query_events(&self, query: &EventQuery) -> VdrResult<Vec<EventLog>>;
+
     /// Get the receipt for the given block hash
     ///
     /// # Params
@@ -58,11 +67,11 @@ pub trait Client: Sync + Send {
     /// receipt as JSON string for the requested block
     async fn get_receipt(&self, hash: &[u8]) -> VdrResult<String>;
 
-    /// Check client connection (passed node is alive and return valid ledger data)
+    /// Get details for the given block
     ///
     /// # Returns
-    /// ledger status
-    async fn ping(&self) -> VdrResult<PingStatus>;
+    ///  Block details
+    async fn get_block(&self, block: Option<u64>) -> VdrResult<BlockDetails>;
 
     /// Get the transaction for the given transaction hash
     ///
@@ -74,30 +83,22 @@ pub trait Client: Sync + Send {
     async fn get_transaction(&self, hash: &[u8]) -> VdrResult<Option<Transaction>>;
 }
 
-pub trait Contract: Sync + Send {
+pub trait Contract: Sync + Send + Debug {
     /// Get the address of deployed contract
     ///
     /// # Returns
     /// address of the deployed contract. Should be used to execute contract methods
     fn address(&self) -> &Address;
 
-    /// Encode data required for the execution of a contract method
-    ///
-    /// # Params
-    /// - `method` method to execute
-    /// - `params` data to pass/encode for contract execution
+    /// Get the contract function
     ///
     /// # Returns
-    /// encoded data to set into transaction
-    fn encode_input(&self, method: &str, params: &[ContractParam]) -> VdrResult<Vec<u8>>;
+    /// Contract function
+    fn function(&self, name: &str) -> VdrResult<&Function>;
 
-    /// Decode the value (bytes) returned as the result of the execution of a contract method
-    ///
-    /// # Params
-    /// - `method` method to execute
-    /// - `output` data to decode (returned as result of sending call transaction)
+    /// Get the contract event
     ///
     /// # Returns
-    /// contract execution result in decoded form
-    fn decode_output(&self, method: &str, output: &[u8]) -> VdrResult<ContractOutput>;
+    /// Contract event
+    fn event(&self, name: &str) -> VdrResult<&Event>;
 }

@@ -8,31 +8,15 @@ export namespace AuthErrors {
 }
 
 export namespace ClErrors {
-  export const IssuerNotFound = 'IssuerNotFound'
-  export const IssuerHasBeenDeactivated = 'IssuerHasBeenDeactivated'
-  export const InvalidIssuerId = 'InvalidIssuerId'
   export const UnauthorizedIssuer = 'UnauthorizedIssuer'
 
   // Schema errors
-  export const InvalidSchemaId = 'InvalidSchemaId'
   export const SchemaAlreadyExist = 'SchemaAlreadyExist'
   export const SchemaNotFound = 'SchemaNotFound'
 
   // CredDef errors
-  export const InvalidCredentialDefinitionId = 'InvalidCredentialDefinitionId'
-  export const UnsupportedCredentialDefinitionType = 'UnsupportedCredentialDefinitionType'
   export const CredentialDefinitionAlreadyExist = 'CredentialDefinitionAlreadyExist'
   export const CredentialDefinitionNotFound = 'CredentialDefinitionNotFound'
-}
-
-export namespace DidError {
-  export const AuthenticationKeyRequired = 'AuthenticationKeyRequired'
-  export const AuthenticationKeyNotFound = 'AuthenticationKeyNotFound'
-  export const DidNotFound = 'DidNotFound'
-  export const DidAlreadyExist = 'DidAlreadyExist'
-  export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'
-  export const IncorrectDid = 'IncorrectDid'
-  export const UnauthorizedSender = 'UnauthorizedSender'
 }
 
 export namespace ProxyError {

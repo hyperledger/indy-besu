@@ -13,7 +13,7 @@ language `<kotlin|python|swift>`:
 
 ```
 cargo build --release
-cargo run --bin uniffi-bindgen generate --library target/release/libindy2_vdr_uniffi.dylib --language <kotlin|python|swift> --out-dir out
+cargo run --bin uniffi-bindgen generate --library target/release/libindy_besu_vdr_uniffi.dylib --language <kotlin|python|swift> --out-dir out
 ```
 
 The check `out` directory which will contain generated bindings.
