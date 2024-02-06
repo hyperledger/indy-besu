@@ -496,7 +496,6 @@ pub struct BlockDetails {
     pub timestamp: u64,
 }
 
-
 #[cfg(test)]
 pub mod test {
 

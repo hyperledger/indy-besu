@@ -325,13 +325,11 @@ pub mod test {
             &contracts(),
             Some(&QuorumConfig::default()),
         )
-            .unwrap();
+        .unwrap();
 
         let mut client = MockClient::new();
         client.expect_ping().returning(|| Ok(PingStatus::ok()));
-        client
-            .expect_get_transaction_count()
-            .returning(|_| Ok(0));
+        client.expect_get_transaction_count().returning(|_| Ok(0));
 
         ledger_client.client = Box::new(client);
         ledger_client
@@ -376,7 +374,7 @@ pub mod test {
             &contracts(),
             Some(&QuorumConfig::default()),
         )
-            .unwrap();
+        .unwrap();
 
         ledger_client.client = client;
         ledger_client
@@ -603,7 +601,8 @@ pub mod test {
                 wrong_node_address,
                 &contracts(),
                 Some(&QuorumConfig::default()),
-            ).unwrap();
+            )
+            .unwrap();
             match client.ping().await.unwrap().status {
                 Status::Err { .. } => {}
                 Status::Ok { .. } => assert!(false, "Ping status expected to be `Err`."),

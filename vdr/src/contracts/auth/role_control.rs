@@ -153,7 +153,6 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<R
         .parse::<Role>(client, bytes)
 }
 
-    }
 #[cfg(test)]
 pub mod test {
     use super::*;
