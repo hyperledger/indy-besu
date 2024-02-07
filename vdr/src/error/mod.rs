@@ -59,7 +59,7 @@ pub enum VdrError {
     GetTransactionError(String),
 
     #[error("Invalid schema: {}", _0)]
-    InvalidSchema(String)
+    InvalidSchema(String),
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;

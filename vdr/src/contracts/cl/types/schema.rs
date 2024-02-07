@@ -5,6 +5,11 @@ use crate::{
     Address,
 };
 use std::collections::HashSet;
+use crate::{
+    error::VdrError,
+    types::{ContractOutput, ContractParam},
+    Address, SchemaId, VdrResult,
+};
 
 use crate::{contracts::did::types::did::DID, types::ContractEvent};
 use serde_derive::{Deserialize, Serialize};
@@ -40,7 +45,9 @@ impl Schema {
 
     fn require_version(&self) -> VdrResult<()> {
         if self.version.is_empty() {
-            return Err(VdrError::InvalidSchema("Version is not provided".to_string()));
+            return Err(VdrError::InvalidSchema(
+                "Version is not provided".to_string(),
+            ));
         }
 
         Ok(())
@@ -48,7 +55,9 @@ impl Schema {
 
     fn require_attributes(&self) -> VdrResult<()> {
         if self.attr_names.is_empty() {
-            return Err(VdrError::InvalidSchema("Attributes are not provided".to_string()));
+            return Err(VdrError::InvalidSchema(
+                "Attributes are not provided".to_string(),
+            ));
         }
 
         Ok(())
