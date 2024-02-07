@@ -94,18 +94,6 @@ pub struct SchemaCreatedEvent {
     pub schema: Schema,
 }
 
-impl SchemaCreatedEvent {
-    pub fn validate_id_hash(&self) -> VdrResult<()> {
-        let actual_schema_id = SchemaId::build(&self.schema.issuer_id, &self.schema.name, &self.schema.version);
-
-        if self.id_hash.as_bytes() != actual_schema_id.hash().as_slice() {
-            return Err(VdrError::InvalidSchema("id_hash from SchemaCreatedEvent != id_hash from schema".to_string()));
-        }
-
-        Ok(())
-    }
-}
-
 impl TryFrom<ContractEvent> for SchemaCreatedEvent {
     type Error = VdrError;
 

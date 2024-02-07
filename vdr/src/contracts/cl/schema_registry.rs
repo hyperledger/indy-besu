@@ -241,6 +241,9 @@ pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<S
     }
 
     let schema = parse_schema_created_event(client, &events[0])?.schema;
+
+    schema.require_valid_id(id)?;
+
     Ok(schema)
 }
 
