@@ -4,12 +4,12 @@ pragma solidity ^0.8.20;
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
-import { CredentialDefinitionAlreadyExist, SchemaNotFound } from "./ClErrors.sol";
-import { CLRegistry } from "./CLRegistry.sol";
+import { CredentialDefinitionAlreadyExist, SchemaNotFound } from "../utils/Errors.sol";
+import { DidValidator } from "../did/DidValidator.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
 import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
 
-contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, ControlledUpgradeable, CLRegistry {
+contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, ControlledUpgradeable, DidValidator {
     /**
      * @dev Reference to the contract that manages anoncreds schemas
      */
@@ -87,7 +87,7 @@ contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, 
         bytes32 id,
         bytes32 schemaId,
         bytes calldata credDef
-    ) internal _uniqueCredDefId(id) _validIssuer(identity, actor) _schemaExist(schemaId) {
+    ) internal _uniqueCredDefId(id) identityOwner(identity, actor) _schemaExist(schemaId) {
         created[id] = block.number;
         emit CredentialDefinitionCreated(id, actor, credDef);
     }

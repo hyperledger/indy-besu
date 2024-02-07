@@ -15,9 +15,9 @@ use crate::{
     },
     error::VdrResult,
     types::{
-        Address, EventLog, EventParser, EventQuery, EventQueryBuilder, MethodParam, Transaction,
-        TransactionBuilder, TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
-        UintBytesParam,
+        Address, EventLog, EventParser, EventQuery, EventQueryBuilder, MethodStringParam,
+        MethodUintBytesParam, Transaction, TransactionBuilder, TransactionEndorsingDataBuilder,
+        TransactionParser, TransactionType,
     },
     Block, Nonce, SignatureData, TransactionEndorsingData, VdrError, DID,
 };
@@ -101,7 +101,7 @@ pub async fn build_did_change_owner_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodParam::from(METHOD_CHANGE_OWNER))?
+        .add_param(MethodStringParam::from(METHOD_CHANGE_OWNER))?
         .add_param(new_owner)?
         .build(client)
         .await
@@ -208,10 +208,10 @@ pub async fn build_did_add_delegate_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodParam::from(METHOD_ADD_DELEGATE))?
+        .add_param(MethodStringParam::from(METHOD_ADD_DELEGATE))?
         .add_param(delegate_type)?
         .add_param(delegate)?
-        .add_param(UintBytesParam::from(validity.0))?
+        .add_param(MethodUintBytesParam::from(validity.0))?
         .build(client)
         .await
 }
@@ -319,7 +319,7 @@ pub async fn build_did_revoke_delegate_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodParam::from(METHOD_REVOKE_DELEGATE))?
+        .add_param(MethodStringParam::from(METHOD_REVOKE_DELEGATE))?
         .add_param(delegate_type)?
         .add_param(delegate)?
         .build(client)
@@ -429,10 +429,10 @@ pub async fn build_did_set_attribute_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodParam::from(METHOD_SET_ATTRIBUTE))?
+        .add_param(MethodStringParam::from(METHOD_SET_ATTRIBUTE))?
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
-        .add_param(UintBytesParam::from(validity.0))?
+        .add_param(MethodUintBytesParam::from(validity.0))?
         .build(client)
         .await
 }
@@ -538,7 +538,7 @@ pub async fn build_did_revoke_attribute_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodParam::from(METHOD_REVOKE_ATTRIBUTE))?
+        .add_param(MethodStringParam::from(METHOD_REVOKE_ATTRIBUTE))?
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
         .build(client)

@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { UnauthorizedIssuer } from "./ClErrors.sol";
+import { NotIdentityOwner } from "../utils/Errors.sol";
 import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
 
-contract CLRegistry {
+contract DidValidator {
     /**
      * @dev Reference to the DID registry contract
      */
     EthereumExtDidRegistry internal _didRegistry;
 
-    modifier _validIssuer(address identity, address actor) {
+    modifier identityOwner(address identity, address actor) {
         if (actor != _didRegistry.identityOwner(identity)) {
-            revert UnauthorizedIssuer(identity, actor);
+            revert NotIdentityOwner(identity, actor);
         }
         _;
     }
@@ -26,7 +26,7 @@ contract CLRegistry {
     ) internal pure returns (address) {
         address signer = ecrecover(hash, sigV, sigR, sigS);
         if (identity != signer) {
-            revert UnauthorizedIssuer(identity, signer);
+            revert NotIdentityOwner(identity, signer);
         }
         return signer;
     }

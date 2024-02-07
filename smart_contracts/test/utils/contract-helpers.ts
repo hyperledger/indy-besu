@@ -1,4 +1,5 @@
-import { concat, getAddress, getBytes, keccak256, SigningKey, toUtf8Bytes } from 'ethers'
+import bs58 from 'bs58'
+import { concat, getAddress, getBytes, keccak256, Signature, SigningKey, toUtf8Bytes } from 'ethers'
 import {
   CredentialDefinitionRegistry,
   EthereumExtDidRegistry,
@@ -7,6 +8,7 @@ import {
   UpgradeControl,
   ValidatorControl,
 } from '../../contracts-ts'
+import { LegacyIdentifiersRegistry } from '../../contracts-ts/LegacyIdentifiersRegistry'
 import { Contract, createSchemaObject } from '../../utils'
 import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 
@@ -30,6 +32,8 @@ export class TestableRoleControl extends testableContractMixin(RoleControl) {}
 export class TestableValidatorControl extends testableContractMixin(ValidatorControl) {}
 
 export class TestableUpgradeControl extends testableContractMixin(UpgradeControl) {}
+
+export class TestableLegacyIdentifiersRegistry extends testableContractMixin(LegacyIdentifiersRegistry) {}
 
 function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
   return class extends Base {
@@ -72,6 +76,15 @@ export async function deployCredentialDefinitionRegistry() {
   })
 
   return { credentialDefinitionRegistry, didRegistry, schemaRegistry, testAccounts }
+}
+
+export async function deployLegacyIdentifiersRegistry() {
+  const { didRegistry, testAccounts } = await deployDidRegistry()
+  const legacyIdentifiersRegistry = await new TestableLegacyIdentifiersRegistry().deployProxy({
+    params: [ZERO_ADDRESS, didRegistry.address],
+  })
+
+  return { didRegistry, legacyIdentifiersRegistry, testAccounts }
 }
 
 export async function createDid(didRegistry: EthereumExtDidRegistry, identity: string, did: string) {
@@ -128,6 +141,42 @@ export async function signCredDefEndorsementData(
       getBytes(keccak256(toUtf8Bytes(id)), 'hex'),
       getBytes(keccak256(toUtf8Bytes(schemaId)), 'hex'),
       toUtf8Bytes(credDef),
+    ]),
+  )
+}
+
+export async function signDidMappingEndorsementData(
+  legacyIdentifiersRegistry: LegacyIdentifiersRegistry,
+  identity: string,
+  privateKey: Uint8Array,
+  identifier: string,
+  ed25519Key: Uint8Array,
+  ed25519Signature: Uint8Array,
+) {
+  return signEndorsementData(
+    privateKey,
+    legacyIdentifiersRegistry.address!,
+    concat([identity, toUtf8Bytes('createDidMapping'), bs58.decode(identifier), ed25519Key, ed25519Signature]),
+  )
+}
+
+export async function signClMappingEndorsementData(
+  legacyIdentifiersRegistry: LegacyIdentifiersRegistry,
+  identity: string,
+  privateKey: Uint8Array,
+  legacyIssuerIdentifier: string,
+  legacyIdentifier: string,
+  newIdentifier: string,
+) {
+  return signEndorsementData(
+    privateKey,
+    legacyIdentifiersRegistry.address!,
+    concat([
+      identity,
+      toUtf8Bytes('createClMapping'),
+      bs58.decode(legacyIssuerIdentifier),
+      toUtf8Bytes(legacyIdentifier),
+      toUtf8Bytes(newIdentifier),
     ]),
   )
 }

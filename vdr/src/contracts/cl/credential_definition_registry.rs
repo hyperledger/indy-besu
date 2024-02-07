@@ -8,8 +8,8 @@ use crate::{
     },
     error::VdrResult,
     types::{
-        Address, EventParser, EventQueryBuilder, MethodParam, Transaction, TransactionBuilder,
-        TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
+        Address, EventParser, EventQueryBuilder, MethodStringParam, Transaction,
+        TransactionBuilder, TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
     },
     Block, EventLog, EventQuery, SignatureData, TransactionEndorsingData, VdrError,
 };
@@ -75,7 +75,7 @@ pub async fn build_create_credential_definition_endorsing_data(
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
         .add_param(&identity)?
-        .add_param(MethodParam::from(METHOD_CREATE_CREDENTIAL_DEFINITION))?
+        .add_param(MethodStringParam::from(METHOD_CREATE_CREDENTIAL_DEFINITION))?
         .add_param(id)?
         .add_param(&credential_definition.schema_id)?
         .add_param(credential_definition)?

@@ -43,6 +43,10 @@ pub use contracts::{
             did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},
         },
     },
+    migration::{
+        legacy_identifiers_registry,
+        types::{ed25519_signature::Ed25519Signature, identifier::Identifier},
+    },
     network::validator_control,
     StringOrVector,
 };

@@ -227,6 +227,8 @@ pub mod test {
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
     pub const ETHR_DID_REGISTRY_PATH: &str =
         "did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json";
+    pub const LEGACY_IDENTIFIERS_REGISTRY_PATH: &str =
+        "migration/LegacyIdentifiersRegistry.sol/LegacyIdentifiersRegistry.json";
     pub const RPC_NODE_ADDRESS: &str = "http://127.0.0.1:8545";
     pub const CLIENT_NODE_ADDRESSES: [&str; 4] = [
         "http://127.0.0.1:21001",
@@ -249,7 +251,10 @@ pub mod test {
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000006666"));
 
     pub static ETHR_DID_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000018888"));
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000003333"));
+
+    pub static LEGACY_IDENTIFIERS_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000019999"));
 
     pub static TRUSTEE_ACC: Lazy<Address> =
         Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
@@ -293,6 +298,11 @@ pub mod test {
             ContractConfig {
                 address: ETHR_DID_REGISTRY_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(ETHR_DID_REGISTRY_PATH)),
+                spec: None,
+            },
+            ContractConfig {
+                address: LEGACY_IDENTIFIERS_REGISTRY_ADDRESS.to_string(),
+                spec_path: Some(build_contract_path(LEGACY_IDENTIFIERS_REGISTRY_PATH)),
                 spec: None,
             },
         ]

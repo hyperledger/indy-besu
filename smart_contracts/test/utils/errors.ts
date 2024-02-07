@@ -39,3 +39,10 @@ export namespace ValidatorControlErrors {
   export const CannotDeactivateLastValidator = 'CannotDeactivateLastValidator'
   export const ValidatorNotFound = 'ValidatorNotFound'
 }
+
+export namespace MigrationErrors {
+  export const DidMappingAlreadyExist = 'DidMappingAlreadyExist'
+  export const ClMappingAlreadyExist = 'ClMappingAlreadyExist'
+  export const UnauthorizedSender = 'UnauthorizedSender'
+  export const InvalidEd25519Key = 'InvalidEd25519Key'
+}

@@ -626,6 +626,7 @@ version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
 dependencies = [
+ "pkcs8",
  "signature",
 ]
 
@@ -637,6 +638,8 @@ checksum = "1f628eaec48bfd21b865dc2950cfa014450c01d2fa2b69a86c2fd5844ec523c0"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
+ "rand_core",
+ "serde",
  "sha2",
  "subtle",
  "zeroize",
@@ -831,9 +834,9 @@ dependencies = [
 
 [[package]]
 name = "fiat-crypto"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27573eac26f4dd11e2b1916c3fe1baa56407c83c71a773a8ba17ec0bca03b6b7"
+checksum = "1676f435fc1dadde4d03e43f5d62b259e1ce5f40bd4ffb21db2b42ebe59c1382"
 
 [[package]]
 name = "fixed-hash"
@@ -980,10 +983,6 @@ name = "futures-timer"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e64b03909df88034c26dc1547e8970b91f98bdb65165d6a4e9110d94263dbb2c"
-dependencies = [
- "gloo-timers",
- "send_wrapper",
-]
 
 [[package]]
 name = "futures-util"
@@ -1021,10 +1020,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be4136b2a15dd319360be1c07d9933517ccf0be8f16bf62a3bee4f0d618df427"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "wasi",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -1344,6 +1341,7 @@ dependencies = [
  "base64 0.21.7",
  "bs58",
  "chrono",
+ "ed25519-dalek",
  "env_logger",
  "ethabi",
  "ethereum",
@@ -1363,29 +1361,37 @@ dependencies = [
  "serde_json",
  "sha3",
  "thiserror",
- "web-sys",
  "web3",
 ]
 
 [[package]]
 name = "indy-data-types"
-version = "0.7.1"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3c213857cd6ff5ad634276bcbdcc5e911b32dcbd7127357776468016fef852c"
+checksum = "8bc9972c657fd152d394f61b00d677aa8a700abd8c39137164e399a1d9fd0c6d"
 dependencies = [
  "anoncreds-clsignatures",
- "bs58",
- "curve25519-dalek",
- "ed25519-dalek",
  "hex",
+ "indy-utils",
  "once_cell",
- "rand",
  "regex",
  "serde",
  "serde_json",
  "sha2",
+ "zeroize",
+]
+
+[[package]]
+name = "indy-utils"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09d7e0cdcece8d97982e82aba5b0cb8c7e87ffb5f4fa48b935a3647d24db5439"
+dependencies = [
+ "bs58",
+ "once_cell",
+ "regex",
+ "serde",
  "thiserror",
- "x25519-dalek",
  "zeroize",
 ]
 
@@ -2384,29 +2390,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b97ed7a9823b74f99c7742f5336af7be5ecd3eeafcb1507d1fa93347b1d589b0"
 
 [[package]]
-name = "send_wrapper"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f638d531eccd6e23b980caf34876660d38e265409d8e99b397ab71eb3612fad0"
-
-[[package]]
 name = "serde"
 version = "1.0.188"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf9e0fcba69a370eed61bcf2b728575f726b50b55cba78064753d708ddc7549e"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-wasm-bindgen"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3b143e2833c57ab9ad3ea280d21fd34e285a42837aeb0ee301f4f41890fa00e"
-dependencies = [
- "js-sys",
- "serde",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -3043,22 +3032,18 @@ dependencies = [
  "ethereum-types",
  "futures",
  "futures-timer",
- "getrandom",
  "headers",
  "hex",
  "idna 0.4.0",
- "js-sys",
  "jsonrpc-core",
  "log",
  "once_cell",
  "parking_lot",
  "pin-project",
- "rand",
  "reqwest",
  "rlp",
  "secp256k1 0.27.0",
  "serde",
- "serde-wasm-bindgen",
  "serde_json",
  "soketto",
  "tiny-keccak",
@@ -3066,8 +3051,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "url",
- "wasm-bindgen",
- "wasm-bindgen-futures",
  "web3-async-native-tls",
 ]
 
@@ -3281,17 +3264,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
 dependencies = [
  "tap",
-]
-
-[[package]]
-name = "x25519-dalek"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb66477291e7e8d2b0ff1bcb900bf29489a9692816d79874bea351e7a8b6de96"
-dependencies = [
- "curve25519-dalek",
- "rand_core",
- "zeroize",
 ]
 
 [[package]]

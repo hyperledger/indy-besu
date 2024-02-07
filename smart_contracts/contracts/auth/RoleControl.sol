@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
-import { Unauthorized } from "./AuthErrors.sol";
+import { Unauthorized } from "../utils/Errors.sol";
 import { RoleControlInterface } from "./RoleControlInterface.sol";
 
 contract RoleControl is RoleControlInterface, ControlledUpgradeable {
