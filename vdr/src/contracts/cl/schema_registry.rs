@@ -199,12 +199,10 @@ pub fn parse_schema_created_event(
     client: &LedgerClient,
     log: &EventLog,
 ) -> VdrResult<SchemaCreatedEvent> {
-    let schema_created_event = EventParser::new()
+    EventParser::new()
         .set_contract(CONTRACT_NAME)
         .set_event(EVENT_SCHEMA_CREATED)
-        .parse(client, log)?;
-
-    schema_created_event
+        .parse(client, log)
 }
 
 /// Single step function to resolve a Schema for the given ID
