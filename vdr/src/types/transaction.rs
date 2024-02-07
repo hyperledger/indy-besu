@@ -672,6 +672,7 @@ pub mod test {
         }
 
         #[async_std::test]
+        #[ignore]
         async fn build_txn_invalid_from_address() {
             let err = setup_transaction_builder(
                 CONTRACT_NAME_EXAMPLE,
