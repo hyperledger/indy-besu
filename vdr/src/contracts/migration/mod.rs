@@ -1,4 +1,4 @@
-pub mod legacy_identifiers_registry;
+pub mod legacy_mapping_registry;
 pub mod types;
 
 pub use types::*;

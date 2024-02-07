@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
-import { CredentialDefinitionAlreadyExist, SchemaNotFound } from "../utils/Errors.sol";
+import { CredentialDefinitionAlreadyExist, SchemaNotFound } from "./ClErrors.sol";
 import { DidValidator } from "../did/DidValidator.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
 import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";

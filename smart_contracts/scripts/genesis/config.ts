@@ -2,7 +2,7 @@ import {
   AccountControlConfig,
   CredentialDefinitionsConfig,
   EthereumDidRegistryConfig,
-  LegacyIdentifiersRegistryConfig,
+  LegacyMappingRegistryConfig,
   RolesConfig,
   SchemasConfig,
   ValidatorsConfig,
@@ -21,7 +21,7 @@ export interface Config {
   schemaRegistry: SchemasConfig
   upgradeControl: UpgradeControlConfig
   validatorControl: ValidatorsConfig
-  legacyIdentifiers: LegacyIdentifiersRegistryConfig
+  legacyMapping: LegacyMappingRegistryConfig
 }
 
 const contractsAddresses = {
@@ -32,7 +32,7 @@ const contractsAddresses = {
   validators: '0x0000000000000000000000000000000000007777',
   accountControl: '0x0000000000000000000000000000000000008888',
   upgradeControl: '0x0000000000000000000000000000000000009999',
-  legacyIdentifiersRegistry: '0x0000000000000000000000000000000000019999',
+  legacyMappingRegistry: '0x0000000000000000000000000000000000019999',
 }
 
 export const config: Config = {
@@ -141,9 +141,9 @@ export const config: Config = {
       upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
-  legacyIdentifiers: {
-    name: 'LegacyIdentifiersRegistry',
-    address: contractsAddresses.legacyIdentifiersRegistry,
+  legacyMapping: {
+    name: 'LegacyMappingRegistry',
+    address: contractsAddresses.legacyMappingRegistry,
     description: 'Smart contract to store mapping of legacy identifiers to new one',
     data: {
       ethereumDidRegistry: contractsAddresses.ethereumDidRegistry,

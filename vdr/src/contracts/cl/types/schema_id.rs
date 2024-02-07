@@ -7,12 +7,12 @@ use sha3::Digest;
 pub struct SchemaId(String);
 
 impl SchemaId {
-    const ID_PATH: &'static str = "anoncreds/v0/SCHEMA";
+    const ID_PATH: &'static str = "/anoncreds/v0/SCHEMA";
 
     pub fn build(issuer_id: &DID, name: &str, version: &str) -> SchemaId {
         SchemaId::from(
             format!(
-                "{}/{}/{}/{}",
+                "{}{}/{}/{}",
                 issuer_id.as_ref(),
                 Self::ID_PATH,
                 name,
@@ -20,6 +20,12 @@ impl SchemaId {
             )
             .as_str(),
         )
+    }
+
+    // A unique identifier for the schema needed for cred def
+    // referencing to https://hyperledger.github.io/indy-did-method/#cred-def
+    pub fn unique_id(&self) -> String {
+        self.0.replace(Self::ID_PATH, "").replace('/', ":")
     }
 
     pub fn hash(&self) -> Vec<u8> {

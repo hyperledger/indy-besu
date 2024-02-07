@@ -44,8 +44,12 @@ pub use contracts::{
         },
     },
     migration::{
-        legacy_identifiers_registry,
-        types::{ed25519_signature::Ed25519Signature, identifier::Identifier},
+        legacy_mapping_registry,
+        types::{
+            did::{LegacyDid, LegacyVerkey},
+            ed25519_signature::Ed25519Signature,
+            resource_identifier::ResourceIdentifier,
+        },
     },
     network::validator_control,
     StringOrVector,

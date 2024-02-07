@@ -389,7 +389,6 @@ pub mod test {
     use crate::contracts::types::did_doc::test::{
         default_ethr_did_document, SERVICE_ENDPOINT, SERVICE_TYPE, TEST_DID_ETHR,
     };
-    use serde_json::json;
 
     const KEY_1_INDEX: &str = "KEY_1";
     const KEY_2_INDEX: &str = "KEY_2";
@@ -446,7 +445,6 @@ pub mod test {
             &ServiceEndpoint::String(SERVICE_ENDPOINT.to_string()),
         );
         let did_document = builder.build();
-        println!("{}", json!(did_document).to_string());
 
         assert_eq!(4, did_document.verification_method.len());
         assert_eq!(3, did_document.assertion_method.len());

@@ -1,2 +1,3 @@
+pub mod did;
 pub mod ed25519_signature;
-pub mod identifier;
+pub mod resource_identifier;

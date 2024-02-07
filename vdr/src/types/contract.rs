@@ -239,6 +239,6 @@ impl TryFrom<MethodStringParam> for ContractParam {
     type Error = VdrError;
 
     fn try_from(value: MethodStringParam) -> Result<Self, Self::Error> {
-        Ok(ContractParam::String(value.0.to_string()))
+        Ok(ContractParam::String(value.0))
     }
 }

@@ -1,12 +1,11 @@
-import bs58 from 'bs58'
 import { Signature } from 'ethers'
 import { Contract } from '../utils/contract'
 
-export class LegacyIdentifiersRegistry extends Contract {
+export class LegacyMappingRegistry extends Contract {
   public static readonly defaultAddress = '0x0000000000000000000000000000000000019999'
 
   constructor(sender?: any) {
-    super(LegacyIdentifiersRegistry.name, sender)
+    super(LegacyMappingRegistry.name, sender)
   }
 
   public async createDidMapping(
@@ -15,7 +14,7 @@ export class LegacyIdentifiersRegistry extends Contract {
     ed25519Key: Uint8Array,
     ed25519Signature: Uint8Array,
   ) {
-    const tx = await this.instance.createDidMapping(identity, bs58.decode(identifier), ed25519Key, ed25519Signature)
+    const tx = await this.instance.createDidMapping(identity, identifier, ed25519Key, ed25519Signature)
     return tx.wait()
   }
 
@@ -31,52 +30,52 @@ export class LegacyIdentifiersRegistry extends Contract {
       signature.v,
       signature.r,
       signature.s,
-      bs58.decode(identifier),
+      identifier,
       ed25519Key,
       ed25519Signature,
     )
     return tx.wait()
   }
 
-  public async resolveNewDid(id: string): Promise<string> {
-    return this.instance.didMapping(bs58.decode(id))
+  public async didMapping(id: string): Promise<string> {
+    return this.instance.didMapping(id)
   }
 
-  public async createClMapping(
+  public async createResourceMapping(
     identity: string,
     legacyIssuerIdentifier: string,
     legacyIdentifier: string,
     newIdentifier: string,
   ) {
-    const tx = await this.instance.createClMapping(
+    const tx = await this.instance.createResourceMapping(
       identity,
-      bs58.decode(legacyIssuerIdentifier),
+      legacyIssuerIdentifier,
       legacyIdentifier,
       newIdentifier,
     )
     return tx.wait()
   }
 
-  public async createClMappingSigned(
+  public async createResourceMappingSigned(
     identity: string,
     legacyIssuerIdentifier: string,
     legacyIdentifier: string,
     newIdentifier: string,
     signature: Signature,
   ) {
-    const tx = await this.instance.createClMappingSigned(
+    const tx = await this.instance.createResourceMappingSigned(
       identity,
       signature.v,
       signature.r,
       signature.s,
-      bs58.decode(legacyIssuerIdentifier),
+      legacyIssuerIdentifier,
       legacyIdentifier,
       newIdentifier,
     )
     return tx.wait()
   }
 
-  public async resolveNewId(id: string): Promise<string> {
-    return this.instance.clMapping(id)
+  public async resourceMapping(id: string): Promise<string> {
+    return this.instance.resourceMapping(id)
   }
 }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { NotIdentityOwner } from "../utils/Errors.sol";
-import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
+import { NotIdentityOwner } from "./DidErrors.sol";
+import { EthereumExtDidRegistry } from "./EthereumExtDidRegistry.sol";
 
 contract DidValidator {
     /**

@@ -58,7 +58,7 @@ pub(crate) async fn resolve_did(
     let block_tag = options.and_then(|options| options.block_tag.as_ref());
     let accept = options.and_then(|options| options.accept.as_deref());
 
-    match accept.as_deref() {
+    match accept {
         Some(DID_RESOLUTION_FORMAT) | None => {
             // ok
         }

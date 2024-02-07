@@ -8,7 +8,7 @@ import {
   UpgradeControl,
   ValidatorControl,
 } from '../../contracts-ts'
-import { LegacyIdentifiersRegistry } from '../../contracts-ts/LegacyIdentifiersRegistry'
+import { LegacyMappingRegistry } from '../../contracts-ts/LegacyMappingRegistry'
 import { Contract, createSchemaObject } from '../../utils'
 import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 
@@ -33,7 +33,7 @@ export class TestableValidatorControl extends testableContractMixin(ValidatorCon
 
 export class TestableUpgradeControl extends testableContractMixin(UpgradeControl) {}
 
-export class TestableLegacyIdentifiersRegistry extends testableContractMixin(LegacyIdentifiersRegistry) {}
+export class TestableLegacyMappingRegistry extends testableContractMixin(LegacyMappingRegistry) {}
 
 function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
   return class extends Base {
@@ -78,13 +78,13 @@ export async function deployCredentialDefinitionRegistry() {
   return { credentialDefinitionRegistry, didRegistry, schemaRegistry, testAccounts }
 }
 
-export async function deployLegacyIdentifiersRegistry() {
+export async function deployLegacyMappingRegistry() {
   const { didRegistry, testAccounts } = await deployDidRegistry()
-  const legacyIdentifiersRegistry = await new TestableLegacyIdentifiersRegistry().deployProxy({
+  const legacyMappingRegistry = await new TestableLegacyMappingRegistry().deployProxy({
     params: [ZERO_ADDRESS, didRegistry.address],
   })
 
-  return { didRegistry, legacyIdentifiersRegistry, testAccounts }
+  return { didRegistry, legacyMappingRegistry, testAccounts }
 }
 
 export async function createDid(didRegistry: EthereumExtDidRegistry, identity: string, did: string) {
@@ -146,7 +146,7 @@ export async function signCredDefEndorsementData(
 }
 
 export async function signDidMappingEndorsementData(
-  legacyIdentifiersRegistry: LegacyIdentifiersRegistry,
+  legacyMappingRegistry: LegacyMappingRegistry,
   identity: string,
   privateKey: Uint8Array,
   identifier: string,
@@ -155,13 +155,13 @@ export async function signDidMappingEndorsementData(
 ) {
   return signEndorsementData(
     privateKey,
-    legacyIdentifiersRegistry.address!,
-    concat([identity, toUtf8Bytes('createDidMapping'), bs58.decode(identifier), ed25519Key, ed25519Signature]),
+    legacyMappingRegistry.address!,
+    concat([identity, toUtf8Bytes('createDidMapping'), toUtf8Bytes(identifier), ed25519Key, ed25519Signature]),
   )
 }
 
-export async function signClMappingEndorsementData(
-  legacyIdentifiersRegistry: LegacyIdentifiersRegistry,
+export async function signResourceMappingEndorsementData(
+  legacyMappingRegistry: LegacyMappingRegistry,
   identity: string,
   privateKey: Uint8Array,
   legacyIssuerIdentifier: string,
@@ -170,11 +170,11 @@ export async function signClMappingEndorsementData(
 ) {
   return signEndorsementData(
     privateKey,
-    legacyIdentifiersRegistry.address!,
+    legacyMappingRegistry.address!,
     concat([
       identity,
-      toUtf8Bytes('createClMapping'),
-      bs58.decode(legacyIssuerIdentifier),
+      toUtf8Bytes('createResourceMapping'),
+      toUtf8Bytes(legacyIssuerIdentifier),
       toUtf8Bytes(legacyIdentifier),
       toUtf8Bytes(newIdentifier),
     ]),

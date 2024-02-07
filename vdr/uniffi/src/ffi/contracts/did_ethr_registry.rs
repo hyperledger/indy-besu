@@ -8,8 +8,8 @@ use crate::ffi::{
 use indy_besu_vdr::{
     did_ethr_registry, Address, Block, DelegateType, DidAttributeChanged as DidAttributeChanged_,
     DidDelegateChanged as DidDelegateChanged_, DidDocAttribute, DidEvents as DidEvents_,
-    DidOwnerChanged as DidOwnerChanged_,
-    DidResolutionOptions as DidResolutionOptions_, Validity, DID,
+    DidOwnerChanged as DidOwnerChanged_, DidResolutionOptions as DidResolutionOptions_, Validity,
+    DID,
 };
 use serde_json::json;
 

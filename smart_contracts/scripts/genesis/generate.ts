@@ -4,7 +4,7 @@ import {
   accountControl,
   credentialDefinitionRegistry,
   ethereumDidRegistry,
-  legacyIdentifiersRegistry,
+  legacyMappingRegistry,
   roleControl,
   schemaRegistry,
   upgradeControl,
@@ -20,7 +20,7 @@ function main() {
     ...ethereumDidRegistry(),
     ...schemaRegistry(),
     ...credentialDefinitionRegistry(),
-    ...legacyIdentifiersRegistry(),
+    ...legacyMappingRegistry(),
   }
   writeJson(contracts, outFile)
 }

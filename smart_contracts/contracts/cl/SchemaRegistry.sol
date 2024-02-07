@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
-import { SchemaAlreadyExist } from "../utils/Errors.sol";
+import { SchemaAlreadyExist } from "./ClErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
 import { DidValidator } from "../did/DidValidator.sol";
 import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";

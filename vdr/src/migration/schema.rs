@@ -1,58 +1,14 @@
 use crate::{
     contracts::did::types::did::DID,
     error::{VdrError, VdrResult},
-    migration::{DID_METHOD, NETWORK},
-    Schema, SchemaId,
+    Schema,
 };
 use indy_data_types::{
     anoncreds::schema::{AttributeNames, Schema as IndySchema, SchemaV1 as IndySchemaV1},
     did::DidValue,
     SchemaId as IndySchemaId,
 };
-use log::warn;
 use log_derive::{logfn, logfn_inputs};
-
-impl SchemaId {
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub fn from_indy_format(id: &str) -> VdrResult<SchemaId> {
-        let parts: Vec<&str> = id.split(':').collect();
-        let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema id".to_string());
-
-            warn!(
-                "Error: {:?} during converting SchemaId from indy format",
-                vdr_error
-            );
-
-            vdr_error
-        })?;
-        let name = parts.get(2).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema name".to_string());
-
-            warn!(
-                "Error: {:?} during converting SchemaId from indy format",
-                vdr_error
-            );
-
-            vdr_error
-        })?;
-        let version = parts.get(3).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema version".to_string());
-
-            warn!(
-                "Error: {:?} during converting SchemaId from indy format",
-                vdr_error
-            );
-
-            vdr_error
-        })?;
-        let issuer_did = DID::build(DID_METHOD, Some(NETWORK), id);
-
-        let besu_schema_id = SchemaId::build(&issuer_did, name, version);
-        Ok(besu_schema_id)
-    }
-}
 
 impl Schema {
     #[logfn(Trace)]

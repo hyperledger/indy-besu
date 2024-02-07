@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { Unauthorized } from "../utils/Errors.sol";
+import { Unauthorized } from "../auth/AuthErrors.sol";
+import { InitialValidatorsRequired, InvalidValidatorAddress, InvalidValidatorAccountAddress, ExceedsValidatorLimit, ValidatorAlreadyExists, SenderHasActiveValidator, CannotDeactivateLastValidator, ValidatorNotFound } from "./ValidatorErrors.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
