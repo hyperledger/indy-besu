@@ -68,6 +68,7 @@ pub async fn build_create_schema_endorsing_data(
     id: &SchemaId,
     schema: &Schema,
 ) -> VdrResult<TransactionEndorsingData> {
+    schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -101,6 +102,7 @@ pub async fn build_create_schema_signed_transaction(
     schema: &Schema,
     signature: &SignatureData,
 ) -> VdrResult<Transaction> {
+    schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)

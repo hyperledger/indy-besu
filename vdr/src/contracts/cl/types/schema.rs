@@ -29,14 +29,14 @@ impl Schema {
         SchemaId::build(&self.issuer_id, &self.name, &self.version)
     }
 
-    pub fn matches_id(&self, expected_schema_id: &SchemaId) -> VdrResult<()> {
-        let actual_schema_id = self.id();
+    pub fn matches_id(&self, expected_id: &SchemaId) -> VdrResult<()> {
+        let actual_id = self.id();
 
-        if expected_schema_id.to_string() != actual_schema_id.to_string() {
+        if expected_id.to_string() != actual_id.to_string() {
             return Err(VdrError::InvalidSchema(format!(
                 "Id built from schema: {} != provided id: {}",
-                actual_schema_id.to_string(),
-                expected_schema_id.to_string()
+                actual_id.to_string(),
+                expected_id.to_string()
             )));
         }
 

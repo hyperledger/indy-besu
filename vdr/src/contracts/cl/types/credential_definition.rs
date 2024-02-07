@@ -1,4 +1,4 @@
-use crate::{error::VdrError, types::ContractParam, Address};
+use crate::{error::VdrError, types::ContractParam, Address, CredentialDefinitionId, VdrResult};
 
 use crate::{
     contracts::{cl::types::schema_id::SchemaId, did::types::did::DID},
@@ -18,6 +18,48 @@ pub struct CredentialDefinition {
     pub cred_def_type: SignatureType,
     pub tag: String,
     pub value: serde_json::Value,
+}
+
+
+
+
+impl CredentialDefinition {
+    pub fn id(&self) -> CredentialDefinitionId {
+        CredentialDefinitionId::build(&self.issuer_id, &self.schema_id.to_string(), &self.tag)
+    }
+
+    pub fn matches_id(&self, expected_id: &CredentialDefinitionId) -> VdrResult<()> {
+        let actual_id = self.id();
+
+        if expected_id.to_string() != actual_id.to_string() {
+            return Err(VdrError::InvalidCredDef(format!(
+                "Id built from cred_def: {} != provided id: {}",
+                actual_id.to_string(),
+                expected_id.to_string()
+            )));
+        }
+
+        Ok(())
+    }
+
+    pub fn validate(&self) -> VdrResult<()> {
+        if self.cred_def_type != CredentialDefinitionTypes::CL {
+            Err(VdrError::InvalidCredDef(format!(
+                "Unsupported type: {}",
+                self.cred_def_type.as_ref()
+            )))
+        }
+
+        if self.tag.is_empty() {
+            Err(VdrError::InvalidCredDef("Tag is not provided".to_string()))
+        }
+
+        if self.value.is_empty() {
+            Err(VdrError::InvalidCredDef("Value is not provided".to_string()))
+        }
+
+        Ok(())
+    }
 }
 
 impl TryFrom<&CredentialDefinition> for ContractParam {

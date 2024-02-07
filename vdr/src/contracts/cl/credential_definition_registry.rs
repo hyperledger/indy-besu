@@ -39,7 +39,7 @@ pub async fn build_create_credential_definition_transaction(
     id: &CredentialDefinitionId,
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<Transaction> {
-    // TODO: validate credential definition
+    credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -70,6 +70,7 @@ pub async fn build_create_credential_definition_endorsing_data(
     id: &CredentialDefinitionId,
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<TransactionEndorsingData> {
+    credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -104,7 +105,7 @@ pub async fn build_create_credential_definition_signed_transaction(
     credential_definition: &CredentialDefinition,
     signature: &SignatureData,
 ) -> VdrResult<Transaction> {
-    // TODO: validate credential definition
+    credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -207,7 +208,6 @@ pub fn parse_credential_definition_created_event(
     client: &LedgerClient,
     log: &EventLog,
 ) -> VdrResult<CredentialDefinitionCreatedEvent> {
-    // TODO: validate schema
     EventParser::new()
         .set_contract(CONTRACT_NAME)
         .set_event(EVENT_CREDENTIAL_DEFINITION_CREATED)
@@ -248,6 +248,8 @@ pub async fn resolve_credential_definition(
     }
 
     let cred_def = parse_credential_definition_created_event(client, &events[0])?.cred_def;
+    cred_def.matches_id(id)?;
+
     Ok(cred_def)
 }
 
