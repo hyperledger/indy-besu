@@ -766,7 +766,8 @@ pub mod test {
                 CONTRACT_METHOD_EXAMPLE,
                 &[],
             )
-            .await.unwrap_err();
+            .await
+            .unwrap_err();
 
             assert!(matches!(
                 error,
@@ -781,7 +782,8 @@ pub mod test {
                 CONTRACT_METHOD_EXAMPLE,
                 VALIDATOR_LIST_BYTES.as_slice(),
             )
-            .await.unwrap_err();
+            .await
+            .unwrap_err();
 
             assert!(matches!(error, VdrError::ContractInvalidName { .. }));
         }
@@ -793,7 +795,8 @@ pub mod test {
                 CONTRACT_METHOD_EXAMPLE,
                 VALIDATOR_LIST_BYTES.as_slice(),
             )
-            .await.unwrap_err();
+            .await
+            .unwrap_err();
 
             assert!(matches!(error, VdrError::ContractInvalidName { .. }));
         }
@@ -805,7 +808,8 @@ pub mod test {
                 None,
                 VALIDATOR_LIST_BYTES.as_slice(),
             )
-            .await.unwrap_err();
+            .await
+            .unwrap_err();
 
             assert!(matches!(error, VdrError::ContractInvalidName { .. }));
         }
@@ -817,7 +821,8 @@ pub mod test {
                 INVALID_METHOD,
                 VALIDATOR_LIST_BYTES.as_slice(),
             )
-            .await.unwrap_err();
+            .await
+            .unwrap_err();
 
             assert!(matches!(error, VdrError::ContractInvalidName { .. }));
         }
