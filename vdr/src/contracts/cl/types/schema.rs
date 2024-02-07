@@ -25,8 +25,12 @@ pub struct Schema {
 }
 
 impl Schema {
+    pub fn id(&self) -> SchemaId {
+        SchemaId::build(&self.issuer_id, &self.name, &self.version)
+    }
+
     pub fn matches_id(&self, expected_schema_id: &SchemaId) -> VdrResult<()> {
-        let actual_schema_id = SchemaId::build(&self.issuer_id, &self.name, &self.version);
+        let actual_schema_id = self.id();
 
         if expected_schema_id.to_string() != actual_schema_id.to_string() {
             return Err(VdrError::InvalidSchema(format!(
