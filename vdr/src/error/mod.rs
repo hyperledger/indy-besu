@@ -62,7 +62,7 @@ pub enum VdrError {
     InvalidSchema(String),
 
     #[error("Invalid credential definition: {}", _0)]
-    InvalidCredDef(String),
+    InvalidCredentialDefinition(String),
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;

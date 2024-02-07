@@ -155,6 +155,7 @@ pub mod test {
     }
 
     mod convert_into_contract_param {
+        use crate::contracts::cl::types::credential_definition::test::{credential_definition, CREDENTIAL_DEFINITION_TAG};
         use super::*;
 
         #[test]
@@ -162,6 +163,22 @@ pub mod test {
             let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
             let param: ContractParam = (&schema).try_into().unwrap();
             assert_eq!(schema_param(), param);
+        }
+
+        #[test]
+        fn schema_matches_id_test() {
+            let (id, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+
+            schema.matches_id(&id).unwrap();
+        }
+
+        #[test]
+        fn schema_not_matches_id_test() {
+            let (_, schema_) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+            let (id, _) = schema(&DID::from(ISSUER_ID), Some("123"));
+
+            let err = schema_.matches_id(&id).unwrap_err();
+            assert!(matches!(err, VdrError::InvalidSchema { .. }))
         }
     }
 }

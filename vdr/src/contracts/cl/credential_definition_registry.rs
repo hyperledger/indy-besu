@@ -243,7 +243,7 @@ pub async fn resolve_credential_definition(
 
     if events.len() != 1 {
         return Err(VdrError::ClientInvalidResponse(
-            format!("Unable to resolve schema: Unexpected amout of schema created events received for id: {:?}", id)
+            format!("Unable to resolve schema: Unexpected amount of schema created events received for id: {:?}", id)
         ));
     }
 
@@ -273,6 +273,7 @@ pub mod test {
     use std::sync::RwLock;
 
     mod build_create_credential_definition_transaction {
+        use serde_json::Value;
         use super::*;
 
         #[async_std::test]
@@ -330,6 +331,50 @@ pub mod test {
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
+        }
+
+        #[async_std::test]
+        async fn build_create_credential_definition_transaction_no_tag() {
+            init_env_logger();
+            let client = mock_client();
+            let (id, mut cred_def) = credential_definition(
+                &DID::from(ISSUER_ID),
+                &SchemaId::from(SCHEMA_ID),
+                Some(CREDENTIAL_DEFINITION_TAG),
+            );
+            cred_def.tag = "".to_string();
+
+            let err = build_create_credential_definition_transaction(
+                &client,
+                &TRUSTEE_ACC,
+                &id,
+                &cred_def,
+            )
+                .await
+                .unwrap_err();
+            assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
+        }
+
+        #[async_std::test]
+        async fn build_create_credential_definition_transaction_no_value() {
+            init_env_logger();
+            let client = mock_client();
+            let (id, mut cred_def) = credential_definition(
+                &DID::from(ISSUER_ID),
+                &SchemaId::from(SCHEMA_ID),
+                Some(CREDENTIAL_DEFINITION_TAG),
+            );
+            cred_def.value = Value::Null;
+
+            let err = build_create_credential_definition_transaction(
+                &client,
+                &TRUSTEE_ACC,
+                &id,
+                &cred_def,
+            )
+                .await
+                .unwrap_err();
+            assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
         }
     }
 

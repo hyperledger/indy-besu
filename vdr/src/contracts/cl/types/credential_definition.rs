@@ -32,7 +32,7 @@ impl CredentialDefinition {
         let actual_id = self.id();
 
         if expected_id.to_string() != actual_id.to_string() {
-            return Err(VdrError::InvalidCredDef(format!(
+            return Err(VdrError::InvalidCredentialDefinition(format!(
                 "Id built from cred_def: {} != provided id: {}",
                 actual_id.to_string(),
                 expected_id.to_string()
@@ -44,18 +44,18 @@ impl CredentialDefinition {
 
     pub fn validate(&self) -> VdrResult<()> {
         if self.cred_def_type != CredentialDefinitionTypes::CL {
-            Err(VdrError::InvalidCredDef(format!(
+            return Err(VdrError::InvalidCredentialDefinition(format!(
                 "Unsupported type: {}",
                 self.cred_def_type.as_ref()
             )))
         }
 
         if self.tag.is_empty() {
-            Err(VdrError::InvalidCredDef("Tag is not provided".to_string()))
+            return Err(VdrError::InvalidCredentialDefinition("Tag is not provided".to_string()))
         }
 
-        if self.value.is_empty() {
-            Err(VdrError::InvalidCredDef("Value is not provided".to_string()))
+        if self.value.is_null() {
+            return Err(VdrError::InvalidCredentialDefinition("Value is not provided".to_string()))
         }
 
         Ok(())
@@ -160,6 +160,35 @@ pub mod test {
             Some(CREDENTIAL_DEFINITION_TAG),
         );
         ContractParam::Bytes(serde_json::to_vec(&cred_def).unwrap())
+    }
+
+    #[test]
+    fn cred_def_matches_id_test() {
+        let (id, cred_def) = credential_definition(
+            &DID::from(ISSUER_ID),
+            &SchemaId::from(SCHEMA_ID),
+            Some(CREDENTIAL_DEFINITION_TAG),
+        );
+
+        cred_def.matches_id(&id).unwrap();
+    }
+
+    #[test]
+    fn cred_def_not_matches_id_test() {
+        let (_, cred_def) = credential_definition(
+            &DID::from(ISSUER_ID),
+            &SchemaId::from(SCHEMA_ID),
+            Some(CREDENTIAL_DEFINITION_TAG),
+        );
+
+        let (id, _) = credential_definition(
+            &DID::from(ISSUER_ID),
+            &SchemaId::from(SCHEMA_ID),
+            Some("NotDefault"),
+        );
+
+        let err = cred_def.matches_id(&id).unwrap_err();
+        assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }))
     }
 
     mod convert_into_contract_param {
