@@ -38,7 +38,7 @@ pub async fn build_create_schema_transaction(
     id: &SchemaId,
     schema: &Schema,
 ) -> VdrResult<Transaction> {
-    schema.validate(id)?;
+    schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -239,8 +239,7 @@ pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<S
     }
 
     let schema = parse_schema_created_event(client, &events[0])?.schema;
-
-    schema.require_valid_id(id)?;
+    schema.matches_id(id)?;
 
     Ok(schema)
 }
@@ -299,6 +298,45 @@ pub mod test {
             };
             assert_eq!(expected_transaction, transaction);
         }
+
+        #[async_std::test]
+        async fn build_create_schema_transaction_no_name() {
+            init_env_logger();
+            let client = mock_client();
+            let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+            schema.name = "".to_string();
+
+            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+                .await
+                .unwrap_err();
+            assert!(matches!(err, VdrError::InvalidSchema {..}));
+        }
+
+        #[async_std::test]
+        async fn build_create_schema_transaction_no_version() {
+            init_env_logger();
+            let client = mock_client();
+            let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+            schema.version = "".to_string();
+
+            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+                .await
+                .unwrap_err();
+            assert!(matches!(err, VdrError::InvalidSchema {..}));
+        }
+
+        #[async_std::test]
+        async fn build_create_schema_transaction_no_attributes() {
+            init_env_logger();
+            let client = mock_client();
+            let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+            schema.attr_names = vec![];
+
+            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+                .await
+                .unwrap_err();
+            assert!(matches!(err, VdrError::InvalidSchema {..}));
+        }
     }
 
     mod build_get_schema_query {
@@ -323,6 +361,7 @@ pub mod test {
             };
             assert_eq!(expected_query, query);
         }
+
     }
     //
     // mod parse_resolve_schema_result {

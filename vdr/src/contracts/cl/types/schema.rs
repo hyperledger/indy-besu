@@ -25,49 +25,36 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn require_valid_id(&self, expected_schema_id: &SchemaId) -> VdrResult<()> {
+    pub fn matches_id(&self, expected_schema_id: &SchemaId) -> VdrResult<()> {
         let actual_schema_id = SchemaId::build(&self.issuer_id, &self.name, &self.version);
 
-        if expected_schema_id != actual_schema_id {
-            return Err(VdrError::InvalidSchema(actual_schema_id.to_string()));
+        if expected_schema_id.to_string() != actual_schema_id.to_string() {
+            return Err(VdrError::InvalidSchema(format!(
+                "Id built from schema: {} != provided id: {}",
+                actual_schema_id.to_string(),
+                expected_schema_id.to_string()
+            )));
         }
 
         Ok(())
     }
 
-    fn require_name(&self) -> VdrResult<()> {
+    pub fn validate(&self) -> VdrResult<()> {
         if self.name.is_empty() {
             return Err(VdrError::InvalidSchema("Name is not provided".to_string()));
         }
 
-        Ok(())
-    }
-
-    fn require_version(&self) -> VdrResult<()> {
         if self.version.is_empty() {
             return Err(VdrError::InvalidSchema(
                 "Version is not provided".to_string(),
             ));
         }
 
-        Ok(())
-    }
-
-    fn require_attributes(&self) -> VdrResult<()> {
         if self.attr_names.is_empty() {
             return Err(VdrError::InvalidSchema(
                 "Attributes are not provided".to_string(),
             ));
         }
-
-        Ok(())
-    }
-
-    pub fn validate(&self, expected_schema_id: &SchemaId) -> VdrResult<()> {
-        self.require_name()?;
-        self.require_version()?;
-        self.require_attributes()?;
-        self.require_valid_id(expected_schema_id)?;
 
         Ok(())
     }
