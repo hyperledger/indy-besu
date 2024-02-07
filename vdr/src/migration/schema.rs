@@ -4,22 +4,13 @@ use crate::{
     migration::{DID_METHOD, NETWORK},
     Schema, SchemaId,
 };
+use indy_data_types::{
+    anoncreds::schema::{AttributeNames, Schema as IndySchema, SchemaV1 as IndySchemaV1},
+    did::DidValue,
+    SchemaId as IndySchemaId,
+};
 use log::warn;
 use log_derive::{logfn, logfn_inputs};
-use serde_derive::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct IndySchemaFormat {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    #[serde(rename = "attrNames")]
-    pub attr_names: Vec<String>,
-    #[serde(rename = "seqNo")]
-    pub seq_no: Option<u64>,
-    #[serde(default)]
-    pub ver: String,
-}
 
 impl SchemaId {
     #[logfn(Trace)]
@@ -66,67 +57,45 @@ impl SchemaId {
 impl Schema {
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
-    pub fn from_indy_format(schema: &str) -> VdrResult<Schema> {
-        let indy_schema: IndySchemaFormat = serde_json::from_str(&schema).map_err(|_err| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema".to_string());
-
-            warn!(
-                "Error: {:?} during converting Schema from indy format",
-                vdr_error
-            );
-
-            vdr_error
+    pub fn from_indy_format_str(schema: &str, issuer_did: &str) -> VdrResult<Schema> {
+        let schema: IndySchema = serde_json::from_str(schema).map_err(|err| {
+            VdrError::CommonInvalidData(format!("Unable to parse indy schema. Err: {:?}", err))
         })?;
-
-        Schema::try_from(indy_schema)
+        Schema::from_indy_format(&schema, issuer_did)
     }
-}
-
-impl TryFrom<IndySchemaFormat> for Schema {
-    type Error = VdrError;
 
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
-    fn try_from(schema: IndySchemaFormat) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = schema.id.split(':').collect();
-        let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy schema".to_string());
+    pub fn from_indy_format(schema: &IndySchema, issuer_did: &str) -> VdrResult<Schema> {
+        match schema {
+            IndySchema::SchemaV1(schema) => {
+                let besu_schema = Schema {
+                    issuer_id: DID::from(issuer_did),
+                    name: schema.name.to_string(),
+                    version: schema.version.to_string(),
+                    attr_names: schema.attr_names.clone().0,
+                };
 
-            warn!(
-                "Error: {:?} during converting Schema from IndySchemaFormat",
-                vdr_error
-            );
-
-            vdr_error
-        })?;
-        let issuer_id = DID::build(DID_METHOD, Some(NETWORK), id);
-
-        let besu_schema = Schema {
-            issuer_id,
-            name: schema.name.to_string(),
-            version: schema.version.to_string(),
-            attr_names: schema.attr_names.clone(),
-        };
-        Ok(besu_schema)
+                Ok(besu_schema)
+            }
+        }
     }
 }
 
-impl Into<IndySchemaFormat> for &Schema {
+impl Into<IndySchema> for &Schema {
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
-    fn into(self) -> IndySchemaFormat {
-        IndySchemaFormat {
-            id: format!(
-                "{}:2:{}:{}",
-                self.issuer_id.as_ref(),
-                self.name,
-                self.version
+    fn into(self) -> IndySchema {
+        IndySchema::SchemaV1(IndySchemaV1 {
+            id: IndySchemaId::new(
+                &DidValue(self.issuer_id.to_string()),
+                &self.name,
+                &self.version,
             ),
             name: self.name.to_string(),
             version: self.version.to_string(),
-            attr_names: self.attr_names.clone(),
+            attr_names: AttributeNames(self.attr_names.clone()),
             seq_no: None,
-            ver: "1.0".to_string(),
-        }
+        })
     }
 }

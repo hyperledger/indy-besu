@@ -1,16 +1,21 @@
 [package]
 name = "migration"
-description = "This package contains an execution script demonstratin the migration flow from Indy to Besu ledger"
+description = "This package contains an execution script demonstratin the migration flow from Indy to Indy-Besu ledger"
 version = "0.1.0"
 authors = ["artem.ivanov <artem.ivanov@dsr-corporation.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
+aries-askar = "0.3.1"
 async-std = { version = "1.12.0", features = ["attributes", "tokio1"] }
 async-trait = "0.1.73"
+indy-credx = "1.1.1"
 bs58 = "0.5.0"
 futures = "0.1.23"
-indy2_vdr = { path = "../../vdr", features = ["migration", "basic_signer"] }
-vdrtools = { git = "https://gitlab.com/evernym/verity/vdr-tools.git" }
+indy-data-types = "0.6.1"
+indy-besu-vdr = { path = "../../vdr", features = ["migration", "basic_signer"] }
+indy-vdr = { git = "https://github.com/hyperledger/indy-vdr.git" }
 serde = "1.0.188"
 serde_json = "1.0.107"
+urlencoding = "2.1.2"
+dirs = "5.0.1"
