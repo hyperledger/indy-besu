@@ -1,3 +1,4 @@
+use crate::{error::VdrError, types::{ContractOutput, ContractParam}, Address, VdrResult, SchemaId};
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
@@ -16,6 +17,51 @@ pub struct Schema {
     pub version: String,
     #[serde(rename = "attrNames")]
     pub attr_names: HashSet<String>,
+}
+
+impl Schema {
+    pub fn require_valid_id(&self, expected_schema_id: &SchemaId) -> VdrResult<()> {
+        let actual_schema_id = SchemaId::build(&self.issuer_id, &self.name, &self.version);
+
+        if expected_schema_id != actual_schema_id {
+            return Err(VdrError::InvalidSchema(actual_schema_id.to_string()));
+        }
+
+        Ok(())
+    }
+
+    fn require_name(&self) -> VdrResult<()> {
+        if self.name.is_empty() {
+            return Err(VdrError::InvalidSchema("Name is not provided".to_string()));
+        }
+
+        Ok(())
+    }
+
+    fn require_version(&self) -> VdrResult<()> {
+        if self.version.is_empty() {
+            return Err(VdrError::InvalidSchema("Version is not provided".to_string()));
+        }
+
+        Ok(())
+    }
+
+    fn require_attributes(&self) -> VdrResult<()> {
+        if self.attr_names.is_empty() {
+            return Err(VdrError::InvalidSchema("Attributes are not provided".to_string()));
+        }
+
+        Ok(())
+    }
+
+    pub fn validate(&self, expected_schema_id: &SchemaId) -> VdrResult<()> {
+        self.require_name()?;
+        self.require_version()?;
+        self.require_attributes()?;
+        self.require_valid_id(expected_schema_id)?;
+
+        Ok(())
+    }
 }
 
 impl TryFrom<&Schema> for ContractParam {
@@ -46,6 +92,18 @@ pub struct SchemaCreatedEvent {
     pub id_hash: String,
     pub identity: Address,
     pub schema: Schema,
+}
+
+impl SchemaCreatedEvent {
+    pub fn validate_id_hash(&self) -> VdrResult<()> {
+        let actual_schema_id = SchemaId::build(&self.schema.issuer_id, &self.schema.name, &self.schema.version);
+
+        if self.id_hash.as_bytes() != actual_schema_id.hash().as_slice() {
+            return Err(VdrError::InvalidSchema("id_hash from SchemaCreatedEvent != id_hash from schema".to_string()));
+        }
+
+        Ok(())
+    }
 }
 
 impl TryFrom<ContractEvent> for SchemaCreatedEvent {

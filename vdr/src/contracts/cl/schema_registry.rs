@@ -38,7 +38,7 @@ pub async fn build_create_schema_transaction(
     id: &SchemaId,
     schema: &Schema,
 ) -> VdrResult<Transaction> {
-    // TODO: validate schema
+    schema.validate(id)?;
     let identity = Address::try_from(&schema.issuer_id)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -199,11 +199,12 @@ pub fn parse_schema_created_event(
     client: &LedgerClient,
     log: &EventLog,
 ) -> VdrResult<SchemaCreatedEvent> {
-    // TODO: validate schema
-    EventParser::new()
+    let schema_created_event = EventParser::new()
         .set_contract(CONTRACT_NAME)
         .set_event(EVENT_SCHEMA_CREATED)
-        .parse(client, log)
+        .parse(client, log)?;
+
+    schema_created_event
 }
 
 /// Single step function to resolve a Schema for the given ID
