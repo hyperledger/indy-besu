@@ -155,8 +155,10 @@ pub mod test {
     }
 
     mod convert_into_contract_param {
-        use crate::contracts::cl::types::credential_definition::test::{credential_definition, CREDENTIAL_DEFINITION_TAG};
         use super::*;
+        use crate::contracts::cl::types::credential_definition::test::{
+            credential_definition, CREDENTIAL_DEFINITION_TAG,
+        };
 
         #[test]
         fn convert_schema_into_contract_param_test() {

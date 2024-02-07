@@ -47,15 +47,19 @@ impl CredentialDefinition {
             return Err(VdrError::InvalidCredentialDefinition(format!(
                 "Unsupported type: {}",
                 self.cred_def_type.as_ref()
-            )))
+            )));
         }
 
         if self.tag.is_empty() {
-            return Err(VdrError::InvalidCredentialDefinition("Tag is not provided".to_string()))
+            return Err(VdrError::InvalidCredentialDefinition(
+                "Tag is not provided".to_string(),
+            ));
         }
 
         if self.value.is_null() {
-            return Err(VdrError::InvalidCredentialDefinition("Value is not provided".to_string()))
+            return Err(VdrError::InvalidCredentialDefinition(
+                "Value is not provided".to_string(),
+            ));
         }
 
         Ok(())

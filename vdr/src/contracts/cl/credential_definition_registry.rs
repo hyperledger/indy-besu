@@ -273,8 +273,8 @@ pub mod test {
     use std::sync::RwLock;
 
     mod build_create_credential_definition_transaction {
-        use serde_json::Value;
         use super::*;
+        use serde_json::Value;
 
         #[async_std::test]
         async fn build_create_credential_definition_transaction_test() {
@@ -350,8 +350,8 @@ pub mod test {
                 &id,
                 &cred_def,
             )
-                .await
-                .unwrap_err();
+            .await
+            .unwrap_err();
             assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
         }
 
@@ -372,8 +372,8 @@ pub mod test {
                 &id,
                 &cred_def,
             )
-                .await
-                .unwrap_err();
+            .await
+            .unwrap_err();
             assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
         }
     }

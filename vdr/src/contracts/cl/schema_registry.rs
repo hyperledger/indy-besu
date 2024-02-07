@@ -311,7 +311,7 @@ pub mod test {
             let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
                 .await
                 .unwrap_err();
-            assert!(matches!(err, VdrError::InvalidSchema {..}));
+            assert!(matches!(err, VdrError::InvalidSchema { .. }));
         }
 
         #[async_std::test]
@@ -324,7 +324,7 @@ pub mod test {
             let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
                 .await
                 .unwrap_err();
-            assert!(matches!(err, VdrError::InvalidSchema {..}));
+            assert!(matches!(err, VdrError::InvalidSchema { .. }));
         }
 
         #[async_std::test]
@@ -337,7 +337,7 @@ pub mod test {
             let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
                 .await
                 .unwrap_err();
-            assert!(matches!(err, VdrError::InvalidSchema {..}));
+            assert!(matches!(err, VdrError::InvalidSchema { .. }));
         }
     }
 
@@ -363,7 +363,6 @@ pub mod test {
             };
             assert_eq!(expected_query, query);
         }
-
     }
     //
     // mod parse_resolve_schema_result {
