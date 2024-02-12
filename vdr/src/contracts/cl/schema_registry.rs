@@ -238,7 +238,15 @@ pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<S
     }
 
     let schema = parse_schema_created_event(client, &events[0])?.schema;
-    schema.matches_id(id)?;
+
+    let schema_id = schema.id();
+    if &schema_id != id {
+        return Err(VdrError::InvalidSchema(format!(
+            "Schema ID {} does not match to requested {}",
+            schema_id.to_string(),
+            id.to_string()
+        )));
+    }
 
     Ok(schema)
 }
@@ -266,7 +274,7 @@ pub mod test {
             init_env_logger();
             let client = mock_client();
             let (id, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-            let transaction = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+            let transaction = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
                 .await
                 .unwrap();
             let expected_transaction = Transaction {
@@ -305,7 +313,7 @@ pub mod test {
             let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
             schema.name = "".to_string();
 
-            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
                 .await
                 .unwrap_err();
             assert!(matches!(err, VdrError::InvalidSchema { .. }));
@@ -318,7 +326,7 @@ pub mod test {
             let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
             schema.version = "".to_string();
 
-            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
                 .await
                 .unwrap_err();
             assert!(matches!(err, VdrError::InvalidSchema { .. }));
@@ -331,7 +339,7 @@ pub mod test {
             let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
             schema.attr_names = vec![];
 
-            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &id, &schema)
+            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
                 .await
                 .unwrap_err();
             assert!(matches!(err, VdrError::InvalidSchema { .. }));

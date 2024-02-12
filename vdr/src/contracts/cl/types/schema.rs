@@ -29,20 +29,6 @@ impl Schema {
         SchemaId::build(&self.issuer_id, &self.name, &self.version)
     }
 
-    pub fn matches_id(&self, expected_id: &SchemaId) -> VdrResult<()> {
-        let actual_id = self.id();
-
-        if expected_id.to_string() != actual_id.to_string() {
-            return Err(VdrError::InvalidSchema(format!(
-                "Id built from schema: {} != provided id: {}",
-                actual_id.to_string(),
-                expected_id.to_string()
-            )));
-        }
-
-        Ok(())
-    }
-
     pub fn validate(&self) -> VdrResult<()> {
         if self.name.is_empty() {
             return Err(VdrError::InvalidSchema("Name is not provided".to_string()));
@@ -165,22 +151,6 @@ pub mod test {
             let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
             let param: ContractParam = (&schema).try_into().unwrap();
             assert_eq!(schema_param(), param);
-        }
-
-        #[test]
-        fn schema_matches_id_test() {
-            let (id, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-
-            schema.matches_id(&id).unwrap();
-        }
-
-        #[test]
-        fn schema_not_matches_id_test() {
-            let (_, schema_) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-            let (id, _) = schema(&DID::from(ISSUER_ID), Some("123"));
-
-            let err = schema_.matches_id(&id).unwrap_err();
-            assert!(matches!(err, VdrError::InvalidSchema { .. }))
         }
     }
 }

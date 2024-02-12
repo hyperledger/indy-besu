@@ -248,7 +248,15 @@ pub async fn resolve_credential_definition(
     }
 
     let cred_def = parse_credential_definition_created_event(client, &events[0])?.cred_def;
-    cred_def.matches_id(id)?;
+
+    let cred_def_id = cred_def.id();
+    if &cred_def_id != id {
+        return Err(VdrError::InvalidCredentialDefinition(format!(
+            "Credential Definition ID {} does not match to requested {}",
+            cred_def_id.to_string(),
+            id.to_string()
+        )));
+    }
 
     Ok(cred_def)
 }

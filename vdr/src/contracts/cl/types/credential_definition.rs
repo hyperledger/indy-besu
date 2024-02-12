@@ -28,20 +28,6 @@ impl CredentialDefinition {
         CredentialDefinitionId::build(&self.issuer_id, &self.schema_id.to_string(), &self.tag)
     }
 
-    pub fn matches_id(&self, expected_id: &CredentialDefinitionId) -> VdrResult<()> {
-        let actual_id = self.id();
-
-        if expected_id.to_string() != actual_id.to_string() {
-            return Err(VdrError::InvalidCredentialDefinition(format!(
-                "Id built from cred_def: {} != provided id: {}",
-                actual_id.to_string(),
-                expected_id.to_string()
-            )));
-        }
-
-        Ok(())
-    }
-
     pub fn validate(&self) -> VdrResult<()> {
         if self.cred_def_type != CredentialDefinitionTypes::CL {
             return Err(VdrError::InvalidCredentialDefinition(format!(
@@ -164,35 +150,6 @@ pub mod test {
             Some(CREDENTIAL_DEFINITION_TAG),
         );
         ContractParam::Bytes(serde_json::to_vec(&cred_def).unwrap())
-    }
-
-    #[test]
-    fn cred_def_matches_id_test() {
-        let (id, cred_def) = credential_definition(
-            &DID::from(ISSUER_ID),
-            &SchemaId::from(SCHEMA_ID),
-            Some(CREDENTIAL_DEFINITION_TAG),
-        );
-
-        cred_def.matches_id(&id).unwrap();
-    }
-
-    #[test]
-    fn cred_def_not_matches_id_test() {
-        let (_, cred_def) = credential_definition(
-            &DID::from(ISSUER_ID),
-            &SchemaId::from(SCHEMA_ID),
-            Some(CREDENTIAL_DEFINITION_TAG),
-        );
-
-        let (id, _) = credential_definition(
-            &DID::from(ISSUER_ID),
-            &SchemaId::from(SCHEMA_ID),
-            Some("NotDefault"),
-        );
-
-        let err = cred_def.matches_id(&id).unwrap_err();
-        assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }))
     }
 
     mod convert_into_contract_param {
