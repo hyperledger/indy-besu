@@ -35,7 +35,6 @@ const EVENT_SCHEMA_CREATED: &str = "SchemaCreated";
 pub async fn build_create_schema_transaction(
     client: &LedgerClient,
     from: &Address,
-    id: &SchemaId,
     schema: &Schema,
 ) -> VdrResult<Transaction> {
     schema.validate()?;
@@ -44,7 +43,7 @@ pub async fn build_create_schema_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_SCHEMA)
         .add_param(&identity)?
-        .add_param(id)?
+        .add_param(&schema.id())?
         .add_param(schema)?
         .set_type(TransactionType::Write)
         .set_from(from)
@@ -65,7 +64,6 @@ pub async fn build_create_schema_transaction(
 #[logfn_inputs(Debug)]
 pub async fn build_create_schema_endorsing_data(
     client: &LedgerClient,
-    id: &SchemaId,
     schema: &Schema,
 ) -> VdrResult<TransactionEndorsingData> {
     schema.validate()?;
@@ -75,7 +73,7 @@ pub async fn build_create_schema_endorsing_data(
         .set_identity(&identity)
         .add_param(&identity)?
         .add_param(MethodStringParam::from(METHOD_CREATE_SCHEMA))?
-        .add_param(id)?
+        .add_param(&schema.id())?
         .add_param(schema)?
         .build(client)
         .await
@@ -98,7 +96,6 @@ pub async fn build_create_schema_endorsing_data(
 pub async fn build_create_schema_signed_transaction(
     client: &LedgerClient,
     sender: &Address,
-    id: &SchemaId,
     schema: &Schema,
     signature: &SignatureData,
 ) -> VdrResult<Transaction> {
@@ -111,7 +108,7 @@ pub async fn build_create_schema_signed_transaction(
         .add_param(signature.v())?
         .add_param(signature.r())?
         .add_param(signature.s())?
-        .add_param(id)?
+        .add_param(&schema.id())?
         .add_param(schema)?
         .set_type(TransactionType::Write)
         .set_from(sender)
