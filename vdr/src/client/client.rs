@@ -213,9 +213,7 @@ impl Debug for LedgerClient {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{
-        client::MockClient, signer::basic_signer::test::basic_signer,
-    };
+    use crate::{client::MockClient, signer::basic_signer::test::basic_signer};
     use once_cell::sync::Lazy;
     use std::{env, fs, sync::RwLock};
 

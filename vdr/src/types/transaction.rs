@@ -676,7 +676,7 @@ pub mod test {
         use crate::contracts::network::ValidatorAddresses;
         use once_cell::sync::Lazy;
         use rstest::rstest;
-        use std::{ops::Deref};
+        use std::ops::Deref;
 
         const EMPTY_RESPONSE: Lazy<Vec<u8>> = Lazy::new(|| Vec::new());
 
