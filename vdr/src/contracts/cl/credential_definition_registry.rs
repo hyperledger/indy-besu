@@ -270,7 +270,9 @@ pub mod test {
         },
         contracts::{
             cl::types::{
-                credential_definition::test::{credential_definition, CREDENTIAL_DEFINITION_TAG, credential_definition_value},
+                credential_definition::test::{
+                    credential_definition, credential_definition_value, CREDENTIAL_DEFINITION_TAG,
+                },
                 schema::test::SCHEMA_ID,
                 schema_id::SchemaId,
             },
@@ -281,8 +283,8 @@ pub mod test {
     use std::sync::RwLock;
 
     mod build_create_credential_definition_transaction {
-        use rstest::rstest;
         use super::*;
+        use rstest::rstest;
         use serde_json::Value;
 
         #[async_std::test]
@@ -351,17 +353,19 @@ pub mod test {
         ) {
             init_env_logger();
             let client = mock_client();
-            let (id, mut cred_def) = credential_definition(
-                &DID::from(ISSUER_ID),
-                &SchemaId::from(SCHEMA_ID),
-                Some(tag),
-            );
+            let (id, mut cred_def) =
+                credential_definition(&DID::from(ISSUER_ID), &SchemaId::from(SCHEMA_ID), Some(tag));
             cred_def.tag = tag.to_string();
             cred_def.value = value;
 
-            let err = build_create_credential_definition_transaction(&client, &TRUSTEE_ACC, &id, &cred_def)
-                .await
-                .unwrap_err();
+            let err = build_create_credential_definition_transaction(
+                &client,
+                &TRUSTEE_ACC,
+                &id,
+                &cred_def,
+            )
+            .await
+            .unwrap_err();
 
             assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
         }

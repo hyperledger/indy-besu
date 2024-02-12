@@ -1,4 +1,8 @@
-use crate::{error::VdrError, types::{ContractOutput, ContractParam}, Address, VdrResult, SchemaId};
+use crate::{
+    error::VdrError,
+    types::{ContractOutput, ContractParam},
+    Address, SchemaId, VdrResult,
+};
 use std::collections::HashSet;
 
 use crate::{contracts::did::types::did::DID, types::ContractEvent};
@@ -94,12 +98,12 @@ impl TryFrom<ContractEvent> for SchemaCreatedEvent {
 
 #[cfg(test)]
 pub mod test {
-    use once_cell::sync::Lazy;
     use super::*;
     use crate::{
         contracts::{cl::types::schema_id::SchemaId, did::types::did_doc::test::ISSUER_ID},
         utils::rand_string,
     };
+    use once_cell::sync::Lazy;
 
     pub const SCHEMA_ID: &str =
         "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0";

@@ -259,7 +259,7 @@ pub mod test {
             mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
         },
         contracts::{
-            cl::types::schema::test::{schema, SCHEMA_NAME, SCHEMA_VERSION, SCHEMA_ATTRIBUTES},
+            cl::types::schema::test::{schema, SCHEMA_ATTRIBUTES, SCHEMA_NAME, SCHEMA_VERSION},
             did::types::{did::DID, did_doc::test::ISSUER_ID},
         },
         utils::init_env_logger,
@@ -267,9 +267,9 @@ pub mod test {
     use std::sync::RwLock;
 
     mod build_create_schema_transaction {
-        use std::collections::HashSet;
-        use rstest::rstest;
         use super::*;
+        use rstest::rstest;
+        use std::collections::HashSet;
 
         #[async_std::test]
         async fn build_create_schema_transaction_test() {

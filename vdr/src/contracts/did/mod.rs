@@ -3,4 +3,4 @@ pub mod types;
 
 pub(crate) mod did_ethr_resolver;
 
-pub use types::{did_doc::*};
+pub use types::did_doc::*;
