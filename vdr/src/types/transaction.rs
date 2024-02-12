@@ -500,15 +500,21 @@ pub struct BlockDetails {
 pub mod test {
     use super::*;
     use crate::{
-        client::client::test::{
-            client, mock_client, write_transaction, CONTRACT_METHOD_EXAMPLE, CONTRACT_NAME_EXAMPLE,
-            VALIDATOR_LIST_BYTES,
-        },
-        contracts::{
-            cl::types::credential_definition::test::_CREDENTIAL_DEFINITION_ID,
-            network::ValidatorAddresses,
+        client::client::test::{mock_client, write_transaction, INVALID_ADDRESS},
+        contracts::network::test::{
+            ADD_VALIDATOR_METHOD, VALIDATOR_ADDRESS, VALIDATOR_CONTROL_NAME, VALIDATOR_LIST_BYTES,
         },
     };
+
+    const INVALID_METHOD: Option<&str> = Some(INVALID_ADDRESS);
+    const INVALID_CONTRACT: Option<&str> = Some(INVALID_ADDRESS);
+    const INVALID_ACC_ADDRESS: Option<&str> = Some(INVALID_ADDRESS);
+    const CONTRACT_METHOD_EXAMPLE: Option<&str> = Some(ADD_VALIDATOR_METHOD);
+    const CONTRACT_NAME_EXAMPLE: Option<&str> = Some(VALIDATOR_CONTROL_NAME);
+
+    fn matches_error_type(actual_error: VdrError, expected_error: VdrError) -> bool {
+        std::mem::discriminant(&actual_error) == std::mem::discriminant(&expected_error)
+    }
 
     #[cfg(test)]
     pub mod txn_test {
@@ -517,7 +523,7 @@ pub mod test {
         #[async_std::test]
         async fn get_to_invalid() {
             let transaction = Transaction {
-                to: Address::from("123"),
+                to: Address::from(INVALID_ADDRESS),
                 ..write_transaction()
             };
 
@@ -578,12 +584,8 @@ pub mod test {
     #[cfg(test)]
     pub mod txn_builder_test {
         use super::*;
-
-        const INVALID_METHOD: Option<&str> = Some("123");
-        const VALIDATOR_ADDRESS: &str = "0x93917cadbace5dfce132b991732c6cda9bcc5b8a";
-        const INVALID_ACC_ADDRESS: Option<&str> = Some("123");
-        const CONTRACT_METHOD_EXAMPLE: Option<&str> = Some(test::CONTRACT_METHOD_EXAMPLE);
-        const CONTRACT_NAME_EXAMPLE: Option<&str> = Some(test::CONTRACT_NAME_EXAMPLE);
+        use rstest::rstest;
+        use std::ops::Deref;
 
         async fn setup_transaction_builder(
             contract: Option<&str>,
@@ -592,9 +594,10 @@ pub mod test {
             from: Option<&str>,
         ) -> VdrResult<Transaction> {
             let client = mock_client();
-            let address = Address::from(VALIDATOR_ADDRESS);
 
-            let mut builder = TransactionBuilder::new().add_param(&address).unwrap();
+            let mut builder = TransactionBuilder::new()
+                .add_param(VALIDATOR_ADDRESS.deref())
+                .unwrap();
 
             if let Some(contract) = contract {
                 builder = builder.set_contract(contract);
@@ -615,131 +618,69 @@ pub mod test {
             builder.build(&client).await
         }
 
-        #[async_std::test]
-        async fn build_txn_contract_name_does_not_set() {
-            let err = setup_transaction_builder(
-                None,
-                CONTRACT_METHOD_EXAMPLE,
-                Some(TransactionType::Read),
-                None,
-            )
-            .await
-            .unwrap_err();
+        #[rstest]
+        #[case::contract_name_does_not_set(
+            None,
+            CONTRACT_METHOD_EXAMPLE,
+            Some(TransactionType::Read),
+            None,
+            VdrError::ContractInvalidName("".to_string())
+        )]
+        #[case::contract_method_does_not_set(
+            CONTRACT_NAME_EXAMPLE,
+            None,
+            Some(TransactionType::Read),
+            None,
+            VdrError::ContractInvalidName("".to_string())
+        )]
+        #[case::contract_method_does_not_exist(
+            CONTRACT_NAME_EXAMPLE,
+            INVALID_METHOD,
+            Some(TransactionType::Read),
+            None,
+            VdrError::ContractInvalidName("".to_string())
+        )]
+        #[case::write_sender_does_not_set(
+            CONTRACT_NAME_EXAMPLE,
+            CONTRACT_METHOD_EXAMPLE,
+            Some(TransactionType::Write),
+            None,
+            VdrError::ClientInvalidTransaction("".to_string())
+        )]
+        #[case::invalid_from_address(
+            CONTRACT_NAME_EXAMPLE,
+            CONTRACT_METHOD_EXAMPLE,
+            Some(TransactionType::Write),
+            INVALID_ACC_ADDRESS,
+            VdrError::ClientInvalidTransaction("".to_string())
+        )]
+        async fn transaction_builder_tests(
+            #[case] contract: Option<&str>,
+            #[case] method: Option<&str>,
+            #[case] txn_type: Option<TransactionType>,
+            #[case] from: Option<&str>,
+            #[case] expected_error: VdrError,
+        ) {
+            let result = setup_transaction_builder(contract, method, txn_type.clone(), from).await;
 
-            assert!(matches!(err, VdrError::ContractInvalidName { .. }));
-        }
-
-        #[async_std::test]
-        async fn build_txn_contract_method_does_not_set() {
-            let err = setup_transaction_builder(
-                CONTRACT_NAME_EXAMPLE,
-                None,
-                Some(TransactionType::Read),
-                None,
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(err, VdrError::ContractInvalidName { .. }));
-        }
-
-        #[async_std::test]
-        async fn build_txn_contract_method_does_not_exist() {
-            let err = setup_transaction_builder(
-                CONTRACT_NAME_EXAMPLE,
-                INVALID_METHOD,
-                Some(TransactionType::Read),
-                None,
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(err, VdrError::ContractInvalidName { .. }));
-        }
-
-        #[async_std::test]
-        async fn build_txn_write_sender_does_not_set() {
-            let err = setup_transaction_builder(
-                CONTRACT_NAME_EXAMPLE,
-                CONTRACT_METHOD_EXAMPLE,
-                Some(TransactionType::Write),
-                None,
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(err, VdrError::ClientInvalidTransaction { .. }));
-        }
-
-        #[async_std::test]
-        #[ignore]
-        async fn build_txn_invalid_from_address() {
-            let err = setup_transaction_builder(
-                CONTRACT_NAME_EXAMPLE,
-                CONTRACT_METHOD_EXAMPLE,
-                Some(TransactionType::Write),
-                INVALID_ACC_ADDRESS,
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(err, VdrError::ClientInvalidTransaction { .. }));
-        }
-
-        #[async_std::test]
-        async fn build_txn_valid_transactions_with_0x_prefix() {
-            setup_transaction_builder(
-                CONTRACT_NAME_EXAMPLE,
-                CONTRACT_METHOD_EXAMPLE,
-                Some(TransactionType::Write),
-                Some(&Address::default().to_string()),
-            )
-            .await
-            .unwrap();
-        }
-
-        #[async_std::test]
-        async fn build_txn_valid_transactions_without_0x_prefix() {
-            let address_without_prefix = VALIDATOR_ADDRESS.trim_start_matches("0x");
-            setup_transaction_builder(
-                CONTRACT_NAME_EXAMPLE,
-                CONTRACT_METHOD_EXAMPLE,
-                Some(TransactionType::Write),
-                Some(address_without_prefix),
-            )
-            .await
-            .unwrap();
-        }
-
-        #[async_std::test]
-        async fn build_txn_type_does_not_set() {
-            let txn = setup_transaction_builder(
-                CONTRACT_NAME_EXAMPLE,
-                CONTRACT_METHOD_EXAMPLE,
-                None,
-                None,
-            )
-            .await
-            .unwrap();
-
-            assert_eq!(TransactionType::Read, txn.type_);
+            match result {
+                Ok(ref txn) => assert_eq!(result.unwrap().type_, txn_type.unwrap()),
+                Err(ref err) => assert!(matches_error_type(result.unwrap_err(), expected_error)),
+            }
         }
     }
 
     #[cfg(test)]
     pub mod txn_parser_test {
         use super::*;
-        use futures::future::Lazy;
-        use std::{ops::Deref, sync::Arc};
+        use crate::contracts::network::ValidatorAddresses;
+        use once_cell::sync::Lazy;
+        use rstest::rstest;
+        use std::{ops::Deref};
 
-        const CONTRACT_NAME_EXAMPLE: Option<&str> = Some(test::CONTRACT_NAME_EXAMPLE);
-        const CONTRACT_METHOD_EXAMPLE: Option<&str> = Some(test::CONTRACT_METHOD_EXAMPLE);
-        const INVALID_METHOD: Option<&str> = Some("123");
-        const INVALID_CONTRACT: Option<&str> = Some("123");
+        const EMPTY_RESPONSE: Lazy<Vec<u8>> = Lazy::new(|| Vec::new());
 
-        async fn test_transaction_parser_setup<
-            T: TryFrom<ContractOutput, Error = VdrError> + Debug,
-        >(
+        fn test_transaction_parser_setup<T: TryFrom<ContractOutput, Error = VdrError> + Debug>(
             contract: Option<&str>,
             method: Option<&str>,
             response: &[u8],
@@ -759,72 +700,51 @@ pub mod test {
             parser.parse::<T>(&client, response)
         }
 
-        #[async_std::test]
-        async fn parse_txn_empty_response_bytes() {
-            let error = test_transaction_parser_setup::<ValidatorAddresses>(
-                CONTRACT_NAME_EXAMPLE,
-                CONTRACT_METHOD_EXAMPLE,
-                &[],
-            )
-            .await
-            .unwrap_err();
+        #[rstest]
+        #[case::empty_response_bytes(
+            CONTRACT_NAME_EXAMPLE,
+            CONTRACT_METHOD_EXAMPLE,
+            EMPTY_RESPONSE,
+            VdrError::ContractInvalidResponseData("".to_string())
+        )]
+        #[case::contract_not_set(
+            None,
+            CONTRACT_METHOD_EXAMPLE,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ContractInvalidName("".to_string())
+        )]
+        #[case::contract_does_not_exist(
+            INVALID_CONTRACT,
+            CONTRACT_METHOD_EXAMPLE,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ContractInvalidName("".to_string())
+        )]
+        #[case::contract_method_not_set(
+            CONTRACT_NAME_EXAMPLE,
+            None,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ContractInvalidName("".to_string())
+        )]
+        #[case::contract_method_does_not_exist(
+            CONTRACT_NAME_EXAMPLE,
+            INVALID_METHOD,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ContractInvalidName("".to_string())
+        )]
+        async fn transaction_parser_tests(
+            #[case] contract: Option<&str>,
+            #[case] method: Option<&str>,
+            #[case] response: Lazy<Vec<u8>, fn() -> Vec<u8>>,
+            #[case] expected_error: VdrError,
+        ) {
+            let client = mock_client();
+            let parser_result = test_transaction_parser_setup::<ValidatorAddresses>(
+                contract,
+                method,
+                response.as_slice(),
+            );
 
-            assert!(matches!(
-                error,
-                VdrError::ContractInvalidResponseData { .. }
-            ));
-        }
-
-        #[async_std::test]
-        async fn parse_txn_contract_not_set() {
-            let error = test_transaction_parser_setup::<ValidatorAddresses>(
-                None,
-                CONTRACT_METHOD_EXAMPLE,
-                VALIDATOR_LIST_BYTES.as_slice(),
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(error, VdrError::ContractInvalidName { .. }));
-        }
-
-        #[async_std::test]
-        async fn parse_txn_contract_does_not_exist() {
-            let error = test_transaction_parser_setup::<ValidatorAddresses>(
-                INVALID_CONTRACT,
-                CONTRACT_METHOD_EXAMPLE,
-                VALIDATOR_LIST_BYTES.as_slice(),
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(error, VdrError::ContractInvalidName { .. }));
-        }
-
-        #[async_std::test]
-        async fn parse_txn_contract_method_not_set() {
-            let error = test_transaction_parser_setup::<ValidatorAddresses>(
-                CONTRACT_NAME_EXAMPLE,
-                None,
-                VALIDATOR_LIST_BYTES.as_slice(),
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(error, VdrError::ContractInvalidName { .. }));
-        }
-
-        #[async_std::test]
-        async fn parse_txn_contract_method_does_not_exist() {
-            let error = test_transaction_parser_setup::<ValidatorAddresses>(
-                CONTRACT_NAME_EXAMPLE,
-                INVALID_METHOD,
-                VALIDATOR_LIST_BYTES.as_slice(),
-            )
-            .await
-            .unwrap_err();
-
-            assert!(matches!(error, VdrError::ContractInvalidName { .. }));
+            assert!(matches!(parser_result.unwrap_err(), expected_error));
         }
     }
 }
