@@ -6,6 +6,8 @@ use crate::{
 };
 use serde_derive::{Deserialize, Serialize};
 
+pub use indy_data_types::anoncreds::cred_def::SignatureType;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CredentialDefinition {
     #[serde(rename = "issuerId")]
@@ -13,23 +15,9 @@ pub struct CredentialDefinition {
     #[serde(rename = "schemaId")]
     pub schema_id: SchemaId,
     #[serde(rename = "credDefType")]
-    pub cred_def_type: CredentialDefinitionTypes,
+    pub cred_def_type: SignatureType,
     pub tag: String,
     pub value: serde_json::Value,
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub enum CredentialDefinitionTypes {
-    #[default]
-    CL,
-}
-
-impl AsRef<str> for CredentialDefinitionTypes {
-    fn as_ref(&self) -> &str {
-        match self {
-            CredentialDefinitionTypes::CL => "CL",
-        }
-    }
 }
 
 impl TryFrom<&CredentialDefinition> for ContractParam {
@@ -116,7 +104,7 @@ pub mod test {
         let cred_def = CredentialDefinition {
             issuer_id: issuer_id.clone(),
             schema_id: SchemaId::from(schema_id.as_ref()),
-            cred_def_type: CredentialDefinitionTypes::CL,
+            cred_def_type: SignatureType::CL,
             tag: tag.to_string(),
             value: credential_definition_value(),
         };

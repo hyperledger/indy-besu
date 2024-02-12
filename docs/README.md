@@ -21,7 +21,7 @@
  
 ### Migration documents
 
-- [Indy Migration](migrtion/migration.md)
+- [Indy Migration](migration/migration.md)
 
 ### Development designs
 

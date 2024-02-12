@@ -3,6 +3,7 @@ use crate::{
     types::{ContractOutput, ContractParam},
     Address,
 };
+use std::collections::HashSet;
 
 use crate::{contracts::did::types::did::DID, types::ContractEvent};
 use serde_derive::{Deserialize, Serialize};
@@ -14,7 +15,7 @@ pub struct Schema {
     pub name: String,
     pub version: String,
     #[serde(rename = "attrNames")]
-    pub attr_names: Vec<String>,
+    pub attr_names: HashSet<String>,
 }
 
 impl TryFrom<&Schema> for ContractParam {
@@ -91,14 +92,15 @@ pub mod test {
     pub fn schema(issuer_id: &DID, name: Option<&str>) -> (SchemaId, Schema) {
         let name = name.map(String::from).unwrap_or_else(rand_string);
         let id = schema_id(issuer_id, name.as_str());
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert(SCHEMA_ATTRIBUTE_FIRST_NAME.to_string());
+        attr_names.insert(SCHEMA_ATTRIBUTE_LAST_NAME.to_string());
+
         let schema = Schema {
             issuer_id: issuer_id.clone(),
             name,
             version: SCHEMA_VERSION.to_string(),
-            attr_names: vec![
-                SCHEMA_ATTRIBUTE_FIRST_NAME.to_string(),
-                SCHEMA_ATTRIBUTE_LAST_NAME.to_string(),
-            ],
+            attr_names,
         };
         (id, schema)
     }
