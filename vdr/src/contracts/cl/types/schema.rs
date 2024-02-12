@@ -1,15 +1,5 @@
 use crate::{error::VdrError, types::{ContractOutput, ContractParam}, Address, VdrResult, SchemaId};
-use crate::{
-    error::VdrError,
-    types::{ContractOutput, ContractParam},
-    Address,
-};
 use std::collections::HashSet;
-use crate::{
-    error::VdrError,
-    types::{ContractOutput, ContractParam},
-    Address, SchemaId, VdrResult,
-};
 
 use crate::{contracts::did::types::did::DID, types::ContractEvent};
 use serde_derive::{Deserialize, Serialize};
@@ -104,6 +94,7 @@ impl TryFrom<ContractEvent> for SchemaCreatedEvent {
 
 #[cfg(test)]
 pub mod test {
+    use once_cell::sync::Lazy;
     use super::*;
     use crate::{
         contracts::{cl::types::schema_id::SchemaId, did::types::did_doc::test::ISSUER_ID},
@@ -115,6 +106,11 @@ pub mod test {
     pub const SCHEMA_NAME: &str = "F1DClaFEzi3t";
     pub const SCHEMA_VERSION: &str = "1.0.0";
     pub const SCHEMA_ATTRIBUTE_FIRST_NAME: &str = "First Name";
+
+    pub static SCHEMA_ATTRIBUTES: Lazy<HashSet<String>> = Lazy::new(|| {
+        let attributes = vec![SCHEMA_ATTRIBUTE_FIRST_NAME.to_string()];
+        attributes.into_iter().collect()
+    });
 
     pub fn schema_id(issuer_id: &DID, name: &str) -> SchemaId {
         SchemaId::build(issuer_id, name, SCHEMA_VERSION)
@@ -142,9 +138,6 @@ pub mod test {
 
     mod convert_into_contract_param {
         use super::*;
-        use crate::contracts::cl::types::credential_definition::test::{
-            credential_definition, CREDENTIAL_DEFINITION_TAG,
-        };
 
         #[test]
         fn convert_schema_into_contract_param_test() {

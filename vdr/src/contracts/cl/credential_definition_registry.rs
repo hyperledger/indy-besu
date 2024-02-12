@@ -270,7 +270,7 @@ pub mod test {
         },
         contracts::{
             cl::types::{
-                credential_definition::test::{credential_definition, CREDENTIAL_DEFINITION_TAG},
+                credential_definition::test::{credential_definition, CREDENTIAL_DEFINITION_TAG, credential_definition_value},
                 schema::test::SCHEMA_ID,
                 schema_id::SchemaId,
             },
@@ -281,6 +281,7 @@ pub mod test {
     use std::sync::RwLock;
 
     mod build_create_credential_definition_transaction {
+        use rstest::rstest;
         use super::*;
         use serde_json::Value;
 
@@ -341,47 +342,27 @@ pub mod test {
             assert_eq!(expected_transaction, transaction);
         }
 
-        #[async_std::test]
-        async fn build_create_credential_definition_transaction_no_tag() {
+        #[rstest]
+        #[case("", credential_definition_value())]
+        #[case(CREDENTIAL_DEFINITION_TAG, Value::Null)]
+        async fn build_create_credential_definition_transaction_errors(
+            #[case] tag: &str,
+            #[case] value: Value,
+        ) {
             init_env_logger();
             let client = mock_client();
             let (id, mut cred_def) = credential_definition(
                 &DID::from(ISSUER_ID),
                 &SchemaId::from(SCHEMA_ID),
-                Some(CREDENTIAL_DEFINITION_TAG),
+                Some(tag),
             );
-            cred_def.tag = "".to_string();
+            cred_def.tag = tag.to_string();
+            cred_def.value = value;
 
-            let err = build_create_credential_definition_transaction(
-                &client,
-                &TRUSTEE_ACC,
-                &id,
-                &cred_def,
-            )
-            .await
-            .unwrap_err();
-            assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
-        }
+            let err = build_create_credential_definition_transaction(&client, &TRUSTEE_ACC, &id, &cred_def)
+                .await
+                .unwrap_err();
 
-        #[async_std::test]
-        async fn build_create_credential_definition_transaction_no_value() {
-            init_env_logger();
-            let client = mock_client();
-            let (id, mut cred_def) = credential_definition(
-                &DID::from(ISSUER_ID),
-                &SchemaId::from(SCHEMA_ID),
-                Some(CREDENTIAL_DEFINITION_TAG),
-            );
-            cred_def.value = Value::Null;
-
-            let err = build_create_credential_definition_transaction(
-                &client,
-                &TRUSTEE_ACC,
-                &id,
-                &cred_def,
-            )
-            .await
-            .unwrap_err();
             assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
         }
     }

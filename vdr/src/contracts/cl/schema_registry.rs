@@ -259,7 +259,7 @@ pub mod test {
             mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TRUSTEE_ACC,
         },
         contracts::{
-            cl::types::schema::test::{schema, SCHEMA_NAME},
+            cl::types::schema::test::{schema, SCHEMA_NAME, SCHEMA_VERSION, SCHEMA_ATTRIBUTES},
             did::types::{did::DID, did_doc::test::ISSUER_ID},
         },
         utils::init_env_logger,
@@ -267,13 +267,15 @@ pub mod test {
     use std::sync::RwLock;
 
     mod build_create_schema_transaction {
+        use std::collections::HashSet;
+        use rstest::rstest;
         use super::*;
 
         #[async_std::test]
         async fn build_create_schema_transaction_test() {
             init_env_logger();
             let client = mock_client();
-            let (id, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
+            let (_, schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
             let transaction = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
                 .await
                 .unwrap();
@@ -306,42 +308,26 @@ pub mod test {
             assert_eq!(expected_transaction, transaction);
         }
 
-        #[async_std::test]
-        async fn build_create_schema_transaction_no_name() {
+        #[rstest]
+        #[case::name_not_provided("", SCHEMA_VERSION, &SCHEMA_ATTRIBUTES)]
+        #[case::version_not_provided(SCHEMA_NAME, "", &SCHEMA_ATTRIBUTES)]
+        #[case::attributes_not_provided(SCHEMA_NAME, SCHEMA_VERSION, &HashSet::new())]
+        async fn build_create_schema_transaction_errors(
+            #[case] name: &str,
+            #[case] version: &str,
+            #[case] attributes: &HashSet<String>,
+        ) {
             init_env_logger();
             let client = mock_client();
-            let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-            schema.name = "".to_string();
+            let (_, mut schema) = schema(&DID::from(ISSUER_ID), Some(name));
+            schema.name = name.to_string();
+            schema.version = version.to_string();
+            schema.attr_names = attributes.clone();
 
             let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
                 .await
                 .unwrap_err();
-            assert!(matches!(err, VdrError::InvalidSchema { .. }));
-        }
 
-        #[async_std::test]
-        async fn build_create_schema_transaction_no_version() {
-            init_env_logger();
-            let client = mock_client();
-            let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-            schema.version = "".to_string();
-
-            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
-                .await
-                .unwrap_err();
-            assert!(matches!(err, VdrError::InvalidSchema { .. }));
-        }
-
-        #[async_std::test]
-        async fn build_create_schema_transaction_no_attributes() {
-            init_env_logger();
-            let client = mock_client();
-            let (id, mut schema) = schema(&DID::from(ISSUER_ID), Some(SCHEMA_NAME));
-            schema.attr_names = vec![];
-
-            let err = build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
-                .await
-                .unwrap_err();
             assert!(matches!(err, VdrError::InvalidSchema { .. }));
         }
     }

@@ -20,22 +20,12 @@ pub struct CredentialDefinition {
     pub value: serde_json::Value,
 }
 
-
-
-
 impl CredentialDefinition {
     pub fn id(&self) -> CredentialDefinitionId {
-        CredentialDefinitionId::build(&self.issuer_id, &self.schema_id.to_string(), &self.tag)
+        CredentialDefinitionId::build(&self.issuer_id, &self.schema_id, &self.tag)
     }
 
     pub fn validate(&self) -> VdrResult<()> {
-        if self.cred_def_type != CredentialDefinitionTypes::CL {
-            return Err(VdrError::InvalidCredentialDefinition(format!(
-                "Unsupported type: {}",
-                self.cred_def_type.as_ref()
-            )));
-        }
-
         if self.tag.is_empty() {
             return Err(VdrError::InvalidCredentialDefinition(
                 "Tag is not provided".to_string(),
@@ -116,7 +106,7 @@ pub mod test {
         CredentialDefinitionId::build(issuer_id, schema_id, tag)
     }
 
-    fn credential_definition_value() -> serde_json::Value {
+    pub fn credential_definition_value() -> serde_json::Value {
         json!({
             "n": "779...397",
             "rctxt": "774...977",
