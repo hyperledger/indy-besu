@@ -512,10 +512,6 @@ pub mod test {
     const CONTRACT_METHOD_EXAMPLE: Option<&str> = Some(ADD_VALIDATOR_METHOD);
     const CONTRACT_NAME_EXAMPLE: Option<&str> = Some(VALIDATOR_CONTROL_NAME);
 
-    fn matches_error_type(actual_error: VdrError, expected_error: VdrError) -> bool {
-        std::mem::discriminant(&actual_error) == std::mem::discriminant(&expected_error)
-    }
-
     #[cfg(test)]
     pub mod txn_test {
         use super::*;
@@ -656,7 +652,7 @@ pub mod test {
 
             match result {
                 Ok(ref txn) => assert_eq!(txn.type_, txn_type.unwrap()),
-                Err(ref err) => assert!(matches_error_type(err.clone(), expected_error)),
+                Err(ref err) => assert!(matches!(err.clone(), expected_error)),
             }
         }
     }
