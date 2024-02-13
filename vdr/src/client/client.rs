@@ -242,7 +242,7 @@ pub mod test {
     pub static CRED_DEF_REGISTRY_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000004444"));
 
-    pub const VALIDATOR_CONTROL_ADDRESS: Lazy<Address> =
+    pub static VALIDATOR_CONTROL_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000007777"));
 
     pub static ROLE_CONTROL_ADDRESS: Lazy<Address> =
@@ -388,31 +388,36 @@ pub mod test {
         }
 
         #[rstest]
-        #[case::invalid_contract_data(&VALIDATOR_CONTROL_ADDRESS, None, Some(VALIDATOR_CONTROL_NAME), Some(""), VdrError::ContractInvalidInputData)]
-        #[case::both_contract_path_and_spec_provided(&VALIDATOR_CONTROL_ADDRESS, Some(VALIDATOR_CONTROL_PATH), Some(VALIDATOR_CONTROL_NAME), None, VdrError::ContractInvalidSpec("".to_string()))]
-        #[case::non_existent_spec_path(&VALIDATOR_CONTROL_ADDRESS, Some(""), None, None, VdrError::ContractInvalidSpec("".to_string()))]
-        #[case::empty_contract_spec(&VALIDATOR_CONTROL_ADDRESS, None, None, None, VdrError::ContractInvalidSpec("".to_string()))]
+        #[case::invalid_contract_data(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: None,
+            spec: Some(ContractSpec {
+                name: VALIDATOR_CONTROL_NAME.to_string(),
+                abi: Value::String("".to_string()),
+            }),
+        }], VdrError::ContractInvalidInputData)]
+        #[case::both_contract_path_and_spec_provided(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
+            spec: Some(ContractSpec {
+                name: VALIDATOR_CONTROL_NAME.to_string(),
+                abi: Value::Array(vec ! []),
+            }),
+        }], VdrError::ContractInvalidSpec("".to_string()))]
+        #[case::non_existent_spec_path(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: Some(build_contract_path("")),
+            spec: None,
+        }], VdrError::ContractInvalidSpec("".to_string()))]
+        #[case::empty_contract_spec(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: None,
+            spec: None,
+        }], VdrError::ContractInvalidSpec("".to_string()))]
         fn test_create_client_errors(
-            #[case] address: &Address,
-            #[case] spec_path: Option<&str>,
-            #[case] name: Option<&str>,
-            #[case] abi: Option<&str>,
+            #[case] contract_config: Vec<ContractConfig>,
             #[case] expected_error: VdrError,
         ) {
-            let spec = match (name, abi) {
-                (Some(n), Some(a)) => Some(ContractSpec {
-                    name: n.to_string(),
-                    abi: Value::String(a.to_string()),
-                }),
-                _ => None,
-            };
-
-            let contract_config = vec![ContractConfig {
-                address: address.to_string(),
-                spec_path: spec_path.map(|sp| sp.to_string()),
-                spec,
-            }];
-
             let client_err = LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contract_config, None)
                 .err()
                 .unwrap();

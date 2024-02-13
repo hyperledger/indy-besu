@@ -587,37 +587,6 @@ pub mod test {
         use rstest::rstest;
         use std::ops::Deref;
 
-        async fn setup_transaction_builder(
-            contract: Option<&str>,
-            method: Option<&str>,
-            txn_type: Option<TransactionType>,
-            from: Option<&str>,
-        ) -> VdrResult<Transaction> {
-            let client = mock_client();
-
-            let mut builder = TransactionBuilder::new()
-                .add_param(VALIDATOR_ADDRESS.deref())
-                .unwrap();
-
-            if let Some(contract) = contract {
-                builder = builder.set_contract(contract);
-            }
-
-            if let Some(method) = method {
-                builder = builder.set_method(method);
-            }
-
-            if let Some(txn_type) = txn_type {
-                builder = builder.set_type(txn_type);
-            }
-
-            if let Some(from) = from {
-                builder = builder.set_from(&Address::from(from));
-            }
-
-            builder.build(&client).await
-        }
-
         #[rstest]
         #[case::contract_name_does_not_set(
             None,
@@ -661,11 +630,33 @@ pub mod test {
             #[case] from: Option<&str>,
             #[case] expected_error: VdrError,
         ) {
-            let result = setup_transaction_builder(contract, method, txn_type.clone(), from).await;
+            let client = mock_client();
+
+            let mut builder = TransactionBuilder::new()
+                .add_param(VALIDATOR_ADDRESS.deref())
+                .unwrap();
+
+            if let Some(contract) = contract {
+                builder = builder.set_contract(contract);
+            }
+
+            if let Some(method) = method {
+                builder = builder.set_method(method);
+            }
+
+            if let Some(txn_type) = txn_type.clone() {
+                builder = builder.set_type(txn_type);
+            }
+
+            if let Some(from) = from {
+                builder = builder.set_from(&Address::from(from));
+            }
+
+            let result = builder.build(&client).await;
 
             match result {
-                Ok(ref txn) => assert_eq!(result.unwrap().type_, txn_type.unwrap()),
-                Err(ref err) => assert!(matches_error_type(result.unwrap_err(), expected_error)),
+                Ok(ref txn) => assert_eq!(txn.type_, txn_type.unwrap()),
+                Err(ref err) => assert!(matches_error_type(err.clone(), expected_error)),
             }
         }
     }
@@ -676,29 +667,8 @@ pub mod test {
         use crate::contracts::network::ValidatorAddresses;
         use once_cell::sync::Lazy;
         use rstest::rstest;
-        use std::ops::Deref;
 
         const EMPTY_RESPONSE: Lazy<Vec<u8>> = Lazy::new(|| Vec::new());
-
-        fn test_transaction_parser_setup<T: TryFrom<ContractOutput, Error = VdrError> + Debug>(
-            contract: Option<&str>,
-            method: Option<&str>,
-            response: &[u8],
-        ) -> VdrResult<T> {
-            let client = mock_client();
-
-            let mut parser = TransactionParser::new();
-
-            if let Some(contract) = contract {
-                parser = parser.set_contract(contract);
-            }
-
-            if let Some(method) = method {
-                parser = parser.set_method(method);
-            }
-
-            parser.parse::<T>(&client, response)
-        }
 
         #[rstest]
         #[case::empty_response_bytes(
@@ -738,13 +708,19 @@ pub mod test {
             #[case] expected_error: VdrError,
         ) {
             let client = mock_client();
-            let parser_result = test_transaction_parser_setup::<ValidatorAddresses>(
-                contract,
-                method,
-                response.as_slice(),
-            );
+            let mut parser = TransactionParser::new();
 
-            assert!(matches!(parser_result.unwrap_err(), expected_error));
+            if let Some(contract) = contract {
+                parser = parser.set_contract(contract);
+            }
+
+            if let Some(method) = method {
+                parser = parser.set_method(method);
+            }
+
+            let result = parser.parse::<ValidatorAddresses>(&client, response.as_slice());
+
+            assert!(matches!(result.unwrap_err(), expected_error));
         }
     }
 }
