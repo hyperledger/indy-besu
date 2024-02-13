@@ -83,7 +83,6 @@ pub mod test {
     pub const SCHEMA_NAME: &str = "F1DClaFEzi3t";
     pub const SCHEMA_VERSION: &str = "1.0.0";
     pub const SCHEMA_ATTRIBUTE_FIRST_NAME: &str = "First Name";
-    pub const SCHEMA_ATTRIBUTE_LAST_NAME: &str = "Last Name";
 
     pub fn schema_id(issuer_id: &DID, name: &str) -> SchemaId {
         SchemaId::build(issuer_id, name, SCHEMA_VERSION)
@@ -94,7 +93,6 @@ pub mod test {
         let id = schema_id(issuer_id, name.as_str());
         let mut attr_names: HashSet<String> = HashSet::new();
         attr_names.insert(SCHEMA_ATTRIBUTE_FIRST_NAME.to_string());
-        attr_names.insert(SCHEMA_ATTRIBUTE_LAST_NAME.to_string());
 
         let schema = Schema {
             issuer_id: issuer_id.clone(),
