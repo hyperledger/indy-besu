@@ -216,6 +216,15 @@ impl Client for Web3Client {
     async fn get_receipt(&self, hash: &[u8]) -> VdrResult<String> {
         trace!("Web3Client::get_receipt(hash: {:?})", hash);
 
+        if hash.len() != 32 {
+            let vdr_error =
+                VdrError::CommonInvalidData("Transaction hash length != 32 bytes".to_string());
+
+            warn!("Error: {} getting receipt", vdr_error,);
+
+            return Err(vdr_error);
+        }
+
         let receipt = self
             .client
             .eth()
