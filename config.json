@@ -1,0 +1,44 @@
+{
+    "contracts": {
+        "did_validator": {
+            "spec_path": "smart_contracts/artifacts/contracts/did/DidValidator.sol/DidValidator.json",
+            "address": "0x0000000000000000000000000000000000002222"
+        },
+
+        "cred_def_registry": {
+            "spec_path": "smart_contracts/artifacts/contracts/cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json",
+            "address": "0x0000000000000000000000000000000000004444"
+        },
+        "schema_registry": {
+            "spec_path": "smart_contracts/artifacts/contracts/cl/SchemaRegistry.sol/SchemaRegistry.json",
+            "address": "0x0000000000000000000000000000000000005555"
+        },
+        "role_control": {
+            "spec_path": "smart_contracts/artifacts/contracts/auth/RoleControl.sol/RoleControl.json",
+            "address": "0x0000000000000000000000000000000000006666"
+        },
+        "validator_control": {
+            "spec_path": "smart_contracts/artifacts/contracts/network/ValidatorControl.sol/ValidatorControl.json",
+            "address": "0x0000000000000000000000000000000000007777"
+        },
+        "account_control": {
+            "spec_path": "smart_contracts/artifacts/contracts/auth/AccountControl.sol/AccountControl.json",
+            "address": "0x0000000000000000000000000000000000008888"
+        },
+        "upgrade_control": {
+            "spec_path": "smart_contracts/artifacts/contracts/upgrade/UpgradeControl.sol/UpgradeControl.json",
+            "address": "0x0000000000000000000000000000000000009999"
+        },
+        "legacy_mapping_registry": {
+            "spec_path": "smart_contracts/artifacts/contracts/migration/LegacyMappingRegistry.sol/LegacyMappingRegistry.json",
+            "address": "0x0000000000000000000000000000000000019999"
+        },
+        "ethereum_did_registry": {
+            "spec_path": "smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json",
+            "address": "0x0000000000000000000000000000000000003333"
+        }
+    }
+}
+
+
+

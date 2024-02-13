@@ -1,5 +1,5 @@
 import { writeJson } from '../../utils'
-import { outFile } from './config'
+import { outFile, readContractsConfig } from './config'
 import {
   accountControl,
   credentialDefinitionRegistry,
@@ -14,6 +14,8 @@ import {
 } from './contracts'
 
 function main() {
+  readContractsConfig()
+
   const contracts = {
     ...accountControl(),
     ...roleControl(),

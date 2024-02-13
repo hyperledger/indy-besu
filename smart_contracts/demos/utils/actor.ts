@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 import {
   RoleControl,
   IndyDidRegistry,
@@ -24,17 +26,19 @@ export class Actor {
   }
 
   public async init() {
-    this.roleControl = await new RoleControl(this.account).getInstance(RoleControl.defaultAddress)
-    this.validatorControl = await new ValidatorControl(this.account).getInstance(ValidatorControl.defaultAddress)
-    this.didRegistry = await new IndyDidRegistry(this.account).getInstance(IndyDidRegistry.defaultAddress)
+    const addresses = this.readContractsAddresses()
+
+    this.roleControl = await new RoleControl(this.account).getInstance(addresses['role_control'])
+    this.validatorControl = await new ValidatorControl(this.account).getInstance(addresses['validator_control'])
+    this.didRegistry = await new IndyDidRegistry(this.account).getInstance(addresses['indy_did_registry'])
     this.ethereumDIDRegistry = await new EthereumExtDidRegistry(this.account).getInstance(
-      EthereumExtDidRegistry.defaultAddress,
+      addresses['ethereum_did_registry'],
     )
-    this.schemaRegistry = await new SchemaRegistry(this.account).getInstance(SchemaRegistry.defaultAddress)
+    this.schemaRegistry = await new SchemaRegistry(this.account).getInstance(addresses['schema_registry'])
     this.credentialDefinitionRegistry = await new CredentialDefinitionRegistry(this.account).getInstance(
-      CredentialDefinitionRegistry.defaultAddress,
+      addresses['cred_def_registry'],
     )
-    this.upgradeControl = await new UpgradeControl(this.account).getInstance(UpgradeControl.defaultAddress)
+    this.upgradeControl = await new UpgradeControl(this.account).getInstance(addresses['upgrade_control'])
     return this
   }
 
@@ -52,5 +56,20 @@ export class Actor {
 
   public get didDocument() {
     return this.account.didDocument
+  }
+
+  private readContractsAddresses(): { [key: string]: string } {
+    const configPath = resolve('..', 'config.json')
+
+    const data = readFileSync(configPath, 'utf8')
+    const contracts = JSON.parse(data).contracts
+
+    const result = {}
+
+    for (const contractName of Object.keys(contracts)) {
+      result[contractName] = contracts[contractName].address
+    }
+
+    return result
   }
 }

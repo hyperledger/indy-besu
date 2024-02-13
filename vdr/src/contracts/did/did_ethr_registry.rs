@@ -851,7 +851,7 @@ pub mod test {
     use crate::{
         client::client::test::{
             mock_client, CHAIN_ID, DEFAULT_NONCE, ETHR_DID_REGISTRY_ADDRESS, TEST_ACCOUNT,
-            TRUSTEE_ACCOUNT,
+            TRUSTEE_ACCOUNT, get_contract_address
         },
         contracts::{
             did::types::{
@@ -929,7 +929,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: get_contract_address("ethereum_did_registry").unwrap(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -964,7 +964,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: get_contract_address("ethereum_did_registry").unwrap(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -1001,7 +1001,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: get_contract_address("ethereum_did_registry").unwrap(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -1036,7 +1036,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: get_contract_address("ethereum_did_registry").unwrap(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -1071,7 +1071,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: get_contract_address("ethereum_did_registry").unwrap(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -1106,7 +1106,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: get_contract_address("ethereum_did_registry").unwrap(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![

@@ -10,12 +10,6 @@ from indy_besu_vdr import *
 chain_id = 1337
 # address of an RPC node connected to the network
 node_address = 'http://127.0.0.1:8545'
-# address of deployed IndyDidRegistry smart contract
-did_contact_address = '0x0000000000000000000000000000000000018888'
-schema_contact_address = '0x0000000000000000000000000000000000005555'
-# Path to the compiled IndyDidRegistry smart contract
-did_contact_spec_path = '/Users/indy-besu/smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json'
-schema_contact_spec_path = '/Users/indy-besu/smart_contracts/artifacts/contracts/cl/SchemaRegistry.sol/SchemaRegistry.json'
 # Account address to use for sending transactions
 trustee = {
     "address": '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5',
@@ -35,10 +29,24 @@ def sign(secret: str, data: bytes):
 
 
 async def demo():
+    cwd = os.getcwd()
+    project_root = f"{cwd}/../../.."
+
+    with open(f"{project_root}/config.json") as f:
+        configs = json.loads(f.read())
+
+        did_registry_contract = configs["contracts"]["did_registry"]
+        did_contract_address = did_registry_contract["address"]
+        did_contract_spec_path = "{}/{}".format(project_root, did_registry_contract["spec_path"])
+
+        schema_registry_contract = configs["contracts"]["schema_registry"]
+        schema_contract_address = schema_registry_contract["address"]
+        schema_contract_spec_path = "{}/{}".format(project_root, schema_registry_contract["spec_path"])
+
     print("1. Init client")
     contract_configs = [
-        ContractConfig(did_contact_address, did_contact_spec_path, None),
-        ContractConfig(schema_contact_address, schema_contact_spec_path, None),
+        ContractConfig(did_contract_address, did_contract_spec_path, None),
+        ContractConfig(schema_contract_address, schema_contract_spec_path, None),
     ]
     client = LedgerClient(chain_id, node_address, contract_configs, None)
     status = await client.ping()

@@ -9,8 +9,6 @@ export type CredentialDefinitionRecord = {
 }
 
 export class CredentialDefinitionRegistry extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000004444'
-
   constructor(sender?: any) {
     super(CredentialDefinitionRegistry.name, sender)
   }

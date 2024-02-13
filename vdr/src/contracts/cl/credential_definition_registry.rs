@@ -211,7 +211,7 @@ pub mod test {
     use crate::{
         client::client::test::{
             mock_client, CHAIN_ID, CRED_DEF_REGISTRY_ADDRESS, DEFAULT_NONCE, TEST_ACCOUNT,
-            TRUSTEE_ACCOUNT,
+            TRUSTEE_ACCOUNT, get_contract_address
         },
         contracts::{
             cl::types::{
@@ -246,7 +246,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: CRED_DEF_REGISTRY_ADDRESS.clone(),
+                to: get_contract_address("cred_def_registry").unwrap(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
@@ -335,7 +335,7 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: CRED_DEF_REGISTRY_ADDRESS.clone(),
+                address: get_contract_address("cred_def_registry").unwrap(),
                 nonce: None,
                 chain_id: CHAIN_ID,
                 data: vec![

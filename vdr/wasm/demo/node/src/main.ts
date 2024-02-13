@@ -1,19 +1,12 @@
 import fs from "fs";
 import secp256k1 from "secp256k1";
 
+import { readFileSync } from "fs";
+import { resolve } from 'path'
 import { LedgerClient, EthrDidRegistry, DidResolver, SchemaRegistry } from "indy-besu-vdr";
 
 const chainId = 1337
 const nodeAddress = 'http://127.0.0.1:8545'
-// set path to the compiled contract
-const didEthrRegistryConfig = {
-    address: '0x0000000000000000000000000000000000018888',
-    specPath: '/Users/indy-besu/smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json'
-}
-const schemaRegistryConfig = {
-    address: '0x0000000000000000000000000000000000005555',
-    specPath: '/Users/indy-besu/smart_contracts/artifacts/contracts/cl/SchemaRegistry.sol/SchemaRegistry.json'
-}
 
 
 const trustee = {
@@ -33,18 +26,31 @@ function sign(message: Uint8Array, key: Uint8Array) {
     }
 }
 
-async function demo() {
-    console.log('1. Init client')
-    const contractConfigs = [
+function readContractsConfigs(): {address: string, spec: string}[] {
+    const projectRootPath = resolve('../../../..')
+    const configPath = `${projectRootPath}/config.json`
+
+    const data = readFileSync(configPath, 'utf8')
+    const parsed_data = JSON.parse(data)
+
+    const ethDidRegistry = parsed_data.contracts.ethereum_did_registry
+    const schemaRegistry = parsed_data.contracts.schema_registry
+
+    return [
         {
-            "address": didEthrRegistryConfig.address,
-            "spec": JSON.parse(fs.readFileSync(didEthrRegistryConfig.specPath, 'utf8')),
+            address: ethDidRegistry.address as string,
+            spec: `${projectRootPath}/${ethDidRegistry.spec_path}`
         },
         {
-            "address": schemaRegistryConfig.address,
-            "spec": JSON.parse(fs.readFileSync(schemaRegistryConfig.specPath, 'utf8')),
+            address: schemaRegistry.address as string,
+            spec: `${projectRootPath}/${schemaRegistry.spec_path}`
         }
     ]
+}
+
+async function demo() {
+    console.log('1. Init client')
+    const contractConfigs = readContractsConfigs()
     const client = new LedgerClient(chainId, nodeAddress, contractConfigs, null)
     const status = await client.ping()
     console.log('Status: ' + JSON.stringify(status, null, 2))

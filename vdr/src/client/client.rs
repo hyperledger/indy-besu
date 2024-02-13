@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fmt::{Debug, Formatter},
 };
+use serde_json::Value;
 
 use log::warn;
 use log_derive::{logfn, logfn_inputs};
@@ -220,17 +221,6 @@ pub mod test {
     use std::{env, fs};
 
     pub const CHAIN_ID: u64 = 1337;
-    pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
-    pub const INDY_DID_REGISTRY_PATH: &str = "did/IndyDidRegistry.sol/IndyDidRegistry.json";
-    pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
-    pub const CRED_DEF_REGISTRY_SPEC_PATH: &str =
-        "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
-    pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
-    pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
-    pub const ETHR_DID_REGISTRY_PATH: &str =
-        "did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json";
-    pub const LEGACY_MAPPING_REGISTRY_PATH: &str =
-        "migration/LegacyMappingRegistry.sol/LegacyMappingRegistry.json";
     pub const RPC_NODE_ADDRESS: &str = "http://127.0.0.1:8545";
     pub const CLIENT_NODE_ADDRESSES: [&str; 4] = [
         "http://127.0.0.1:21001",
@@ -241,26 +231,6 @@ pub mod test {
     pub const DEFAULT_NONCE: u64 = 0;
     pub const INVALID_ADDRESS: &str = "123";
 
-    pub static INDY_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000003333"));
-
-    pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000005555"));
-
-    pub static CRED_DEF_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000004444"));
-
-    pub static VALIDATOR_CONTROL_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000007777"));
-
-    pub static ROLE_CONTROL_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000006666"));
-
-    pub static ETHR_DID_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000018888"));
-
-    pub static LEGACY_MAPPING_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000017777"));
 
     pub static TRUSTEE_ACCOUNT: Lazy<Address> =
         Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
@@ -270,7 +240,7 @@ pub mod test {
 
     fn build_contract_path(contract_path: &str) -> String {
         let mut cur_dir = env::current_dir().unwrap();
-        cur_dir.push(CONTRACTS_SPEC_BASE_PATH);
+        cur_dir.push(".."); // project root directory
         cur_dir.push(contract_path);
         fs::canonicalize(&cur_dir)
             .unwrap()
@@ -279,44 +249,84 @@ pub mod test {
             .to_string()
     }
 
+    fn get_contract_conf(contract_name: &str) -> Option<Value> {
+        let mut conf_json_path = env::current_dir().unwrap();
+        conf_json_path.push("../config.json");
+        let json_content = fs::read_to_string(conf_json_path).expect("config file reading failed");
+        let conf: Value = serde_json::from_str(&json_content).expect("config file parsing failed");
+
+        let contracts = conf
+            .get("contracts").expect("'contracts' must be in the config file")
+            .as_object().expect("'contracts' is expected to be an object");
+
+        match contracts.get(contract_name) {
+            Some(value) => {
+                return Some(value.clone());
+            },
+            None => {
+                return None;
+            }
+        }
+    }
+
+    pub fn get_contract_address(contract_name: &str) -> Option<Address> {
+        match get_contract_conf(contract_name) {
+            Some(value) => {
+                let s = value
+                    .get("address").expect("'address' not found in the contract config")
+                    .as_str().expect("'address' must be a string");
+                return Some(Address::from(s));
+            },
+            None => {
+                return None;
+            }
+        }
+    }
+
+    pub fn get_contract_spec_path(contract_name: &str) -> Option<String> {
+        match get_contract_conf(contract_name) {
+            Some(value) => {
+                let s = value
+                    .get("spec_path").expect("'spec_path' not found in the contract config")
+                    .as_str().expect("'spec_path' must be a string");
+                return Some(String::from(s));
+            },
+            None => {
+                return None;
+            }
+        }
+    }
+
     fn contracts() -> Vec<ContractConfig> {
-        vec![
-            ContractConfig {
-                address: SCHEMA_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),
+        let mut conf_json_path = env::current_dir().unwrap();
+        conf_json_path.push("../config.json");
+
+        let json_content = fs::read_to_string(conf_json_path).expect("config file reading failed");
+        let conf: Value = serde_json::from_str(&json_content).expect("config file parsing failed");
+
+        let contracts_conf = conf
+            .get("contracts").expect("'contracts' must be in the config file")
+            .as_object().expect("'contracts' is expected to be an object");
+
+        let mut result = Vec::new();
+
+        for contract_conf in contracts_conf.values() {
+            let addr = contract_conf
+                .get("address").expect("'address' not found in the contract config")
+                .as_str().expect("'address' must be a string");
+
+            let spec = contract_conf
+                .get("spec_path").expect("'spec_path' not found in the contract config")
+                .as_str().expect("'spec_path' must be a string");
+
+            result.push(ContractConfig {
+                address: String::from(addr),
+                spec_path: Some(build_contract_path(spec)),
                 spec: None,
-            },
-            ContractConfig {
-                address: CRED_DEF_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH)),
-                spec: None,
-            },
-            ContractConfig {
-                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
-                spec: None,
-            },
-            ContractConfig {
-                address: ROLE_CONTROL_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(ROLE_CONTROL_PATH)),
-                spec: None,
-            },
-            ContractConfig {
-                address: ETHR_DID_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(ETHR_DID_REGISTRY_PATH)),
-                spec: None,
-            },
-            ContractConfig {
-                address: INDY_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(INDY_DID_REGISTRY_PATH)),
-                spec: None,
-            },
-            ContractConfig {
-                address: LEGACY_MAPPING_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(LEGACY_MAPPING_REGISTRY_PATH)),
-                spec: None,
-            },
-        ]
+            });
+        }
+
+        return result;
     }
 
     pub fn client() -> LedgerClient {
@@ -379,7 +389,7 @@ pub mod test {
 
         #[rstest]
         #[case::invalid_contract_data(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            address: get_contract_address("validator_control").unwrap().to_string(),
             spec_path: None,
             spec: Some(ContractSpec {
                 name: VALIDATOR_CONTROL_NAME.to_string(),
@@ -387,20 +397,20 @@ pub mod test {
             }),
         }], VdrError::ContractInvalidInputData)]
         #[case::both_contract_path_and_spec_provided(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
-            spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
+            address: get_contract_address("validator_control").unwrap().to_string(),
+            spec_path: Some(build_contract_path(get_contract_spec_path("validator_control").unwrap().as_str())),
             spec: Some(ContractSpec {
                 name: VALIDATOR_CONTROL_NAME.to_string(),
                 abi: Value::Array(vec ! []),
             }),
         }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]
         #[case::non_existent_spec_path(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            address: get_contract_address("validator_control").unwrap().to_string(),
             spec_path: Some(build_contract_path("")),
             spec: None,
         }], VdrError::ContractInvalidSpec("Unable to read contract spec file. Err: \"Is a directory (os error 21)\"".to_string()))]
         #[case::empty_contract_spec(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            address: get_contract_address("validator_control").unwrap().to_string(),
             spec_path: None,
             spec: None,
         }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]

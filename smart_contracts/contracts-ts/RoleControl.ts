@@ -9,8 +9,6 @@ export enum ROLES {
 }
 
 export class RoleControl extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000006666'
-
   constructor(sender?: Account) {
     super(RoleControl.name, sender)
   }
