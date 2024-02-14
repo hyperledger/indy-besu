@@ -1,14 +1,11 @@
-export namespace Errors {
-  export const ConflictingFields = 'ConflictingFields'
-  export const FieldRequired = 'FieldRequired'
-}
-
 export namespace AuthErrors {
   export const Unauthorized = 'Unauthorized'
 }
 
 export namespace ClErrors {
-  export const UnauthorizedIssuer = 'UnauthorizedIssuer'
+  export const IssuerNotFound = 'IssuerNotFound'
+  export const InvalidIssuerId = 'InvalidIssuerId'
+  export const IssuerHasBeenDeactivated = 'IssuerHasBeenDeactivated'
 
   // Schema errors
   export const SchemaAlreadyExist = 'SchemaAlreadyExist'
@@ -17,6 +14,15 @@ export namespace ClErrors {
   // CredDef errors
   export const CredentialDefinitionAlreadyExist = 'CredentialDefinitionAlreadyExist'
   export const CredentialDefinitionNotFound = 'CredentialDefinitionNotFound'
+}
+
+export namespace DidError {
+  export const DidNotFound = 'DidNotFound'
+  export const DidAlreadyExist = 'DidAlreadyExist'
+  export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'
+  export const UnauthorizedSender = 'UnauthorizedSender'
+  export const IncorrectDid = 'IncorrectDid'
+  export const NotIdentityOwner = 'NotIdentityOwner'
 }
 
 export namespace ProxyError {

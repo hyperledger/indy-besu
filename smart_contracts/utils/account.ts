@@ -1,6 +1,6 @@
-import { encodeBase58, Signer } from 'ethers'
+import { Signer } from 'ethers'
 import { ethers } from 'hardhat'
-import { environment, host, web3 } from '../environment'
+import { host, web3 } from '../environment'
 import { createBaseDidDocument } from './entity-factories'
 
 export interface AccountInfo {
@@ -28,13 +28,7 @@ export class Account {
   }
 
   public get did() {
-    const method = environment.did.method
-    const network = environment.network.name
-    // TODO: The DID's method-specefic-id is not generated according to the specification.
-    // It needs to be adjusted to match the specification: Base58(Truncate_msb(16(SHA256(publicKey))))
-    const methodSpeceficId = encodeBase58(this.address).substring(0, 22)
-
-    return `did:${method}:${network}:${methodSpeceficId}`
+    return `did:indybesu:${this.address}`
   }
 
   public get didEthr() {

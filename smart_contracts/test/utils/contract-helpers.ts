@@ -1,17 +1,24 @@
-import { concat, getAddress, getBytes, keccak256, SigningKey, toUtf8Bytes } from 'ethers'
+import { concat, getAddress, getBytes, keccak256, SigningKey } from 'ethers'
 import {
   CredentialDefinitionRegistry,
-  EthereumExtDidRegistry,
+  IndyDidRegistry,
   RoleControl,
   SchemaRegistry,
+  UniversalDidResolver,
   UpgradeControl,
   ValidatorControl,
 } from '../../contracts-ts'
-import { Contract, createSchemaObject } from '../../utils'
+import { Contract, createBaseDidDocument, createSchemaObject } from '../../utils'
 import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 
 export const testActorAddress = '0x2036C6CD85692F0Fb2C26E6c6B2ECed9e4478Dfd'
 export const testActorPrivateKey = getBytes('0xa285ab66393c5fdda46d6fbad9e27fafd438254ab72ad5acb681a0e9f20f5d7b')
+
+export class EthereumDIDRegistry extends testableContractMixin(Contract) {
+  constructor() {
+    super(EthereumDIDRegistry.name)
+  }
+}
 
 export class UpgradablePrototype extends testableContractMixin(Contract) {
   public get version(): Promise<string> {
@@ -19,7 +26,7 @@ export class UpgradablePrototype extends testableContractMixin(Contract) {
   }
 }
 
-export class TestableDidRegistry extends testableContractMixin(EthereumExtDidRegistry) {}
+export class TestableIndyDidRegistry extends testableContractMixin(IndyDidRegistry) {}
 
 export class TestableSchemaRegistry extends testableContractMixin(SchemaRegistry) {}
 
@@ -31,13 +38,7 @@ export class TestableValidatorControl extends testableContractMixin(ValidatorCon
 
 export class TestableUpgradeControl extends testableContractMixin(UpgradeControl) {}
 
-function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
-  return class extends Base {
-    public get baseInstance() {
-      return this.instance
-    }
-  }
-}
+export class TestableUniversalDidResolver extends testableContractMixin(UniversalDidResolver) {}
 
 export async function deployRoleControl() {
   const roleControl = await new RoleControl().deployProxy({ params: [ZERO_ADDRESS] })
@@ -46,88 +47,80 @@ export async function deployRoleControl() {
   return { roleControl, testAccounts }
 }
 
-export async function deployDidRegistry() {
+export async function deployIndyDidRegistry() {
   const { testAccounts } = await deployRoleControl()
 
-  const didRegistry = await new TestableDidRegistry().deployProxy({
+  const indyDidRegistry = await new TestableIndyDidRegistry().deployProxy({
     params: [ZERO_ADDRESS],
   })
 
-  return { didRegistry, testAccounts }
+  return { indyDidRegistry, testAccounts }
+}
+
+export async function deployUniversalDidResolver() {
+  const { indyDidRegistry, testAccounts } = await deployIndyDidRegistry()
+  const ethereumDIDRegistry = await new EthereumDIDRegistry().deploy()
+
+  const universalDidReolver = await new TestableUniversalDidResolver().deployProxy({
+    params: [ZERO_ADDRESS, indyDidRegistry.address, ethereumDIDRegistry.address],
+  })
+
+  return { universalDidReolver, ethereumDIDRegistry, indyDidRegistry, testAccounts }
 }
 
 export async function deploySchemaRegistry() {
-  const { didRegistry, testAccounts } = await deployDidRegistry()
+  const { universalDidReolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
   const schemaRegistry = await new TestableSchemaRegistry().deployProxy({
-    params: [ZERO_ADDRESS, didRegistry.address],
+    params: [ZERO_ADDRESS, universalDidReolver.address],
   })
 
-  return { didRegistry, schemaRegistry, testAccounts }
+  return { universalDidReolver, indyDidRegistry, schemaRegistry, testAccounts }
 }
 
 export async function deployCredentialDefinitionRegistry() {
-  const { didRegistry, schemaRegistry, testAccounts } = await deploySchemaRegistry()
+  const { universalDidReolver, indyDidRegistry, schemaRegistry, testAccounts } = await deploySchemaRegistry()
   const credentialDefinitionRegistry = await new TestableCredentialDefinitionRegistry().deployProxy({
-    params: [ZERO_ADDRESS, didRegistry.address, schemaRegistry.address],
+    params: [ZERO_ADDRESS, universalDidReolver.address, schemaRegistry.address],
   })
 
-  return { credentialDefinitionRegistry, didRegistry, schemaRegistry, testAccounts }
+  return { credentialDefinitionRegistry, universalDidReolver, indyDidRegistry, schemaRegistry, testAccounts }
 }
 
-export async function createDid(didRegistry: EthereumExtDidRegistry, identity: string, did: string) {
-  // DID assume to be created by default
-  return did
+export async function createDid(didRegistry: IndyDidRegistry, identity: string, did: string) {
+  const didDocument = createBaseDidDocument(did)
+  await didRegistry.createDid(identity, didDocument)
+  return didDocument
 }
 
-export async function signEndorsementData(privateKey: Uint8Array, contract: string, data: string) {
-  const dataToSign = concat(['0x1900', getAddress(contract), data])
-  return new SigningKey(privateKey).sign(keccak256(dataToSign))
+export async function createDidSigned(didRegistry: IndyDidRegistry, identity: string, did: string) {
+  const didDocument = createBaseDidDocument(did)
+  const sig = await didRegistry.signCreateDidEndorsementData(identity, testActorPrivateKey, didDocument)
+  await didRegistry.createDidSigned(identity, didDocument, sig)
 }
 
-export async function signSchemaEndorsementData(
-  schemaRegistry: SchemaRegistry,
-  identity: string,
-  privateKey: Uint8Array,
-  id: string,
-  schema: string,
-) {
-  return signEndorsementData(
-    privateKey,
-    schemaRegistry.address!,
-    concat([identity, toUtf8Bytes('createSchema'), getBytes(keccak256(toUtf8Bytes(id)), 'hex'), toUtf8Bytes(schema)]),
-  )
-}
-
-export async function createSchema(schemaRegistry: SchemaRegistry, issuer: string) {
-  const { id, schema } = createSchemaObject({ issuer })
-  await schemaRegistry.createSchema(issuer, id, schema)
+export async function createSchema(schemaRegistry: SchemaRegistry, identity: string, issuerId: string) {
+  const { id, schema } = createSchemaObject({ issuerId })
+  await schemaRegistry.createSchema(identity, id, issuerId, schema)
   return { id, schema }
 }
 
-export async function createSchemaSigned(schemaRegistry: SchemaRegistry, issuer: string) {
-  const { id, schema } = createSchemaObject({ issuer })
-  const signature = await signSchemaEndorsementData(schemaRegistry, issuer, testActorPrivateKey, id, schema)
-  await schemaRegistry.createSchemaSigned(issuer, id, schema, signature)
+export async function createSchemaSigned(schemaRegistry: SchemaRegistry, identity: string, issuerId: string) {
+  const { id, schema } = createSchemaObject({ issuerId })
+  const signature = await schemaRegistry.signCreateSchemaEndorsementData(
+    identity,
+    testActorPrivateKey,
+    id,
+    issuerId,
+    schema,
+  )
+  await schemaRegistry.createSchemaSigned(identity, id, issuerId, schema, signature)
   return { id, schema }
 }
 
-export async function signCredDefEndorsementData(
-  credentialDefinitionRegistry: CredentialDefinitionRegistry,
-  identity: string,
-  privateKey: Uint8Array,
-  id: string,
-  schemaId: string,
-  credDef: string,
-) {
-  return signEndorsementData(
-    privateKey,
-    credentialDefinitionRegistry.address!,
-    concat([
-      identity,
-      toUtf8Bytes('createCredentialDefinition'),
-      getBytes(keccak256(toUtf8Bytes(id)), 'hex'),
-      getBytes(keccak256(toUtf8Bytes(schemaId)), 'hex'),
-      toUtf8Bytes(credDef),
-    ]),
-  )
+function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
+  return class extends Base {
+    public get baseInstance() {
+      return this.instance
+    }
+  }
 }

@@ -55,7 +55,11 @@ impl CredentialDefinitionId {
         })?;
         let issuer_did = DID::build(DID_METHOD, Some(NETWORK), id);
 
-        let cred_def_id = CredentialDefinitionId::build(&issuer_did, schema_id, tag);
+        let cred_def_id = CredentialDefinitionId::build(
+            &issuer_did,
+            &SchemaId::from(schema_id.to_string().as_str()),
+            tag,
+        );
         Ok(cred_def_id)
     }
 }

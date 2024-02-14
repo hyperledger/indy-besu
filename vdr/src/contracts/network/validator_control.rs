@@ -106,11 +106,8 @@ pub fn parse_get_validators_result(
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, TRUSTEE_ACC, VALIDATOR_CONTROL_ADDRESS,
-        },
-        utils::init_env_logger,
+    use crate::client::client::test::{
+        mock_client, CHAIN_ID, DEFAULT_NONCE, TRUSTEE_ACCOUNT, VALIDATOR_CONTROL_ADDRESS,
     };
     use once_cell::sync::Lazy;
     use std::sync::RwLock;
@@ -118,15 +115,30 @@ pub mod test {
     pub static VALIDATOR_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x93917cadbace5dfce132b991732c6cda9bcc5b8a"));
 
+    pub const VALIDATOR_CONTROL_NAME: &str = "ValidatorControl";
+    pub const ADD_VALIDATOR_METHOD: &str = "addValidator";
+    pub const VALIDATOR_LIST_BYTES: Lazy<Vec<u8>> = Lazy::new(|| {
+        vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 147, 145, 124, 173, 186, 206, 93,
+            252, 225, 50, 185, 145, 115, 44, 108, 218, 155, 204, 91, 138, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 39, 169, 124, 154, 175, 4, 241, 143, 48, 20, 195, 46, 3, 109, 208, 172,
+            118, 218, 95, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 206, 65, 47, 152, 131, 119, 227,
+            31, 77, 15, 241, 45, 116, 223, 115, 181, 28, 66, 208, 202, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 152, 193, 51, 68, 150, 97, 74, 237, 73, 210, 232, 21, 38, 208, 137, 247, 38,
+            79, 237, 156,
+        ]
+    });
+
     mod build_add_validator_transaction {
         use super::*;
 
         #[async_std::test]
         async fn build_add_validator_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction =
-                build_add_validator_transaction(&client, &TRUSTEE_ACC, &VALIDATOR_ADDRESS)
+                build_add_validator_transaction(&client, &TRUSTEE_ACCOUNT, &VALIDATOR_ADDRESS)
                     .await
                     .unwrap();
             let expected_data = [
@@ -136,7 +148,7 @@ pub mod test {
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TRUSTEE_ACCOUNT.clone()),
                 to: VALIDATOR_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
@@ -154,10 +166,9 @@ pub mod test {
 
         #[async_std::test]
         async fn build_remove_validator_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction =
-                build_remove_validator_transaction(&client, &TRUSTEE_ACC, &VALIDATOR_ADDRESS)
+                build_remove_validator_transaction(&client, &TRUSTEE_ACCOUNT, &VALIDATOR_ADDRESS)
                     .await
                     .unwrap();
             let expected_data = [
@@ -167,7 +178,7 @@ pub mod test {
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TRUSTEE_ACCOUNT.clone()),
                 to: VALIDATOR_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
@@ -185,7 +196,6 @@ pub mod test {
 
         #[async_std::test]
         async fn build_get_validators_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction = build_get_validators_transaction(&client).await.unwrap();
             let encoded_method = [183, 171, 77, 181];

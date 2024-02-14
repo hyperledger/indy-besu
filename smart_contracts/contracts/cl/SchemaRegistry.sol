@@ -1,35 +1,49 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
-import { SchemaAlreadyExist } from "./ClErrors.sol";
+import { SchemaAlreadyExist, SchemaNotFound } from "./ClErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
+import { SchemaRecord } from "./SchemaTypes.sol";
 import { CLRegistry } from "./CLRegistry.sol";
-import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
 
 contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLRegistry {
     /**
-     * Mapping to track created schemas by their id to the block number when it was created.
+     * Mapping Schema ID to its Schema Details and Metadata.
      */
-    mapping(bytes32 id => uint block) public created;
+    mapping(bytes32 id => SchemaRecord SchemaRecord) private _schemas;
 
     /**
      * Checks the uniqueness of the Schema ID
      */
     modifier _uniqueSchemaId(bytes32 id) {
-        if (created[id] != 0) revert SchemaAlreadyExist(id);
+        if (_schemas[id].metadata.created != 0) revert SchemaAlreadyExist(id);
         _;
     }
 
-    function initialize(address upgradeControlAddress, address ethereumExtDidRegistry) public reinitializer(1) {
+    /**
+     * Checks that the Schema exist
+     */
+    modifier _schemaExist(bytes32 id) {
+        if (_schemas[id].metadata.created == 0) revert SchemaNotFound(id);
+        _;
+    }
+
+    function initialize(address upgradeControlAddress, address didResolverAddress) public reinitializer(1) {
         _initializeUpgradeControl(upgradeControlAddress);
-        _didRegistry = EthereumExtDidRegistry(ethereumExtDidRegistry);
+        _didResolver = UniversalDidResolverInterface(didResolverAddress);
     }
 
     /// @inheritdoc SchemaRegistryInterface
-    function createSchema(address identity, bytes32 id, bytes calldata schema) public virtual {
-        _createSchema(identity, msg.sender, id, schema);
+    function createSchema(
+        address identity,
+        bytes32 id,
+        string calldata issuerId,
+        bytes calldata schema
+    ) public virtual {
+        _createSchema(identity, msg.sender, id, issuerId, schema);
     }
 
     /// @inheritdoc SchemaRegistryInterface
@@ -39,21 +53,30 @@ contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLReg
         bytes32 sigR,
         bytes32 sigS,
         bytes32 id,
+        string calldata issuerId,
         bytes calldata schema
     ) public virtual {
         bytes32 hash = keccak256(
-            abi.encodePacked(bytes1(0x19), bytes1(0), address(this), identity, "createSchema", id, schema)
+            abi.encodePacked(bytes1(0x19), bytes1(0), address(this), identity, "createSchema", id, issuerId, schema)
         );
-        _createSchema(identity, _checkSignature(identity, hash, sigV, sigR, sigS), id, schema);
+        _createSchema(identity, ecrecover(hash, sigV, sigR, sigS), id, issuerId, schema);
+    }
+
+    /// @inheritdoc SchemaRegistryInterface
+    function resolveSchema(bytes32 id) public view virtual _schemaExist(id) returns (SchemaRecord memory schemaRecord) {
+        return _schemas[id];
     }
 
     function _createSchema(
         address identity,
         address actor,
         bytes32 id,
+        string calldata issuerId,
         bytes calldata schema
-    ) internal _uniqueSchemaId(id) _validIssuer(identity, actor) {
-        created[id] = block.number;
-        emit SchemaCreated(id, actor, schema);
+    ) internal _uniqueSchemaId(id) _validIssuer(issuerId, identity, actor) {
+        _schemas[id].schema = schema;
+        _schemas[id].metadata.created = block.timestamp;
+
+        emit SchemaCreated(id, identity);
     }
 }

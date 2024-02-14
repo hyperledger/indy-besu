@@ -1,4 +1,4 @@
-use crate::{contracts::did::types::did::DID, types::ContractParam, VdrError};
+use crate::{contracts::did::types::did::DID, types::ContractParam, SchemaId, VdrError};
 
 use serde_derive::{Deserialize, Serialize};
 use sha3::Digest;
@@ -9,13 +9,13 @@ pub struct CredentialDefinitionId(String);
 impl CredentialDefinitionId {
     const ID_PATH: &'static str = "anoncreds/v0/CLAIM_DEF";
 
-    pub fn build(issuer_id: &DID, schema_id: &str, tag: &str) -> CredentialDefinitionId {
+    pub fn build(issuer_id: &DID, schema_id: &SchemaId, tag: &str) -> CredentialDefinitionId {
         CredentialDefinitionId::from(
             format!(
                 "{}/{}/{}/{}",
                 issuer_id.as_ref(),
                 Self::ID_PATH,
-                schema_id,
+                schema_id.as_ref(),
                 tag
             )
             .as_str(),
@@ -24,10 +24,6 @@ impl CredentialDefinitionId {
 
     pub fn hash(&self) -> Vec<u8> {
         sha3::Keccak256::digest(self.0.as_bytes()).to_vec()
-    }
-
-    pub(crate) fn to_filter(&self) -> String {
-        hex::encode(self.hash())
     }
 }
 

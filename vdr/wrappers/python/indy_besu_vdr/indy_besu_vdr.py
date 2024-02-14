@@ -491,17 +491,29 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_assign_role_transaction() != 13494:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_endorsing_data() != 59949:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_endorsing_data() != 55676:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_signed_transaction() != 6216:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_signed_transaction() != 38063:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_transaction() != 59923:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_transaction() != 27654:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_endorsing_data() != 3325:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_endorsing_data() != 54516:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_signed_transaction() != 56271:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_signed_transaction() != 40911:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_transaction() != 6657:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_transaction() != 55435:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_endorsing_data() != 53121:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_signed_transaction() != 19440:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_transaction() != 31018:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_endorsing_data() != 24992:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_signed_transaction() != 50123:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_transaction() != 52099:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_did_add_delegate_endorsing_data() != 21660:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -533,10 +545,6 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_did_set_attribute_transaction() != 65451:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_credential_definition_created_transaction() != 55886:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_credential_definition_query() != 15375:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_changed_transaction() != 41555:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_events_query() != 35752:
@@ -547,21 +555,25 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_role_transaction() != 34920:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_schema_created_transaction() != 11928:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_schema_query() != 36622:
-        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_validators_transaction() != 16117:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_has_role_transaction() != 35189:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_remove_validator_transaction() != 23482:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_credential_definition_transaction() != 50274:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_did_transaction() != 13420:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_schema_transaction() != 25036:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_revoke_role_transaction() != 41767:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_credential_definition_created_event() != 43712:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_endorsing_data() != 47376:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_credential_definition_created_result() != 43952:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_signed_transaction() != 42885:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_transaction() != 9871:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_attribute_changed_event_response() != 27285:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -570,6 +582,8 @@ def _uniffi_check_api_checksums(lib):
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_delegate_changed_event_response() != 48798:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_event_response() != 5583:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_nonce_result() != 38919:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_owner_changed_event_response() != 45369:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -581,9 +595,11 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_has_role_result() != 16372:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_schema_created_event() != 39931:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_credential_definition_result() != 30087:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_schema_created_result() != 64564:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_did_result() != 15878:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_schema_result() != 15793:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_resolve_credential_definition() != 411:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -744,12 +760,10 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_assign_role_transaction.res
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definition_endorsing_data.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definition_endorsing_data.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definition_signed_transaction.argtypes = (
     ctypes.c_void_p,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
@@ -759,18 +773,36 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definitio
     ctypes.c_void_p,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definition_transaction.restype = ctypes.c_void_p
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_endorsing_data.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_endorsing_data.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_endorsing_data.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_signed_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_signed_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_endorsing_data.argtypes = (
+    ctypes.c_void_p,
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_endorsing_data.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_signed_transaction.argtypes = (
     ctypes.c_void_p,
-    _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
@@ -780,9 +812,26 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_transaction.a
     ctypes.c_void_p,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
-    _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_endorsing_data.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_endorsing_data.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_signed_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_signed_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_did_add_delegate_endorsing_data.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -900,18 +949,6 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_did_set_attribute_transacti
     ctypes.c_uint64,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_did_set_attribute_transaction.restype = ctypes.c_void_p
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_credential_definition_created_transaction.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_credential_definition_created_transaction.restype = ctypes.c_void_p
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_credential_definition_query.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    _UniffiRustBuffer,
-    _UniffiRustBuffer,
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_credential_definition_query.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_did_changed_transaction.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -939,18 +976,6 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_role_transaction.argtyp
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_role_transaction.restype = ctypes.c_void_p
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_schema_created_transaction.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_schema_created_transaction.restype = ctypes.c_void_p
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_schema_query.argtypes = (
-    ctypes.c_void_p,
-    _UniffiRustBuffer,
-    _UniffiRustBuffer,
-    _UniffiRustBuffer,
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_schema_query.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_validators_transaction.argtypes = (
     ctypes.c_void_p,
 )
@@ -967,6 +992,21 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_remove_validator_transactio
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_remove_validator_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_credential_definition_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_credential_definition_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_did_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_did_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_schema_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_schema_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_revoke_role_transaction.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -974,18 +1014,27 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_revoke_role_transaction.arg
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_revoke_role_transaction.restype = ctypes.c_void_p
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_credential_definition_created_event.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_endorsing_data.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
+    _UniffiRustBuffer,
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_credential_definition_created_event.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_credential_definition_created_result.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_endorsing_data.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_signed_transaction.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
-    ctypes.POINTER(_UniffiRustCallStatus),
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_credential_definition_created_result.restype = ctypes.c_uint64
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_signed_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_attribute_changed_event_response.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1010,6 +1059,12 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_event_response.argtypes
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_event_response.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_nonce_result.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_nonce_result.restype = ctypes.c_uint64
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_owner_changed_event_response.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1040,18 +1095,24 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_has_role_result.argtypes = 
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_has_role_result.restype = ctypes.c_int8
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_schema_created_event.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_credential_definition_result.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_schema_created_event.restype = _UniffiRustBuffer
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_schema_created_result.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_credential_definition_result.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_did_result.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_schema_created_result.restype = ctypes.c_uint64
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_did_result.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_schema_result.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_schema_result.restype = _UniffiRustBuffer
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_resolve_credential_definition.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1351,6 +1412,15 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_def
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_definition_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_endorsing_data.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_endorsing_data.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_signed_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_signed_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_endorsing_data.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_endorsing_data.restype = ctypes.c_uint16
@@ -1360,6 +1430,15 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_signed_
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_endorsing_data.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_endorsing_data.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_signed_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_signed_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_deactivate_did_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_did_add_delegate_endorsing_data.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_did_add_delegate_endorsing_data.restype = ctypes.c_uint16
@@ -1405,12 +1484,6 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_did_set_attribute_sig
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_did_set_attribute_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_did_set_attribute_transaction.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_credential_definition_created_transaction.argtypes = (
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_credential_definition_created_transaction.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_credential_definition_query.argtypes = (
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_credential_definition_query.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_changed_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_changed_transaction.restype = ctypes.c_uint16
@@ -1426,12 +1499,6 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_identity_nonce_tr
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_role_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_role_transaction.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_schema_created_transaction.argtypes = (
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_schema_created_transaction.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_schema_query.argtypes = (
-)
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_schema_query.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_validators_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_validators_transaction.restype = ctypes.c_uint16
@@ -1441,15 +1508,27 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_has_role_transaction.
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_remove_validator_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_remove_validator_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_credential_definition_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_credential_definition_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_did_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_did_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_schema_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_resolve_schema_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_revoke_role_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_revoke_role_transaction.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_credential_definition_created_event.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_endorsing_data.argtypes = (
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_credential_definition_created_event.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_credential_definition_created_result.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_endorsing_data.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_signed_transaction.argtypes = (
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_credential_definition_created_result.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_signed_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_update_did_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_attribute_changed_event_response.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_attribute_changed_event_response.restype = ctypes.c_uint16
@@ -1462,6 +1541,9 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_delegate_changed_
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_event_response.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_event_response.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_nonce_result.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_nonce_result.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_owner_changed_event_response.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_owner_changed_event_response.restype = ctypes.c_uint16
@@ -1477,12 +1559,15 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_get_validators_result
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_has_role_result.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_has_role_result.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_schema_created_event.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_credential_definition_result.argtypes = (
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_schema_created_event.restype = ctypes.c_uint16
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_schema_created_result.argtypes = (
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_credential_definition_result.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_did_result.argtypes = (
 )
-_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_schema_created_result.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_did_result.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_schema_result.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_schema_result.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_resolve_credential_definition.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_resolve_credential_definition.restype = ctypes.c_uint16
@@ -2313,10 +2398,10 @@ class _UniffiConverterTypeDidOwnerChanged(_UniffiConverterRustBuffer):
 
 
 class DidResolutionOptions:
-    accept: "str"
+    accept: "typing.Optional[str]"
     block_tag: "typing.Optional[int]"
     @typing.no_type_check
-    def __init__(self, accept: "str", block_tag: "typing.Optional[int]"):
+    def __init__(self, accept: "typing.Optional[str]", block_tag: "typing.Optional[int]"):
         self.accept = accept
         self.block_tag = block_tag
 
@@ -2334,18 +2419,18 @@ class _UniffiConverterTypeDidResolutionOptions(_UniffiConverterRustBuffer):
     @staticmethod
     def read(buf):
         return DidResolutionOptions(
-            accept=_UniffiConverterString.read(buf),
+            accept=_UniffiConverterOptionalString.read(buf),
             block_tag=_UniffiConverterOptionalUInt64.read(buf),
         )
 
     @staticmethod
     def check_lower(value):
-        _UniffiConverterString.check_lower(value.accept)
+        _UniffiConverterOptionalString.check_lower(value.accept)
         _UniffiConverterOptionalUInt64.check_lower(value.block_tag)
 
     @staticmethod
     def write(value, buf):
-        _UniffiConverterString.write(value.accept, buf)
+        _UniffiConverterOptionalString.write(value.accept, buf)
         _UniffiConverterOptionalUInt64.write(value.block_tag, buf)
 
 
@@ -3530,17 +3615,14 @@ def build_assign_role_transaction(client: "LedgerClient",_from: "str",role: "int
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_credential_definition_endorsing_data(client: "LedgerClient",id: "str",credential_definition: "str"):
+def build_create_credential_definition_endorsing_data(client: "LedgerClient",credential_definition: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
-    
-    _UniffiConverterString.check_lower(id)
     
     _UniffiConverterString.check_lower(credential_definition)
     
     return _uniffi_rust_call_async(
         _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definition_endorsing_data(
         _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(credential_definition)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
@@ -3551,12 +3633,10 @@ def build_create_credential_definition_endorsing_data(client: "LedgerClient",id:
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_credential_definition_signed_transaction(client: "LedgerClient",_from: "str",id: "str",credential_definition: "str",signature: "SignatureData"):
+def build_create_credential_definition_signed_transaction(client: "LedgerClient",_from: "str",credential_definition: "str",signature: "SignatureData"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
-    
-    _UniffiConverterString.check_lower(id)
     
     _UniffiConverterString.check_lower(credential_definition)
     
@@ -3566,7 +3646,6 @@ def build_create_credential_definition_signed_transaction(client: "LedgerClient"
         _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definition_signed_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
-        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(credential_definition),
         _UniffiConverterTypeSignatureData.lower(signature)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
@@ -3578,12 +3657,10 @@ def build_create_credential_definition_signed_transaction(client: "LedgerClient"
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_credential_definition_transaction(client: "LedgerClient",_from: "str",id: "str",credential_definition: "str"):
+def build_create_credential_definition_transaction(client: "LedgerClient",_from: "str",credential_definition: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
-    
-    _UniffiConverterString.check_lower(id)
     
     _UniffiConverterString.check_lower(credential_definition)
     
@@ -3591,7 +3668,6 @@ def build_create_credential_definition_transaction(client: "LedgerClient",_from:
         _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_credential_definition_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
-        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(credential_definition)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
@@ -3602,17 +3678,86 @@ def build_create_credential_definition_transaction(client: "LedgerClient",_from:
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_schema_endorsing_data(client: "LedgerClient",id: "str",schema: "str"):
+def build_create_did_endorsing_data(client: "LedgerClient",did: "str",did_doc: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
-    _UniffiConverterString.check_lower(id)
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(did_doc)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_endorsing_data(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(did_doc)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransactionEndorsingData.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_did_signed_transaction(client: "LedgerClient",_from: "str",did: "str",did_doc: "str",signature: "SignatureData"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(did_doc)
+    
+    _UniffiConverterTypeSignatureData.check_lower(signature)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_signed_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(did_doc),
+        _UniffiConverterTypeSignatureData.lower(signature)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_did_transaction(client: "LedgerClient",_from: "str",did: "str",did_doc: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(did_doc)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(did_doc)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_schema_endorsing_data(client: "LedgerClient",schema: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(schema)
     
     return _uniffi_rust_call_async(
         _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_endorsing_data(
         _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(schema)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
@@ -3623,12 +3768,10 @@ def build_create_schema_endorsing_data(client: "LedgerClient",id: "str",schema: 
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_schema_signed_transaction(client: "LedgerClient",_from: "str",id: "str",schema: "str",signature: "SignatureData"):
+def build_create_schema_signed_transaction(client: "LedgerClient",_from: "str",schema: "str",signature: "SignatureData"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
-    
-    _UniffiConverterString.check_lower(id)
     
     _UniffiConverterString.check_lower(schema)
     
@@ -3638,7 +3781,6 @@ def build_create_schema_signed_transaction(client: "LedgerClient",_from: "str",i
         _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_signed_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
-        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(schema),
         _UniffiConverterTypeSignatureData.lower(signature)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
@@ -3650,12 +3792,10 @@ def build_create_schema_signed_transaction(client: "LedgerClient",_from: "str",i
         _UniffiConverterTypeVdrError,
     )
 
-def build_create_schema_transaction(client: "LedgerClient",_from: "str",id: "str",schema: "str"):
+def build_create_schema_transaction(client: "LedgerClient",_from: "str",schema: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterString.check_lower(_from)
-    
-    _UniffiConverterString.check_lower(id)
     
     _UniffiConverterString.check_lower(schema)
     
@@ -3663,8 +3803,70 @@ def build_create_schema_transaction(client: "LedgerClient",_from: "str",id: "str
         _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(_from),
-        _UniffiConverterString.lower(id),
         _UniffiConverterString.lower(schema)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_deactivate_did_endorsing_data(client: "LedgerClient",did: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_endorsing_data(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(did)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransactionEndorsingData.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_deactivate_did_signed_transaction(client: "LedgerClient",_from: "str",did: "str",signature: "SignatureData"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterTypeSignatureData.check_lower(signature)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_signed_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterTypeSignatureData.lower(signature)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_deactivate_did_transaction(client: "LedgerClient",_from: "str",did: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_deactivate_did_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
@@ -4070,48 +4272,6 @@ def build_did_set_attribute_transaction(client: "LedgerClient",_from: "str",did:
         _UniffiConverterTypeVdrError,
     )
 
-def build_get_credential_definition_created_transaction(client: "LedgerClient",id: "str"):
-    _UniffiConverterTypeLedgerClient.check_lower(client)
-    
-    _UniffiConverterString.check_lower(id)
-    
-    return _uniffi_rust_call_async(
-        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_credential_definition_created_transaction(
-        _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterString.lower(id)),
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
-        # lift function
-        _UniffiConverterTypeTransaction.lift,
-        # Error FFI converter
-        _UniffiConverterTypeVdrError,
-    )
-
-def build_get_credential_definition_query(client: "LedgerClient",id: "str",from_block: "typing.Optional[int]",to_block: "typing.Optional[int]"):
-    _UniffiConverterTypeLedgerClient.check_lower(client)
-    
-    _UniffiConverterString.check_lower(id)
-    
-    _UniffiConverterOptionalUInt64.check_lower(from_block)
-    
-    _UniffiConverterOptionalUInt64.check_lower(to_block)
-    
-    return _uniffi_rust_call_async(
-        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_credential_definition_query(
-        _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterString.lower(id),
-        _UniffiConverterOptionalUInt64.lower(from_block),
-        _UniffiConverterOptionalUInt64.lower(to_block)),
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
-        # lift function
-        _UniffiConverterTypeEventQuery.lift,
-        # Error FFI converter
-        _UniffiConverterTypeVdrError,
-    )
-
 def build_get_did_changed_transaction(client: "LedgerClient",did: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
@@ -4208,48 +4368,6 @@ def build_get_role_transaction(client: "LedgerClient",account: "str"):
         _UniffiConverterTypeVdrError,
     )
 
-def build_get_schema_created_transaction(client: "LedgerClient",id: "str"):
-    _UniffiConverterTypeLedgerClient.check_lower(client)
-    
-    _UniffiConverterString.check_lower(id)
-    
-    return _uniffi_rust_call_async(
-        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_schema_created_transaction(
-        _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterString.lower(id)),
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
-        # lift function
-        _UniffiConverterTypeTransaction.lift,
-        # Error FFI converter
-        _UniffiConverterTypeVdrError,
-    )
-
-def build_get_schema_query(client: "LedgerClient",id: "str",from_block: "typing.Optional[int]",to_block: "typing.Optional[int]"):
-    _UniffiConverterTypeLedgerClient.check_lower(client)
-    
-    _UniffiConverterString.check_lower(id)
-    
-    _UniffiConverterOptionalUInt64.check_lower(from_block)
-    
-    _UniffiConverterOptionalUInt64.check_lower(to_block)
-    
-    return _uniffi_rust_call_async(
-        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_schema_query(
-        _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterString.lower(id),
-        _UniffiConverterOptionalUInt64.lower(from_block),
-        _UniffiConverterOptionalUInt64.lower(to_block)),
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
-        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
-        # lift function
-        _UniffiConverterTypeEventQuery.lift,
-        # Error FFI converter
-        _UniffiConverterTypeVdrError,
-    )
-
 def build_get_validators_transaction(client: "LedgerClient"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
@@ -4307,6 +4425,60 @@ def build_remove_validator_transaction(client: "LedgerClient",_from: "str",valid
         _UniffiConverterTypeVdrError,
     )
 
+def build_resolve_credential_definition_transaction(client: "LedgerClient",id: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(id)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_credential_definition_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(id)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_resolve_did_transaction(client: "LedgerClient",did: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_did_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(did)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_resolve_schema_transaction(client: "LedgerClient",id: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(id)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_resolve_schema_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(id)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
 def build_revoke_role_transaction(client: "LedgerClient",_from: "str",role: "int",account: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
@@ -4331,25 +4503,77 @@ def build_revoke_role_transaction(client: "LedgerClient",_from: "str",role: "int
         _UniffiConverterTypeVdrError,
     )
 
-def parse_credential_definition_created_event(client: "LedgerClient",log: "EventLog") -> "str":
+def build_update_did_endorsing_data(client: "LedgerClient",did: "str",did_doc: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
-    _UniffiConverterTypeEventLog.check_lower(log)
+    _UniffiConverterString.check_lower(did)
     
-    return _UniffiConverterString.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_credential_definition_created_event,
+    _UniffiConverterString.check_lower(did_doc)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_endorsing_data(
         _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterTypeEventLog.lower(log)))
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(did_doc)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransactionEndorsingData.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
 
-
-def parse_credential_definition_created_result(client: "LedgerClient",bytes: "bytes") -> "int":
+def build_update_did_signed_transaction(client: "LedgerClient",_from: "str",did: "str",did_doc: "str",signature: "SignatureData"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
-    _UniffiConverterBytes.check_lower(bytes)
+    _UniffiConverterString.check_lower(_from)
     
-    return _UniffiConverterUInt64.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_credential_definition_created_result,
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(did_doc)
+    
+    _UniffiConverterTypeSignatureData.check_lower(signature)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_signed_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterBytes.lower(bytes)))
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(did_doc),
+        _UniffiConverterTypeSignatureData.lower(signature)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
 
+def build_update_did_transaction(client: "LedgerClient",_from: "str",did: "str",did_doc: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(did_doc)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_update_did_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(did_doc)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
 
 def parse_did_attribute_changed_event_response(client: "LedgerClient",log: "EventLog") -> "DidAttributeChanged":
     _UniffiConverterTypeLedgerClient.check_lower(client)
@@ -4389,6 +4613,16 @@ def parse_did_event_response(client: "LedgerClient",log: "EventLog") -> "DidEven
     return _UniffiConverterTypeDidEvents.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_event_response,
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterTypeEventLog.lower(log)))
+
+
+def parse_did_nonce_result(client: "LedgerClient",bytes: "bytes") -> "int":
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterBytes.check_lower(bytes)
+    
+    return _UniffiConverterUInt64.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_nonce_result,
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterBytes.lower(bytes)))
 
 
 def parse_did_owner_changed_event_response(client: "LedgerClient",log: "EventLog") -> "DidOwnerChanged":
@@ -4441,22 +4675,32 @@ def parse_has_role_result(client: "LedgerClient",bytes: "bytes") -> "bool":
         _UniffiConverterBytes.lower(bytes)))
 
 
-def parse_schema_created_event(client: "LedgerClient",log: "EventLog") -> "str":
-    _UniffiConverterTypeLedgerClient.check_lower(client)
-    
-    _UniffiConverterTypeEventLog.check_lower(log)
-    
-    return _UniffiConverterString.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_schema_created_event,
-        _UniffiConverterTypeLedgerClient.lower(client),
-        _UniffiConverterTypeEventLog.lower(log)))
-
-
-def parse_schema_created_result(client: "LedgerClient",bytes: "bytes") -> "int":
+def parse_resolve_credential_definition_result(client: "LedgerClient",bytes: "bytes") -> "str":
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
     _UniffiConverterBytes.check_lower(bytes)
     
-    return _UniffiConverterUInt64.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_schema_created_result,
+    return _UniffiConverterString.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_credential_definition_result,
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterBytes.lower(bytes)))
+
+
+def parse_resolve_did_result(client: "LedgerClient",bytes: "bytes") -> "str":
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterBytes.check_lower(bytes)
+    
+    return _UniffiConverterString.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_did_result,
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterBytes.lower(bytes)))
+
+
+def parse_resolve_schema_result(client: "LedgerClient",bytes: "bytes") -> "str":
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterBytes.check_lower(bytes)
+    
+    return _UniffiConverterString.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_schema_result,
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterBytes.lower(bytes)))
 
@@ -4540,9 +4784,15 @@ __all__ = [
     "build_create_credential_definition_endorsing_data",
     "build_create_credential_definition_signed_transaction",
     "build_create_credential_definition_transaction",
+    "build_create_did_endorsing_data",
+    "build_create_did_signed_transaction",
+    "build_create_did_transaction",
     "build_create_schema_endorsing_data",
     "build_create_schema_signed_transaction",
     "build_create_schema_transaction",
+    "build_deactivate_did_endorsing_data",
+    "build_deactivate_did_signed_transaction",
+    "build_deactivate_did_transaction",
     "build_did_add_delegate_endorsing_data",
     "build_did_add_delegate_signed_transaction",
     "build_did_add_delegate_transaction",
@@ -4558,32 +4808,34 @@ __all__ = [
     "build_did_set_attribute_endorsing_data",
     "build_did_set_attribute_signed_transaction",
     "build_did_set_attribute_transaction",
-    "build_get_credential_definition_created_transaction",
-    "build_get_credential_definition_query",
     "build_get_did_changed_transaction",
     "build_get_did_events_query",
     "build_get_did_owner_transaction",
     "build_get_identity_nonce_transaction",
     "build_get_role_transaction",
-    "build_get_schema_created_transaction",
-    "build_get_schema_query",
     "build_get_validators_transaction",
     "build_has_role_transaction",
     "build_remove_validator_transaction",
+    "build_resolve_credential_definition_transaction",
+    "build_resolve_did_transaction",
+    "build_resolve_schema_transaction",
     "build_revoke_role_transaction",
-    "parse_credential_definition_created_event",
-    "parse_credential_definition_created_result",
+    "build_update_did_endorsing_data",
+    "build_update_did_signed_transaction",
+    "build_update_did_transaction",
     "parse_did_attribute_changed_event_response",
     "parse_did_changed_result",
     "parse_did_delegate_changed_event_response",
     "parse_did_event_response",
+    "parse_did_nonce_result",
     "parse_did_owner_changed_event_response",
     "parse_did_owner_result",
     "parse_get_role_result",
     "parse_get_validators_result",
     "parse_has_role_result",
-    "parse_schema_created_event",
-    "parse_schema_created_result",
+    "parse_resolve_credential_definition_result",
+    "parse_resolve_did_result",
+    "parse_resolve_schema_result",
     "resolve_credential_definition",
     "resolve_did",
     "resolve_schema",

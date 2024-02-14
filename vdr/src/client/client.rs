@@ -213,13 +213,15 @@ impl Debug for LedgerClient {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::types::EventLog;
-    use async_trait::async_trait;
+    use crate::{
+        client::MockClient, types::transaction::test::read_transaction, utils::init_env_logger,
+    };
     use once_cell::sync::Lazy;
-    use std::{env, fs};
+    use std::{env, fs, sync::RwLock};
 
     pub const CHAIN_ID: u64 = 1337;
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
+    pub const INDY_DID_REGISTRY_PATH: &str = "did/IndyDidRegistry.sol/IndyDidRegistry.json";
     pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
     pub const CRED_DEF_REGISTRY_SPEC_PATH: &str =
         "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
@@ -235,6 +237,10 @@ pub mod test {
         "http://127.0.0.1:21004",
     ];
     pub const DEFAULT_NONCE: u64 = 0;
+    pub const INVALID_ADDRESS: &str = "123";
+
+    pub static INDY_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000003333"));
 
     pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000005555"));
@@ -251,11 +257,11 @@ pub mod test {
     pub static ETHR_DID_REGISTRY_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000018888"));
 
-    pub static TRUSTEE_ACC: Lazy<Address> =
+    pub static TRUSTEE_ACCOUNT: Lazy<Address> =
         Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
 
-    pub static IDENTITY_ACC: Lazy<Address> =
-        Lazy::new(|| Address::from("0xb9059400dcd05158ffd8ca092937989dd27b3bdc"));
+    pub static TEST_ACCOUNT: Lazy<Address> =
+        Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
 
     fn build_contract_path(contract_path: &str) -> String {
         let mut cur_dir = env::current_dir().unwrap();
@@ -295,6 +301,11 @@ pub mod test {
                 spec_path: Some(build_contract_path(ETHR_DID_REGISTRY_PATH)),
                 spec: None,
             },
+            ContractConfig {
+                address: INDY_REGISTRY_ADDRESS.to_string(),
+                spec_path: Some(build_contract_path(INDY_DID_REGISTRY_PATH)),
+                spec: None,
+            },
         ]
     }
 
@@ -302,63 +313,187 @@ pub mod test {
         LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contracts(), None).unwrap()
     }
 
-    pub struct MockClient {}
-
-    impl Debug for MockClient {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            write!(f, r#"MockClient {{ }}"#)
-        }
-    }
-
-    #[async_trait]
-    impl Client for MockClient {
-        async fn get_transaction_count(&self, _address: &Address) -> VdrResult<u64> {
-            Ok(0)
-        }
-
-        async fn submit_transaction(&self, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
-            todo!()
-        }
-
-        async fn call_transaction(&self, _to: &str, _transaction: &[u8]) -> VdrResult<Vec<u8>> {
-            todo!()
-        }
-
-        async fn query_events(&self, _query: &EventQuery) -> VdrResult<Vec<EventLog>> {
-            todo!()
-        }
-
-        async fn get_receipt(&self, _hash: &[u8]) -> VdrResult<String> {
-            todo!()
-        }
-
-        async fn get_block(&self, _block: Option<u64>) -> VdrResult<BlockDetails> {
-            todo!()
-        }
-
-        async fn get_transaction(&self, _hash: &[u8]) -> VdrResult<Option<Transaction>> {
-            todo!()
-        }
-    }
-
     pub fn mock_client() -> LedgerClient {
-        let mut client = LedgerClient::new(
+        init_env_logger();
+        let mut ledger_client = LedgerClient::new(
             CHAIN_ID,
             RPC_NODE_ADDRESS,
             &contracts(),
             Some(&QuorumConfig::default()),
         )
         .unwrap();
-        client.client = Box::new(MockClient {});
-        client
+
+        let mut client = MockClient::new();
+        client.expect_get_transaction_count().returning(|_| Ok(0));
+
+        ledger_client.client = Box::new(client);
+        ledger_client
+    }
+
+    pub fn mock_custom_client(client: Box<dyn Client>) -> LedgerClient {
+        let mut ledger_client = LedgerClient::new(
+            CHAIN_ID,
+            RPC_NODE_ADDRESS,
+            &contracts(),
+            Some(&QuorumConfig::default()),
+        )
+        .unwrap();
+
+        ledger_client.client = client;
+        ledger_client
     }
 
     mod create {
+        use crate::validator_control::test::VALIDATOR_CONTROL_NAME;
+        use mockall::predicate::eq;
+        use rstest::rstest;
+        use serde_json::Value;
+
         use super::*;
 
         #[test]
         fn create_client_test() {
             client();
+        }
+
+        #[test]
+        fn create_client_invalid_node_address() {
+            let client_err = LedgerClient::new(CHAIN_ID, "..", &contracts(), None)
+                .err()
+                .unwrap();
+
+            assert!(matches!(
+                client_err,  | VdrError::ClientNodeUnreachable { .. }
+            ));
+        }
+
+        #[rstest]
+        #[case::invalid_contract_data(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: None,
+            spec: Some(ContractSpec {
+                name: VALIDATOR_CONTROL_NAME.to_string(),
+                abi: Value::String("".to_string()),
+            }),
+        }], VdrError::ContractInvalidInputData)]
+        #[case::both_contract_path_and_spec_provided(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
+            spec: Some(ContractSpec {
+                name: VALIDATOR_CONTROL_NAME.to_string(),
+                abi: Value::Array(vec ! []),
+            }),
+        }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]
+        #[case::non_existent_spec_path(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: Some(build_contract_path("")),
+            spec: None,
+        }], VdrError::ContractInvalidSpec("Unable to read contract spec file. Err: \"Is a directory (os error 21)\"".to_string()))]
+        #[case::empty_contract_spec(vec![ContractConfig {
+            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
+            spec_path: None,
+            spec: None,
+        }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]
+        fn test_create_client_errors(
+            #[case] contract_config: Vec<ContractConfig>,
+            #[case] expected_error: VdrError,
+        ) {
+            let client_err = LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contract_config, None)
+                .err()
+                .unwrap();
+
+            assert_eq!(client_err, expected_error);
+        }
+
+        #[rstest]
+        #[case::empty_recipient_address("", VdrError::ClientInvalidTransaction("Invalid transaction target address \"0x\"".to_string()))]
+        #[case::invalid_recipient_address(INVALID_ADDRESS, VdrError::ClientInvalidTransaction("Invalid transaction target address \"0x123\"".to_string()))]
+        async fn call_transaction_various_recipient_addresses(
+            #[case] recipient_address: &str,
+            #[case] expected_error: VdrError,
+        ) {
+            let transaction = Transaction {
+                to: Address::from(recipient_address),
+                ..read_transaction()
+            };
+            let client = client();
+
+            let error = client.submit_transaction(&transaction).await.unwrap_err();
+
+            assert_eq!(error, expected_error);
+        }
+
+        #[async_std::test]
+        async fn get_receipt_invalid_transaction_hash() {
+            let client = client();
+            let txn_hash = vec![1; 4];
+
+            let receipt_err = client.get_receipt(&txn_hash).await.unwrap_err();
+
+            assert!(matches!(
+                receipt_err,  | VdrError::CommonInvalidData { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_receipt_transaction_does_not_exist() {
+            let mut client_mock = MockClient::new();
+            let txn_hash = vec![1; 32];
+            client_mock
+                .expect_get_receipt()
+                .with(eq(txn_hash.clone()))
+                .returning(|_| {
+                    Err(VdrError::ClientInvalidResponse(
+                        "Missing transaction receipt".to_string(),
+                    ))
+                });
+
+            let client = mock_custom_client(Box::new(client_mock));
+
+            let receipt_err = client.get_receipt(&txn_hash).await.unwrap_err();
+
+            assert!(matches!(
+                receipt_err,  | VdrError::ClientInvalidResponse { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_receipt_positive() {
+            let mut client_mock = MockClient::new();
+            let txn_hash = vec![1; 32];
+            client_mock
+                .expect_get_receipt()
+                .with(eq(txn_hash.clone()))
+                .returning(|_| Ok("".to_string()));
+
+            let client = mock_custom_client(Box::new(client_mock));
+
+            client.get_receipt(&txn_hash).await.unwrap();
+        }
+
+        #[async_std::test]
+        async fn get_transaction_count_invalid_address() {
+            let client = client();
+
+            let get_nonce_err = client
+                .get_transaction_count(&Address::from(INVALID_ADDRESS))
+                .await
+                .unwrap_err();
+
+            assert!(matches!(
+                get_nonce_err,  | VdrError::ClientInvalidTransaction { .. }
+            ));
+        }
+
+        #[async_std::test]
+        async fn get_contract_does_not_exist() {
+            let client = client();
+
+            let contract_err = client.contract(INVALID_ADDRESS).err().unwrap();
+
+            assert!(matches!(
+                contract_err,  | VdrError::ContractInvalidName { .. }
+            ));
         }
     }
 

@@ -1,58 +1,181 @@
 use crate::{
-    client::client::test::client,
+    client::client::test::{client, TRUSTEE_ACCOUNT},
     contracts::{
-        auth::Role,
+        auth::{role_control, Role},
         cl::types::{credential_definition::test::credential_definition, schema::test::schema},
-        did::{DID, ETHR_DID_METHOD},
+        did::{did_indy_registry, types::did_doc::test::did_doc, DidRecord, DID, ETHR_DID_METHOD},
     },
-    error::VdrResult,
-    signer::basic_signer::{
-        test::{basic_signer, TRUSTEE_ACC},
-        BasicSigner,
-    },
+    signer::basic_signer::{test::basic_signer, BasicSigner},
     types::{Address, SignatureData, Transaction},
     LedgerClient, TransactionEndorsingData,
 };
 
-fn did(address: &Address) -> DID {
-    DID::build(ETHR_DID_METHOD, None, address.as_ref())
+mod helpers {
+    use super::*;
+    use crate::{Address, LedgerClient};
+
+    pub async fn sign_and_submit_transaction(
+        client: &LedgerClient,
+        transaction: Transaction,
+        signer: &BasicSigner,
+    ) -> String {
+        let sign_bytes = transaction.get_signing_bytes().unwrap();
+        let from = transaction.from.as_ref().unwrap();
+        let signature = signer.sign(&sign_bytes, from.as_ref()).unwrap();
+        transaction.set_signature(signature);
+        let block_hash = client.submit_transaction(&transaction).await.unwrap();
+        client.get_receipt(&block_hash).await.unwrap()
+    }
+
+    pub fn sign_endorsing_data(
+        data: &TransactionEndorsingData,
+        signer: &BasicSigner,
+    ) -> SignatureData {
+        signer
+            .sign(&data.get_signing_bytes().unwrap(), data.from.as_ref())
+            .unwrap()
+    }
+
+    pub async fn assign_role(
+        client: &LedgerClient,
+        assignee_account: &Address,
+        role_to_assign: &Role,
+        signer: &BasicSigner,
+    ) -> String {
+        let transaction = role_control::build_assign_role_transaction(
+            client,
+            &TRUSTEE_ACCOUNT,
+            role_to_assign,
+            assignee_account,
+        )
+        .await
+        .unwrap();
+        sign_and_submit_transaction(client, transaction, signer).await
+    }
+
+    pub async fn create_trustee(signer: &mut BasicSigner, client: &LedgerClient) -> Address {
+        let (identity, _) = signer.create_key(None).unwrap();
+        assign_role(&client, &identity, &Role::Trustee, &signer).await;
+        identity
+    }
 }
 
-async fn sign_and_submit_transaction(
-    client: &LedgerClient,
-    transaction: Transaction,
-    signer: &BasicSigner,
-) -> String {
-    let sign_bytes = transaction.get_signing_bytes().unwrap();
-    let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
-    transaction.set_signature(signature);
-    let block_hash = client.submit_transaction(&transaction).await.unwrap();
-    client.get_receipt(&block_hash).await.unwrap()
+mod did_indy {
+    use super::*;
+    use crate::client::client::test::TRUSTEE_ACCOUNT;
+
+    async fn resolve_did(client: &LedgerClient, did: &DID) -> DidRecord {
+        let transaction = did_indy_registry::build_resolve_did_transaction(client, did)
+            .await
+            .unwrap();
+        let result = client.submit_transaction(&transaction).await.unwrap();
+        did_indy_registry::parse_resolve_did_result(client, &result).unwrap()
+    }
+
+    #[async_std::test]
+    async fn create_did_test() {
+        let mut signer = basic_signer();
+        let client = client();
+        let identity = super::helpers::create_trustee(&mut signer, &client).await;
+
+        // create
+        let did_doc = did_doc(identity.as_ref());
+        let transaction = did_indy_registry::build_create_did_transaction(
+            &client,
+            &identity,
+            &did_doc.id,
+            &did_doc,
+        )
+        .await
+        .unwrap();
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // read
+        let resolved_did_record = resolve_did(&client, &did_doc.id).await;
+        assert_eq!(did_doc, resolved_did_record.document);
+    }
+
+    #[async_std::test]
+    async fn create_and_deactivate_test() {
+        let mut signer = basic_signer();
+        let client = client();
+        let identity = super::helpers::create_trustee(&mut signer, &client).await;
+
+        // create
+        let did_doc = did_doc(identity.as_ref());
+        let transaction = did_indy_registry::build_create_did_transaction(
+            &client,
+            &identity,
+            &did_doc.id,
+            &did_doc,
+        )
+        .await
+        .unwrap();
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // deactivate
+        let transaction =
+            did_indy_registry::build_deactivate_did_transaction(&client, &identity, &did_doc.id)
+                .await
+                .unwrap();
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // read
+        let resolved_did_record = resolve_did(&client, &did_doc.id).await;
+        assert_eq!(true, resolved_did_record.metadata.deactivated.unwrap());
+    }
+
+    #[async_std::test]
+    async fn endorse_did_test() {
+        let mut signer = basic_signer();
+        let client = client();
+        let (identity, _) = signer.create_key(None).unwrap();
+
+        // create
+        let did_doc = did_doc(identity.as_ref());
+        let endorsement_data =
+            did_indy_registry::build_create_did_endorsing_data(&client, &did_doc.id, &did_doc)
+                .await
+                .unwrap();
+
+        let signature = super::helpers::sign_endorsing_data(&endorsement_data, &signer);
+
+        let transaction = did_indy_registry::build_create_did_signed_transaction(
+            &client,
+            &TRUSTEE_ACCOUNT,
+            &did_doc.id,
+            &did_doc,
+            &signature,
+        )
+        .await
+        .unwrap();
+
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // read
+        let resolved_did_record = resolve_did(&client, &did_doc.id).await;
+        assert_eq!(did_doc, resolved_did_record.document);
+    }
 }
 
-fn sign_endorsing_data(data: &TransactionEndorsingData, signer: &BasicSigner) -> SignatureData {
-    signer
-        .sign(&data.get_signing_bytes().unwrap(), data.from.as_ref())
-        .unwrap()
-}
-
-mod did {
+mod did_ethr {
     use super::*;
     use crate::{
         contracts::{
             did::{
                 did_ethr_registry,
                 did_ethr_registry::test::{public_key, service, validity},
+                did_resolver,
                 types::{
-                    did_doc::test::{default_ethr_did_document, TEST_DID_ETHR},
-                    did_doc_attribute::DidDocAttribute,
+                    did_doc::test::default_ethr_did_document, did_doc_attribute::DidDocAttribute,
                 },
                 DID,
             },
             types::did::ParsedDid,
+            ETHR_DID_METHOD,
         },
         did_ethr_registry::test::{public_key_2, public_key_3},
-        Address, LedgerClient, Validity, VdrResult,
+        Address, LedgerClient, Validity,
     };
 
     async fn endorse_set_did_attribute(
@@ -68,11 +191,11 @@ mod did {
         .await
         .unwrap();
 
-        let signature = sign_endorsing_data(&transaction_endorsing_data, signer);
+        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, signer);
 
         let transaction = did_ethr_registry::build_did_set_attribute_signed_transaction(
             client,
-            &TRUSTEE_ACC,
+            &TRUSTEE_ACCOUNT,
             did,
             attribute,
             validity,
@@ -81,7 +204,7 @@ mod did {
         .await
         .unwrap();
 
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
     }
 
     async fn endorse_revoke_did_attribute(
@@ -95,26 +218,27 @@ mod did {
                 .await
                 .unwrap();
 
-        let signature = sign_endorsing_data(&transaction_endorsing_data, signer);
+        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, signer);
 
         let transaction = did_ethr_registry::build_did_revoke_attribute_signed_transaction(
             client,
-            &TRUSTEE_ACC,
+            &TRUSTEE_ACCOUNT,
             did,
             attribute,
             &signature,
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await
     }
 
     #[async_std::test]
-    async fn demo_create_did_ethr() -> VdrResult<()> {
-        let signer = basic_signer();
+    async fn demo_create_did_ethr() {
+        let mut signer = basic_signer();
         let client = client();
+        let identity = super::helpers::create_trustee(&mut signer, &client).await;
 
-        let did = super::did(&TRUSTEE_ACC.clone());
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
 
         // read DID changed block -> it must be none
         let transaction = did_ethr_registry::build_get_did_changed_transaction(&client, &did)
@@ -127,14 +251,14 @@ mod did {
         // add service attribute to DID
         let transaction = did_ethr_registry::build_did_set_attribute_transaction(
             &client,
-            &TRUSTEE_ACC,
+            &identity,
             &did,
             &service(),
             &validity(),
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // Read DID events
         let transaction = did_ethr_registry::build_get_did_events_query(&client, &did, None, None)
@@ -156,17 +280,17 @@ mod did {
         // add service key to DID
         let transaction = did_ethr_registry::build_did_set_attribute_transaction(
             &client,
-            &TRUSTEE_ACC,
+            &identity,
             &did,
             &public_key(),
             &validity(),
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // resolve DID document
-        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
         let did_document = did_doc_with_meta.did_document.unwrap();
@@ -176,17 +300,14 @@ mod did {
             false,
             did_doc_with_meta.did_document_metadata.deactivated.unwrap()
         );
-
-        Ok(())
     }
 
     #[async_std::test]
-    async fn demo_endorse_did_ethr() -> VdrResult<()> {
+    async fn demo_endorse_did_ethr() {
         let mut signer = basic_signer();
         let client = client();
-        let (identity, _) = signer.create_key(None)?;
-
-        let did = super::did(&identity);
+        let (identity, _) = signer.create_key(None).unwrap();
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
 
         // endorse service attribute
         endorse_set_did_attribute(&client, &did, &service(), &validity(), &signer).await;
@@ -195,23 +316,21 @@ mod did {
         endorse_set_did_attribute(&client, &did, &public_key(), &validity(), &signer).await;
 
         // resolve DID document
-        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
         let did_document = did_doc_with_meta.did_document.unwrap();
         assert_eq!(1, did_document.service.len());
         assert_eq!(2, did_document.verification_method.len());
-
-        Ok(())
     }
 
     #[async_std::test]
-    async fn demo_did_ethr_deactivate() -> VdrResult<()> {
+    async fn demo_did_ethr_deactivate() {
         let mut signer = basic_signer();
         let client = client();
-        let (identity, _) = signer.create_key(None)?;
+        let (identity, _) = signer.create_key(None).unwrap();
 
-        let did = super::did(&identity);
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
 
         // add service attribute
         let service = service();
@@ -225,21 +344,21 @@ mod did {
                 .await
                 .unwrap();
 
-        let signature = sign_endorsing_data(&transaction_endorsing_data, &signer);
+        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
 
         let transaction = did_ethr_registry::build_did_change_owner_signed_transaction(
             &client,
-            &TRUSTEE_ACC,
+            &TRUSTEE_ACCOUNT,
             &did,
             &new_owner,
             &signature,
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // Resole DID document
-        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
         let did_document = did_doc_with_meta.did_document.unwrap();
@@ -254,17 +373,15 @@ mod did {
         assert_eq!(0, did_document.verification_method.len());
         assert_eq!(0, did_document.authentication.len());
         assert_eq!(0, did_document.assertion_method.len());
-
-        Ok(())
     }
 
     #[async_std::test]
-    async fn demo_did_add_remove_attribute() -> VdrResult<()> {
+    async fn demo_did_ethr_add_remove_attribute() {
         let mut signer = basic_signer();
         let client = client();
-        let (identity, _) = signer.create_key(None)?;
+        let (identity, _) = signer.create_key(None).unwrap();
 
-        let did = super::did(&identity);
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
 
         // set service attribute
         let service = service();
@@ -280,7 +397,7 @@ mod did {
         endorse_set_did_attribute(&client, &did, &public_key_2, &validity, &signer).await;
 
         // resolve DID document
-        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
         let did_document_before_remove = did_doc_with_meta.did_document.unwrap();
@@ -295,7 +412,7 @@ mod did {
         endorse_revoke_did_attribute(&client, &did, &service, &signer).await;
 
         // resolve DID document
-        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
         let did_document_after_remove = did_doc_with_meta.did_document.unwrap();
@@ -310,7 +427,7 @@ mod did {
         endorse_set_did_attribute(&client, &did, &public_key_3, &validity, &signer).await;
 
         // resolve DID document
-        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
         let did_document_after_add = did_doc_with_meta.did_document.unwrap();
@@ -319,110 +436,103 @@ mod did {
         assert_eq!(1, did_document_after_add.key_agreement.len());
         assert_eq!(1, did_document_after_add.authentication.len());
         assert_eq!(2, did_document_after_add.assertion_method.len());
-
-        Ok(())
     }
 
     #[async_std::test]
-    async fn demo_resolve_offchain_did() -> VdrResult<()> {
+    async fn demo_resolve_offchain_did() {
+        let mut signer = basic_signer();
         let client = client();
+        let (identity, _) = signer.create_key(None).unwrap();
 
-        let did = DID::from(TEST_DID_ETHR);
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
 
         // Resole DID document
-        let did_doc_with_meta = did_ethr_registry::resolve_did(&client, &did, None)
+        let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
+        println!("{:?}", did_doc_with_meta);
         let did_document = did_doc_with_meta.did_document.unwrap();
 
         // DID Document is empty
         assert_eq!(
-            default_ethr_did_document(Some(client.chain_id())),
+            default_ethr_did_document(identity.as_ref(), Some(client.chain_id())),
             did_document
         );
-
-        Ok(())
     }
 }
 
 mod schema {
     use super::*;
-    use crate::{schema_registry, LedgerClient, Schema, SchemaId, DID};
+    use crate::{schema_registry, Schema};
 
     pub(crate) async fn endorse_schema(
         client: &LedgerClient,
         did: &DID,
         signer: &BasicSigner,
-    ) -> (SchemaId, Schema) {
-        let (schema_id, schema) = schema(did, None);
+    ) -> Schema {
+        let schema = schema(did, None);
         let transaction_endorsing_data =
-            schema_registry::build_create_schema_endorsing_data(client, &schema_id, &schema)
+            schema_registry::build_create_schema_endorsing_data(client, &schema)
                 .await
                 .unwrap();
 
-        let signature = sign_endorsing_data(&transaction_endorsing_data, signer);
+        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, signer);
 
         let transaction = schema_registry::build_create_schema_signed_transaction(
             client,
-            &TRUSTEE_ACC.clone(),
-            &schema_id,
+            &TRUSTEE_ACCOUNT.clone(),
             &schema,
             &signature,
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(client, transaction, signer).await;
-        (schema_id, schema)
+        super::helpers::sign_and_submit_transaction(client, transaction, signer).await;
+        schema
     }
 
     #[async_std::test]
-    async fn demo_create_schema() -> VdrResult<()> {
+    async fn demo_create_schema() {
         let signer = basic_signer();
         let client = client();
 
         // create DID
-        let did = super::did(&TRUSTEE_ACC.clone());
+        let did = DID::build(ETHR_DID_METHOD, None, TRUSTEE_ACCOUNT.as_ref());
 
         // write
-        let (schema_id, schema) = schema(&did, None);
+        let schema = schema(&did, None);
         let transaction = schema_registry::build_create_schema_transaction(
             &client,
-            &TRUSTEE_ACC.clone(),
-            &schema_id,
+            &TRUSTEE_ACCOUNT.clone(),
             &schema,
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // read
-        let resolved_schema = schema_registry::resolve_schema(&client, &schema_id)
+        let resolved_schema = schema_registry::resolve_schema(&client, &schema.id())
             .await
             .unwrap();
         assert_eq!(schema, resolved_schema);
-
-        Ok(())
     }
 
     #[async_std::test]
-    async fn demo_endorse_schema() -> VdrResult<()> {
+    async fn demo_endorse_schema() {
         let mut signer = basic_signer();
         let client = client();
-        let (identity, _) = signer.create_key(None)?;
+        let (identity, _) = signer.create_key(None).unwrap();
 
         // create DID
-        let did = super::did(&identity);
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
 
         // endorse schema
-        let (schema_id, schema) = endorse_schema(&client, &did, &signer).await;
+        let schema = endorse_schema(&client, &did, &signer).await;
 
         // read
-        let resolved_schema = schema_registry::resolve_schema(&client, &schema_id)
+        let resolved_schema = schema_registry::resolve_schema(&client, &schema.id())
             .await
             .unwrap();
         assert_eq!(schema, resolved_schema);
-
-        Ok(())
     }
 }
 
@@ -431,101 +541,88 @@ mod credential_definition {
     use crate::{credential_definition_registry, schema_registry};
 
     #[async_std::test]
-    async fn demo_create_credential_definition() -> VdrResult<()> {
+    async fn demo_create_credential_definition() {
         let signer = basic_signer();
         let client = client();
 
         // create DID
-        let did = super::did(&TRUSTEE_ACC.clone());
+        let did = DID::build(ETHR_DID_METHOD, None, TRUSTEE_ACCOUNT.as_ref());
 
         // create Schema
-        let (schema_id, schema) = schema(&did, None);
-        let transaction = schema_registry::build_create_schema_transaction(
-            &client,
-            &TRUSTEE_ACC,
-            &schema_id,
-            &schema,
-        )
-        .await
-        .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        let schema = schema(&did, None);
+        let transaction =
+            schema_registry::build_create_schema_transaction(&client, &TRUSTEE_ACCOUNT, &schema)
+                .await
+                .unwrap();
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // write
-        let (credential_definition_id, credential_definition) =
-            credential_definition(&did, &schema_id, None);
+        let credential_definition = credential_definition(&did, &schema.id(), None);
         let transaction =
             credential_definition_registry::build_create_credential_definition_transaction(
                 &client,
-                &TRUSTEE_ACC,
-                &credential_definition_id,
+                &TRUSTEE_ACCOUNT,
                 &credential_definition,
             )
             .await
             .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // read
         let resolved_credential_definition =
             credential_definition_registry::resolve_credential_definition(
                 &client,
-                &credential_definition_id,
+                &credential_definition.id(),
             )
             .await
             .unwrap();
         assert_eq!(credential_definition, resolved_credential_definition);
-
-        Ok(())
     }
 
     #[async_std::test]
-    async fn demo_endorse_credential_definition() -> VdrResult<()> {
+    async fn demo_endorse_credential_definition() {
         let mut signer = basic_signer();
         let client = client();
-        let (identity, _) = signer.create_key(None)?;
+        let (identity, _) = signer.create_key(None).unwrap();
 
         // create DID Document
-        let did = super::did(&identity);
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
 
         // create Schema
-        let (schema_id, _) = super::schema::endorse_schema(&client, &did, &signer).await;
+        let schema = super::schema::endorse_schema(&client, &did, &signer).await;
 
         // write
-        let (credential_definition_id, credential_definition) =
-            credential_definition(&did, &schema_id, None);
+        let credential_definition = credential_definition(&did, &schema.id(), None);
         let transaction_endorsing_data =
             credential_definition_registry::build_create_credential_definition_endorsing_data(
                 &client,
-                &credential_definition_id,
                 &credential_definition,
             )
             .await
             .unwrap();
 
-        let signature = sign_endorsing_data(&transaction_endorsing_data, &signer);
+        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
 
         let transaction =
             credential_definition_registry::build_create_credential_definition_signed_transaction(
                 &client,
-                &TRUSTEE_ACC.clone(),
-                &credential_definition_id,
+                &TRUSTEE_ACCOUNT.clone(),
                 &credential_definition,
                 &signature,
             )
             .await
             .unwrap();
-        sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // read
         let resolved_credential_definition =
             credential_definition_registry::resolve_credential_definition(
                 &client,
-                &credential_definition_id,
+                &credential_definition.id(),
             )
             .await
             .unwrap();
         assert_eq!(credential_definition, resolved_credential_definition);
-
-        Ok(())
     }
 }
 
@@ -533,24 +630,7 @@ mod role {
     use super::*;
     use crate::role_control;
 
-    pub(crate) async fn build_and_submit_assign_role_transaction(
-        client: &LedgerClient,
-        assignee_account: &Address,
-        role_to_assign: &Role,
-        signer: &BasicSigner,
-    ) -> String {
-        let transaction = role_control::build_assign_role_transaction(
-            client,
-            &TRUSTEE_ACC,
-            role_to_assign,
-            assignee_account,
-        )
-        .await
-        .unwrap();
-        sign_and_submit_transaction(client, transaction, signer).await
-    }
-
-    async fn build_and_submit_revoke_role_transaction(
+    async fn revoke_role(
         client: &LedgerClient,
         revokee_account: &Address,
         role_to_revoke: &Role,
@@ -558,7 +638,7 @@ mod role {
     ) -> String {
         let transaction = role_control::build_revoke_role_transaction(
             client,
-            &TRUSTEE_ACC,
+            &TRUSTEE_ACCOUNT,
             role_to_revoke,
             revokee_account,
         )
@@ -566,7 +646,7 @@ mod role {
         .unwrap();
 
         let sign_bytes = transaction.get_signing_bytes().unwrap();
-        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
+        let signature = signer.sign(&sign_bytes, TRUSTEE_ACCOUNT.as_ref()).unwrap();
         transaction.set_signature(signature);
 
         let block_hash = client.submit_transaction(&transaction).await.unwrap();
@@ -598,37 +678,23 @@ mod role {
     }
 
     #[async_std::test]
-    async fn demo_build_and_submit_assign_and_remove_role_transactions_test() -> VdrResult<()> {
+    async fn demo_build_and_submit_assign_and_remove_role_transactions_test() {
         let signer = basic_signer();
         let (assignee_account, _) = signer.create_account(None).unwrap();
         let client = client();
         let role_to_assign = Role::Endorser;
 
-        build_and_submit_assign_role_transaction(
-            &client,
-            &assignee_account,
-            &role_to_assign,
-            &signer,
-        )
-        .await;
+        super::helpers::assign_role(&client, &assignee_account, &role_to_assign, &signer).await;
 
         let assigned_role = build_and_submit_get_role_transaction(&client, &assignee_account).await;
         assert_eq!(role_to_assign, assigned_role);
 
-        build_and_submit_revoke_role_transaction(
-            &client,
-            &assignee_account,
-            &role_to_assign,
-            &signer,
-        )
-        .await;
+        revoke_role(&client, &assignee_account, &role_to_assign, &signer).await;
 
         let has_role =
             build_and_submit_has_role_transaction(&client, &role_to_assign, &assignee_account)
                 .await;
         assert!(!has_role);
-
-        Ok(())
     }
 }
 
@@ -658,12 +724,12 @@ mod validator {
     ) -> String {
         let transaction = validator_control::build_add_validator_transaction(
             &client,
-            &TRUSTEE_ACC,
+            &TRUSTEE_ACCOUNT,
             new_validator_address,
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(client, transaction, signer).await
+        super::helpers::sign_and_submit_transaction(client, transaction, signer).await
     }
 
     async fn build_and_submit_remove_validator_transaction(
@@ -674,26 +740,20 @@ mod validator {
         // write
         let transaction = validator_control::build_remove_validator_transaction(
             &client,
-            &TRUSTEE_ACC,
+            &TRUSTEE_ACCOUNT,
             validator_address,
         )
         .await
         .unwrap();
-        sign_and_submit_transaction(client, transaction, signer).await
+        super::helpers::sign_and_submit_transaction(client, transaction, signer).await
     }
 
     #[async_std::test]
-    async fn demo_build_and_submit_transaction_test() -> VdrResult<()> {
+    async fn demo_build_and_submit_transaction_test() {
         let signer = basic_signer();
         let (new_validator_address, _) = signer.create_account(None).unwrap();
         let client = client();
-        role::build_and_submit_assign_role_transaction(
-            &client,
-            &TRUSTEE_ACC,
-            &Role::Steward,
-            &signer,
-        )
-        .await;
+        super::helpers::assign_role(&client, &TRUSTEE_ACCOUNT, &Role::Steward, &signer).await;
 
         build_and_submit_add_validator_transaction(&client, &new_validator_address, &signer).await;
 
@@ -707,7 +767,5 @@ mod validator {
         let validator_list = build_and_submit_get_validators_transaction(&client).await;
         assert_eq!(validator_list.len(), 4);
         assert!(!validator_list.contains(&new_validator_address));
-
-        Ok(())
     }
 }

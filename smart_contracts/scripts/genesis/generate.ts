@@ -4,8 +4,10 @@ import {
   accountControl,
   credentialDefinitionRegistry,
   ethereumDidRegistry,
+  indyDidRegistry,
   roleControl,
   schemaRegistry,
+  universalDidResolver,
   upgradeControl,
   validatorControl,
 } from './contracts'
@@ -16,7 +18,9 @@ function main() {
     ...roleControl(),
     ...validatorControl(),
     ...upgradeControl(),
+    ...indyDidRegistry(),
     ...ethereumDidRegistry(),
+    ...universalDidResolver(),
     ...schemaRegistry(),
     ...credentialDefinitionRegistry(),
   }

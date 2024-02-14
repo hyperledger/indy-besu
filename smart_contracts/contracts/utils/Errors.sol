@@ -2,6 +2,25 @@
 pragma solidity ^0.8.20;
 
 /**
+ * @dev Error that occurs when a required field is not provided.
+ * @param name The name of the required field.
+ */
+error FieldRequired(string name);
+
+/**
+ * @dev Error that occurs when provided two or more fields, which should not be provided together
+ * @param names Names of the conflicting fields
+ */
+error ConflictingFields(string names);
+
+/**
+ * @dev Error that occurs when the operation is not supported or cannot be performed.
+ * @param operation Name of the operation being performed
+ * @param description A brief error descriptiion
+ */
+error UnsupportedOperation(string operation, string description);
+
+/**
  * @title Errors
  * @dev A library that provides utility functions for error handling.
  */
@@ -13,8 +32,8 @@ library Errors {
      * @return bool Returns true if the selectors match, indicating the errors are the same; otherwise, returns false.
      */
     function equals(bytes memory reason, bytes4 errorSelector) internal pure returns (bool) {
-        bytes4 reasonSelector = abi.decode(reason, (bytes4));
-        return reasonSelector == errorSelector;
+        bytes4 receivedSelector = bytes4(reason);
+        return errorSelector == receivedSelector;
     }
 
     /**

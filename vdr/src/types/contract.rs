@@ -38,7 +38,7 @@ impl ContractSpec {
         let contract_spec = std::fs::read_to_string(spec_path).map_err(|err| {
             let vdr_error = VdrError::ContractInvalidSpec(format!(
                 "Unable to read contract spec file. Err: {:?}",
-                err
+                err.to_string()
             ));
 
             warn!(
@@ -89,10 +89,10 @@ impl ContractOutput {
             .map(ContractOutput)
     }
 
-    pub fn get_string(&self, index: usize) -> VdrResult<String> {
-        self.get_item(index)?.into_string().ok_or_else(|| {
-            VdrError::ContractInvalidResponseData("Missing string value".to_string())
-        })
+    pub fn get_bytes(&self, index: usize) -> VdrResult<Vec<u8>> {
+        self.get_item(index)?
+            .into_bytes()
+            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing bytes value".to_string()))
     }
 
     pub fn get_address(&self, index: usize) -> VdrResult<Address> {
@@ -121,6 +121,14 @@ impl ContractOutput {
             .into_uint()
             .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
             .as_u64())
+    }
+
+    pub fn get_u128(&self, index: usize) -> VdrResult<u128> {
+        Ok(self
+            .get_item(index)?
+            .into_uint()
+            .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing uint value".to_string()))?
+            .as_u128())
     }
 
     pub fn get_address_array(&self, index: usize) -> VdrResult<Vec<Address>> {
@@ -208,18 +216,18 @@ impl From<Log> for ContractEvent {
 }
 
 #[derive(Debug)]
-pub(crate) struct UintBytesParam(u64);
+pub(crate) struct MethodUintBytesParam(u64);
 
-impl From<u64> for UintBytesParam {
+impl From<u64> for MethodUintBytesParam {
     fn from(value: u64) -> Self {
-        UintBytesParam(value)
+        MethodUintBytesParam(value)
     }
 }
 
-impl TryFrom<UintBytesParam> for ContractParam {
+impl TryFrom<&MethodUintBytesParam> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: UintBytesParam) -> Result<Self, Self::Error> {
+    fn try_from(value: &MethodUintBytesParam) -> Result<Self, Self::Error> {
         Ok(ContractParam::FixedBytes(
             format_bytes32(value.0.to_be_bytes().as_slice())?.to_vec(),
         ))
@@ -227,18 +235,18 @@ impl TryFrom<UintBytesParam> for ContractParam {
 }
 
 #[derive(Debug)]
-pub(crate) struct MethodParam(&'static str);
+pub(crate) struct MethodStringParam(&'static str);
 
-impl From<&'static str> for MethodParam {
+impl From<&'static str> for MethodStringParam {
     fn from(value: &'static str) -> Self {
-        MethodParam(value)
+        MethodStringParam(value)
     }
 }
 
-impl TryFrom<MethodParam> for ContractParam {
+impl TryFrom<&MethodStringParam> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: MethodParam) -> Result<Self, Self::Error> {
+    fn try_from(value: &MethodStringParam) -> Result<Self, Self::Error> {
         Ok(ContractParam::String(value.0.to_string()))
     }
 }

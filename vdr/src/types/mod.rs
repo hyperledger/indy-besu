@@ -3,7 +3,7 @@ mod contract;
 mod event_query;
 mod signature;
 mod status;
-mod transaction;
+pub(crate) mod transaction;
 
 pub use address::Address;
 pub use contract::{ContractConfig, ContractSpec};
@@ -16,7 +16,7 @@ pub use transaction::{
 };
 
 pub(crate) use contract::{
-    ContractEvent, ContractOutput, ContractParam, MethodParam, UintBytesParam,
+    ContractEvent, ContractOutput, ContractParam, MethodStringParam, MethodUintBytesParam,
 };
 pub(crate) use event_query::{EventParser, EventQueryBuilder};
 pub(crate) use transaction::{

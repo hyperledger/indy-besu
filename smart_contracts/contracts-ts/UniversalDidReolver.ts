@@ -1,5 +1,6 @@
+import { getBytes, toUtf8String } from 'ethers'
+import { DidMetadataStruct } from '../typechain-types/contracts/did/IndyDidRegistry'
 import { Contract } from '../utils'
-import { DidMetadata, mapDidMetadata } from './types'
 
 export class UniversalDidResolver extends Contract {
   public static readonly defaultAddress = '0x000000000000000000000000000000000019999'
@@ -9,11 +10,17 @@ export class UniversalDidResolver extends Contract {
   }
 
   public async resolveDocument(id: string): Promise<string> {
-    return this.instance.resolveDocument(id)
+    return toUtf8String(getBytes(await this.instance.resolveDocument(id)))
   }
 
-  public async resolveMetadata(id: string): Promise<DidMetadata> {
+  public async resolveMetadata(id: string): Promise<DidMetadataStruct> {
     const metadata = await this.instance.resolveMetadata(id)
-    return mapDidMetadata(metadata)
+    return {
+      owner: metadata.owner,
+      sender: metadata.sender,
+      created: metadata.created,
+      updated: metadata.updated,
+      deactivated: metadata.deactivated,
+    }
   }
 }

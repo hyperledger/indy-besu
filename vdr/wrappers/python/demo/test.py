@@ -65,16 +65,17 @@ async def demo():
 
     print("4. Publish Schema")
     name = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
-    schema_id = 'did:ethr:test:' + identity["address"] + '/anoncreds/v0/SCHEMA/' + name + '/1.0.0'
+    schema_id = did + '/anoncreds/v0/SCHEMA/' + name + '/1.0.0'
     schema = {
         "attrNames": ["First Name", "Last Name"],
-        "issuerId": 'did:ethr:test:' + identity["address"],
+        "issuerId": did,
         "name": name,
         "version": "1.0.0"
     }
-    endorsing_data = await build_create_schema_endorsing_data(client, schema_id, json.dumps(schema))
+    endorsing_data = await build_create_schema_endorsing_data(client, json.dumps(schema))
     identity_signature = sign(identity["secret"], endorsing_data.get_signing_bytes())
-    transaction = await build_create_schema_signed_transaction(client, trustee["address"], schema_id,
+    transaction = await build_create_schema_signed_transaction(client,
+                                                               trustee["address"],
                                                                json.dumps(schema),
                                                                identity_signature)
     trustee_signature = sign(trustee["secret"], transaction.get_signing_bytes())

@@ -1,14 +1,14 @@
 ## Legacy identifiers support
 
 The idea is using of a basic mapping between legacy DIDs identifiers and ethereum accounts instead of introducing a new
-`did:indy2` DID method.  
+`did:indybesu` DID method.  
 So that legacy DID can be associated with a new `did:ethr` and we can only use `did:ethr` in the network.
 
 * Create a new `LegacyIdMappingRegistry` smart contract which will be holding mapping of legacy identifiers to ethereum accounts/new ids:
     ```
     contract LegacyIdMappingRegistry {
         // did:sov:<indentifier> -> ethr account address
-        mapping(string => address) public didMappings;
+        mapping(string => string) public didMappings;
   
         // legacy formated ids of schemas and cred defs -> new id
         mapping(string => string) public clMappings;
@@ -69,3 +69,4 @@ So that legacy DID can be associated with a new `did:ethr` and we can only use `
     * for Schema/Credential Definition firstly must resolve new identifier
       using `LegacyIdMappingRegistry.clMappings(identifier)`, and next resolve Schema/Credential Definition as it described in the
       corresponding specification.
+    

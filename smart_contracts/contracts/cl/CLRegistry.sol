@@ -1,33 +1,50 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { UnauthorizedIssuer } from "./ClErrors.sol";
-import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
+import { DidNotFound, IncorrectDid, NotIdentityOwner } from "../did/DidErrors.sol";
+import { DidMetadata } from "../did/DidTypes.sol";
+import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
+import { Errors } from "../utils/Errors.sol";
+import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound } from "./ClErrors.sol";
 
 contract CLRegistry {
     /**
-     * @dev Reference to the DID registry contract
+     * @dev Reference to the contract that resolves DIDs
      */
-    EthereumExtDidRegistry internal _didRegistry;
+    UniversalDidResolverInterface internal _didResolver;
 
-    modifier _validIssuer(address identity, address actor) {
-        if (actor != _didRegistry.identityOwner(identity)) {
-            revert UnauthorizedIssuer(identity, actor);
-        }
+    /**
+     * Checks that actor matches to the identity
+     */
+    modifier _identityOwner(address identity, address actor) {
+        if (identity != actor) revert NotIdentityOwner(actor, identity);
         _;
     }
 
-    function _checkSignature(
+    /**
+     * @dev Check that the Issuer DID exist, authorized for actor, and active.
+     * @param did        The Issuer's Account.
+     * @param identity   The Issuer's DID.
+     * @param actor      Actor identity address.
+     */
+    modifier _validIssuer(
+        string calldata did,
         address identity,
-        bytes32 hash,
-        uint8 sigV,
-        bytes32 sigR,
-        bytes32 sigS
-    ) internal pure returns (address) {
-        address signer = ecrecover(hash, sigV, sigR, sigS);
-        if (identity != signer) {
-            revert UnauthorizedIssuer(identity, signer);
+        address actor
+    ) {
+        if (identity != actor) revert NotIdentityOwner(actor, identity);
+
+        try _didResolver.resolveMetadata(did) returns (DidMetadata memory metadata) {
+            if (identity != metadata.owner) {
+                revert NotIdentityOwner(actor, identity);
+            }
+            if (metadata.deactivated) revert IssuerHasBeenDeactivated(did);
+        } catch (bytes memory reason) {
+            if (Errors.equals(reason, DidNotFound.selector)) revert IssuerNotFound(did);
+            if (Errors.equals(reason, IncorrectDid.selector)) revert InvalidIssuerId(did);
+
+            Errors.rethrow(reason);
         }
-        return signer;
+        _;
     }
 }

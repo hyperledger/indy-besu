@@ -1,13 +1,13 @@
-import { Signer } from 'ethers'
+import { concat, getAddress, keccak256, Signer, SigningKey } from 'ethers'
 import { ethers, upgrades } from 'hardhat'
 import { host } from '../environment'
 
 export class Contract {
   public address?: string
-  public instance: any
 
   protected readonly name: string
   protected readonly signer?: Signer
+  protected instance: any
 
   constructor(name: string, sender?: any) {
     this.name = name
@@ -69,5 +69,10 @@ export class Contract {
       acc[library.name] = library.address!
       return acc
     }, {})
+  }
+
+  protected signEndorsementData(privateKey: Uint8Array, data: string) {
+    const dataToSign = concat(['0x1900', getAddress(this.address!), data])
+    return new SigningKey(privateKey).sign(keccak256(dataToSign))
   }
 }
