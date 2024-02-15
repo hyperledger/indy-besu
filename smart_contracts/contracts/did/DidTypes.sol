@@ -14,7 +14,6 @@ struct DidRecord {
  */
 struct DidMetadata {
     address owner;
-    address sender;
     uint256 created;
     uint256 updated;
     uint256 versionId;

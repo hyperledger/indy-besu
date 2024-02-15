@@ -31,6 +31,11 @@ interface IndyDidRegistryInterface {
     /**
      * @dev Creates a new DID record.
      *
+     * Restrictions:
+     * - DID must not already exist; otherwise, will revert with a `DidAlreadyExist` error.
+     * - Sender address must has either TRUSTEE or ENDORSER or STEWARD role; otherwise, will revert with a `Unauthorized` error.
+     * - Sender address must be equal to passed identity address; otherwise, will revert with a `NotIdentityOwner` error.
+     *
      * @param identity  Address of DID identity owner.
      * @param document  DID Document JSON as bytes.
      */
@@ -38,6 +43,11 @@ interface IndyDidRegistryInterface {
 
     /**
      * @dev Endorses a new DID record (off-chain author signature).
+     *
+     * Restrictions:
+     * - DID must not already exist; otherwise, will revert with a `DidAlreadyExist` error.
+     * - Sender address must has either TRUSTEE or ENDORSER or STEWARD role; otherwise, will revert with a `Unauthorized` error.
+     * - Signer address must be equal to passed identity address; otherwise, will revert with a `NotIdentityOwner` error.
      *
      * @param identity  Address of DID identity owner.
      * @param sigV      Part of EcDSA signature.
@@ -60,7 +70,7 @@ interface IndyDidRegistryInterface {
      *
      * - DID must already exist; otherwise, will revert with a `DidNotFound` error.
      * - DID must be active; otherwise, will revert with a `DidHasBeenDeactivated` error.
-     * - Sender address must be equal either to DID owner or creator; otherwise, will revert with a `UnauthorizedSender` error.
+     * - Sender address must be equal either to DID owner or has TRUSTEE role; otherwise, will revert with a `Unauthorized` error.
      * - Sender address must be equal to passed identity address; otherwise, will revert with a `NotIdentityOwner` error.
      *
      * Events:
@@ -75,10 +85,9 @@ interface IndyDidRegistryInterface {
      * @dev Endorses an updated DID document for an existing DID record (off-chain author signature).
      *
      * Restrictions:
-     *
      * - DID must already exist; otherwise, will revert with a `DidNotFound` error.
      * - DID must be active; otherwise, will revert with a `DidHasBeenDeactivated` error.
-     * - Sender address must be equal either to DID owner or creator; otherwise, will revert with a `UnauthorizedSender` error.
+     * - Sender address must be equal either to DID owner or has TRUSTEE role; otherwise, will revert with a `Unauthorized` error.
      * - Signer address must be equal to passed identity address; otherwise, will revert with a `NotIdentityOwner` error.
      *
      * Events:
@@ -104,7 +113,7 @@ interface IndyDidRegistryInterface {
      * Restrictions:
      * - DID must be active; otherwise, will revert with a `DidHasBeenDeactivated` error.
      * - DID must exist; otherwise, will revert with a `DidNotFound` error.
-     * - Sender address must be equal either to DID owner or creator; otherwise, will revert with a `UnauthorizedSender` error.
+     * - Sender address must be equal either to DID owner or has TRUSTEE role; otherwise, will revert with a `Unauthorized` error.
      * - Sender address must be equal to passed identity address; otherwise, will revert with a `NotIdentityOwner` error.
      *
      * Events:
@@ -120,7 +129,7 @@ interface IndyDidRegistryInterface {
      * Restrictions:
      * - DID must be active; otherwise, will revert with a `DidHasBeenDeactivated` error.
      * - DID must exist; otherwise, will revert with a `DidNotFound` error.
-     * - Sender address must be equal either to DID owner or creator; otherwise, will revert with a `UnauthorizedSender` error.
+     * - Sender address must be equal either to DID owner or has TRUSTEE role; otherwise, will revert with a `Unauthorized` error.
      * - Signer address must be equal to passed identity address; otherwise, will revert with a `NotIdentityOwner` error.
      *
      * Events:

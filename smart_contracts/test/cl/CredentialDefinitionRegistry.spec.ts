@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { keccak256, toUtf8Bytes } from 'ethers'
 import { IndyDidRegistry } from '../../contracts-ts'
-import { createCredentialDefinitionObject } from '../../utils'
+import { createCredentialDefinitionObject, createSchemaObject } from '../../utils'
 import {
   createDid,
   createDidSigned,
@@ -9,17 +9,19 @@ import {
   createSchemaSigned,
   deployCredentialDefinitionRegistry,
   TestableCredentialDefinitionRegistry,
+  TestableRoleControl,
   TestableSchemaRegistry,
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { ClErrors, DidErrors } from '../utils/errors'
+import { AuthErrors, ClErrors, DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('CredentialDefinitionRegistry', function () {
   let didRegistry: IndyDidRegistry
   let schemaRegistry: TestableSchemaRegistry
   let credentialDefinitionRegistry: TestableCredentialDefinitionRegistry
+  let roleControl: TestableRoleControl
   let testAccounts: TestAccounts
   let schemaId: string
   let issuerAddress: string
@@ -30,6 +32,7 @@ describe('CredentialDefinitionRegistry', function () {
       indyDidRegistry: didRegistryInit,
       schemaRegistry: schemaRegistryInit,
       credentialDefinitionRegistry: credentialDefinitionRegistryInit,
+      roleControl: roleControlInit,
       testAccounts: testAccountsInit,
     } = await deployCredentialDefinitionRegistry()
 
@@ -46,6 +49,7 @@ describe('CredentialDefinitionRegistry', function () {
     testAccounts = testAccountsInit
     schemaRegistry = schemaRegistryInit
     credentialDefinitionRegistry = credentialDefinitionRegistryInit
+    roleControl = roleControlInit
     schemaId = id
   })
 
@@ -86,16 +90,8 @@ describe('CredentialDefinitionRegistry', function () {
       const unknownIssuerId = `did:indybesu:mainnet:${testAccounts.noRole.account.address}`
       const { id, credDef } = createCredentialDefinitionObject({ issuerId: unknownIssuerId, schemaId })
 
-      credentialDefinitionRegistry.connect(testAccounts.noRole.account)
-
       await expect(
-        credentialDefinitionRegistry.createCredentialDefinition(
-          testAccounts.noRole.account.address,
-          id,
-          unknownIssuerId,
-          schemaId,
-          credDef,
-        ),
+        credentialDefinitionRegistry.createCredentialDefinition(issuerAddress, id, unknownIssuerId, schemaId, credDef),
       )
         .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.IssuerNotFound)
         .withArgs(unknownIssuerId)
@@ -141,6 +137,16 @@ describe('CredentialDefinitionRegistry', function () {
           credDef,
         ),
       ).to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, DidErrors.NotIdentityOwner)
+    })
+
+    it('Should fail if the Credential Definition being created by identity without required role', async function () {
+      const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
+
+      credentialDefinitionRegistry.connect(testAccounts.noRole.account)
+
+      await expect(
+        credentialDefinitionRegistry.createCredentialDefinition(issuerAddress, id, issuerId, schemaId, credDef),
+      ).to.be.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
     })
   })
 

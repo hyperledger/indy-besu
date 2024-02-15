@@ -6,16 +6,18 @@ import {
   createDid,
   createDidSigned,
   deploySchemaRegistry,
+  TestableRoleControl,
   TestableSchemaRegistry,
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { ClErrors, DidErrors } from '../utils/errors'
+import { AuthErrors, ClErrors, DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('SchemaRegistry', function () {
   let didRegistry: IndyDidRegistry
   let schemaRegistry: TestableSchemaRegistry
+  let roleControl: TestableRoleControl
   let testAccounts: TestAccounts
   let issuerAddress: string
   let issuerId: string
@@ -23,6 +25,7 @@ describe('SchemaRegistry', function () {
   beforeEach(async function () {
     const {
       indyDidRegistry: didRegistryInit,
+      roleControl: roleControlInit,
       schemaRegistry: schemaRegistryInit,
       testAccounts: testAccountsInit,
     } = await deploySchemaRegistry()
@@ -37,6 +40,7 @@ describe('SchemaRegistry', function () {
     didRegistry = didRegistryInit
     testAccounts = testAccountsInit
     schemaRegistry = schemaRegistryInit
+    roleControl = roleControlInit
   })
 
   describe('Add/Resolve Schema', function () {
@@ -72,9 +76,7 @@ describe('SchemaRegistry', function () {
       const unknownIssuerId = `did:indybesu:mainnet:${identity}`
       const { id, schema } = createSchemaObject({ issuerId: unknownIssuerId })
 
-      schemaRegistry.connect(testAccounts.noRole.account)
-
-      await expect(schemaRegistry.createSchema(identity, id, unknownIssuerId, schema))
+      await expect(schemaRegistry.createSchema(issuerAddress, id, unknownIssuerId, schema))
         .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.IssuerNotFound)
         .withArgs(unknownIssuerId)
     })
@@ -100,6 +102,17 @@ describe('SchemaRegistry', function () {
       await expect(
         schemaRegistry.createSchema(testAccounts.trustee2.account.address, id, issuerId, schema),
       ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
+    })
+
+    it('Should fail if the Schema being created by identity without required role', async function () {
+      const { id, schema } = createSchemaObject({ issuerId })
+
+      schemaRegistry.connect(testAccounts.noRole.account)
+
+      await expect(schemaRegistry.createSchema(issuerAddress, id, issuerId, schema)).to.be.revertedWithCustomError(
+        roleControl.baseInstance,
+        AuthErrors.Unauthorized,
+      )
     })
   })
 

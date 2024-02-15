@@ -432,6 +432,7 @@ mod ethr {
         };
 
         Ok(DidMetadata {
+            owner: None,
             created: None,
             deactivated: Some(deactivated),
             updated,

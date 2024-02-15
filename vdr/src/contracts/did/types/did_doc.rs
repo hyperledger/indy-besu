@@ -1,7 +1,7 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
-    Block,
+    Address, Block,
 };
 
 use crate::contracts::did::types::did::DID;
@@ -78,6 +78,8 @@ pub struct DidRecord {
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner: Option<Address>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub created: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -256,13 +258,13 @@ impl TryFrom<ContractOutput> for DidMetadata {
     type Error = VdrError;
 
     fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
-        let _owner = value.get_address(0)?;
-        let _sender = value.get_address(1)?;
-        let created = value.get_u128(2)? as u64;
-        let updated = value.get_u128(3)? as u64;
-        let version_id = value.get_u128(4)? as u64;
-        let deactivated = value.get_bool(5)?;
+        let owner = value.get_address(0)?;
+        let created = value.get_u128(1)? as u64;
+        let updated = value.get_u128(2)? as u64;
+        let version_id = value.get_u128(3)? as u64;
+        let deactivated = value.get_bool(4)?;
         let did_metadata = DidMetadata {
+            owner: Some(owner),
             deactivated: Some(deactivated),
             created: Some(created),
             version_id: Some(version_id),

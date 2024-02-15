@@ -27,7 +27,8 @@ interface LegacyMappingRegistryInterface {
      * This function can revert with following errors:
      * - `MappingAlreadyExist`: Raised if DID mapping with provided identifier already exist.
      * - `InvalidEd25519Key`: Raised if provided ED25519 verification key does not match to the DID identifier.
-     * - `NotIdentityOwner`: Raised if sender account is not owner of the provided identity
+     * - `NotIdentityOwner`: Raised if sender account is not owner of the provided identity.
+     * - `Unauthorized`: Raised if sender account does not have non of the roles assigned: TRUSTEE, ENDORSER, STEWARD.
      *
      * @param identity          Account address of the DID's owner.
      * @param identifier        legacy DID identifier.
@@ -51,6 +52,7 @@ interface LegacyMappingRegistryInterface {
      * - `MappingAlreadyExist`: Raised if DID mapping with provided identifier already exist.
      * - `InvalidEd25519Key`: Raised if provided ED25519 verification key does not match to the DID identifier.
      * - `NotIdentityOwner`: Raised if signer account is not owner of the provided identity
+     * - `Unauthorized`: Raised if sender account does not have non of the roles assigned: TRUSTEE, ENDORSER, STEWARD.
      *
      * @param identity          Account address of the DID's owner.
      * @param sigV              Part of EcDSA signature.
@@ -80,6 +82,7 @@ interface LegacyMappingRegistryInterface {
      * - `MappingAlreadyExist`: Raised if resource mapping with provided identifier already exist.
      * - `NotIdentityOwner`: Raised if identity account is not owner of the legacy Issuer DID
      * - `NotIdentityOwner`: Raised if sender account is not owner of provided identity
+     * - `Unauthorized`: Raised if sender account does not have non of the roles assigned: TRUSTEE, ENDORSER, STEWARD.
      *
      * @param identity                  Account address of the issuer.
      * @param legacyIssuerIdentifier    Legacy issuer identifier.
@@ -103,6 +106,7 @@ interface LegacyMappingRegistryInterface {
      * - `MappingAlreadyExist`: Raised if resource mapping with provided identifier already exist.
      * - `NotIdentityOwner`: Raised if identity account is not owner of the legacy Issuer DID
      * - `NotIdentityOwner`: Raised if signer account is not owner of the provided identity
+     * - `Unauthorized`: Raised if sender account does not have non of the roles assigned: TRUSTEE, ENDORSER, STEWARD.
      *
      * @param identity                  Account address of the issuer.
      * @param sigV                      Part of EcDSA signature.

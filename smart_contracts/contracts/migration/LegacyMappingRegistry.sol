@@ -6,6 +6,7 @@ import { DidMappingAlreadyExist, ResourceMappingAlreadyExist, InvalidEd25519Key,
 import { NotIdentityOwner } from "../did/DidErrors.sol";
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { LegacyMappingRegistryInterface } from "./LegacyMappingRegistryInterface.sol";
+import { RoleControlInterface } from "../auth/RoleControl.sol";
 
 import { Base58 } from "../utils/Base58.sol";
 import { toSlice } from "@dk1a/solidity-stringutils/src/StrSlice.sol";
@@ -18,6 +19,9 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
      */
     UniversalDidResolverInterface internal _didResolver;
 
+    RoleControlInterface internal _roleControl;
+
+    // FIXME: Now, since we have `indybesu` and `ethr` DID methods having account as identifier we need to change value of `didMapping`
     /*
      * Mapping storing indy/sov DID identifiers to the corresponding account address
      */
@@ -36,9 +40,22 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         _;
     }
 
-    function initialize(address upgradeControlAddress, address didResolverAddress) public reinitializer(1) {
+    /**
+     * Checks that method was called either by Trustee or Endorser or Steward
+     */
+    modifier _senderIsTrusteeOrEndorserOrSteward() {
+        _roleControl.isTrusteeOrEndorserOrSteward(msg.sender);
+        _;
+    }
+
+    function initialize(
+        address upgradeControlAddress,
+        address didResolverAddress,
+        address roleControlContractAddress
+    ) public reinitializer(1) {
         _initializeUpgradeControl(upgradeControlAddress);
         _didResolver = UniversalDidResolverInterface(didResolverAddress);
+        _roleControl = RoleControlInterface(roleControlContractAddress);
     }
 
     /// @inheritdoc LegacyMappingRegistryInterface
@@ -123,7 +140,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         string calldata identifier,
         bytes32 ed25519Key,
         bytes calldata ed25518Signature
-    ) internal _identityOwner(identity, actor) {
+    ) internal _identityOwner(identity, actor) _senderIsTrusteeOrEndorserOrSteward {
         // Checks the uniqueness of the DID mapping
         if (didMapping[identifier] != address(0x00)) revert DidMappingAlreadyExist(identifier);
 
@@ -142,7 +159,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         string calldata legacyIssuerIdentifier,
         string calldata legacyIdentifier,
         string calldata newIdentifier
-    ) internal _identityOwner(identity, actor) {
+    ) internal _identityOwner(identity, actor) _senderIsTrusteeOrEndorserOrSteward {
         // Checks the uniqueness of the Resource mapping
         if (bytes(resourceMapping[legacyIdentifier]).length != 0) revert ResourceMappingAlreadyExist(legacyIdentifier);
 

@@ -17,11 +17,6 @@ error DidAlreadyExist(address identity);
 error DidHasBeenDeactivated(address identity);
 
 /**
- * @dev Error that occurs when message sender address is nether DID owner or original creator.
- */
-error UnauthorizedSender(address sender);
-
-/**
  * @dev Error that occurs when the specified DID is incorrect.
  */
 error IncorrectDid(string did);

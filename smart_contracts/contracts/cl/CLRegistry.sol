@@ -6,12 +6,34 @@ import { DidMetadata } from "../did/DidTypes.sol";
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { Errors } from "../utils/Errors.sol";
 import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound } from "./ClErrors.sol";
+import { RoleControlInterface } from "../auth/RoleControl.sol";
 
 contract CLRegistry {
     /**
      * @dev Reference to the contract that resolves DIDs
      */
     UniversalDidResolverInterface internal _didResolver;
+
+    /**
+     * @dev Reference to the contract that controls account roles
+     */
+    RoleControlInterface internal _roleControl;
+
+    /**
+     * Checks that method was called either by Trustee or Endorser or Steward
+     */
+    modifier _senderIsTrusteeOrEndorserOrSteward() {
+        _roleControl.isTrusteeOrEndorserOrSteward(msg.sender);
+        _;
+    }
+
+    /**
+     * Checks that actor matches to the identity
+     */
+    modifier _identityOwner(address identity, address actor) {
+        if (identity != actor) revert NotIdentityOwner(actor, identity);
+        _;
+    }
 
     /**
      * @dev Check that the Issuer DID exist, authorized for actor, and active.

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { Unauthorized } from "../auth/AuthErrors.sol";
 import { InitialValidatorsRequired, InvalidValidatorAddress, InvalidValidatorAccountAddress, ExceedsValidatorLimit, ValidatorAlreadyExists, SenderHasActiveValidator, CannotDeactivateLastValidator, ValidatorNotFound } from "./ValidatorErrors.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
@@ -49,7 +48,7 @@ contract ValidatorControl is ValidatorControlInterface, ControlledUpgradeable {
      * @dev Modifier that checks that the sender account has Steward role assigned.
      */
     modifier _senderIsSteward() {
-        if (!_roleControl.hasRole(RoleControlInterface.ROLES.STEWARD, msg.sender)) revert Unauthorized(msg.sender);
+        _roleControl.isSteward(msg.sender);
         _;
     }
 
@@ -102,18 +101,6 @@ contract ValidatorControl is ValidatorControlInterface, ControlledUpgradeable {
     }
 
     /// @inheritdoc ValidatorControlInterface
-    /**
-     * @dev Remove an existing validator from the list.
-     *
-     * Restrictions:
-     * - Only accounts with the steward role are permitted to call this method; otherwise, will revert with an `Unauthorized` error.
-     * - The validator address must be non-zero; otherwise, will revert with an `InvalidValidatorAddress` error.
-     * - The validator must not be last one; otherwise, will revert with an `CannotDeactivateLastValidator` error.
-     * - The validator must exist; otherwise, will revert with an `ValidatorNotFound` error.
-     *
-     * Events:
-     * - On successful validator removal, will emit a `ValidatorRemoved` event.
-     */
     function removeValidator(address validator) public _senderIsSteward _nonZeroValidatorAddress(validator) {
         if (_validators.length == 1) revert CannotDeactivateLastValidator();
 

@@ -38,6 +38,9 @@ interface SchemaRegistryInterface {
      * Once the Schema is created, this function emits a `SchemaCreated` event
      * with the new Schema ID and issuer address.
      *
+     * Restrictions:
+     * - Only senders with either TRUSTEE or ENDORSER or STEWARD role are permitted to create new object;
+     *
      * This function can revert with following errors:
      * - `SchemaAlreadyExist`: Raised if Schema with provided ID already exist.
      * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.

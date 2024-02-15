@@ -20,7 +20,6 @@ export namespace DidErrors {
   export const DidNotFound = 'DidNotFound'
   export const DidAlreadyExist = 'DidAlreadyExist'
   export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'
-  export const UnauthorizedSender = 'UnauthorizedSender'
   export const IncorrectDid = 'IncorrectDid'
   export const NotIdentityOwner = 'NotIdentityOwner'
 }

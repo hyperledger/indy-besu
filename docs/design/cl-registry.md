@@ -73,7 +73,9 @@ Contract name: **SchemaRegistry**
         * `schema` - AnonCreds schema JSON as bytes.
     * Restrictions:
         * Schema id must be unique.
-        * Corresponding issuer DID must exist, be active, and owned by sender.
+        * Sender is equal to identity.
+        * Corresponding issuer DID must exist, be active, and owned by identity.
+        * Sender must have either TRUSTEE or ENDORSER or STEWARD role assigned.
     * Format:
         ```
         SchemaRegistry.createSchema(
@@ -190,8 +192,10 @@ Contract name: **CredentialDefinitionRegistry**
         * `credDef` - AnonCreds Credential Definition JSON as bytes
     * Restrictions:
         * Credential Definition must be unique.
-        * Corresponding issuer DID must exist, be active, and owned by sender.
+        * Sender mus tbe equal to identity.
+        * Corresponding issuer DID must exist, be active, and owned by identity.
         * Corresponding schema must exist.
+        * Sender must have either TRUSTEE or ENDORSER or STEWARD role assigned.
     * Format:
         ```
         CredentialDefinitionRegistry.createCredentialDefinition(

@@ -32,11 +32,6 @@ contract AccountControl is AccountControlInterface, ControlledUpgradeable {
             return false;
         }
 
-        // Validate ensure that only senders with not-empty roles can write transactions
-        if (_roleControl.hasRole(RoleControlInterface.ROLES.EMPTY, sender)) {
-            return false;
-        }
-
         return true;
     }
     /* solhint-enable no-unused-vars */

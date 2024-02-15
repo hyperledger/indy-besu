@@ -1,25 +1,34 @@
 import { expect } from 'chai'
+import { ROLES } from '../../contracts-ts'
 import { createBaseDidDocument } from '../../utils/entity-factories'
 import {
+  createDidSigned,
   deployIndyDidRegistry,
   TestableIndyDidRegistry,
+  TestableRoleControl,
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { DidErrors } from '../utils/errors'
+import { AuthErrors, DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('IndyDidRegistry', function () {
   let didRegistry: TestableIndyDidRegistry
+  let roleControl: TestableRoleControl
   let testAccounts: TestAccounts
   let identity: string
   let did: string
   let didDocument: string
 
   beforeEach(async function () {
-    const { indyDidRegistry: didRegistryInit, testAccounts: testAccountsInit } = await deployIndyDidRegistry()
+    const {
+      roleControl: roleControlInit,
+      indyDidRegistry: didRegistryInit,
+      testAccounts: testAccountsInit,
+    } = await deployIndyDidRegistry()
 
     didRegistry = didRegistryInit
+    roleControl = roleControlInit
     testAccounts = testAccountsInit
 
     identity = testAccounts.trustee.account.address
@@ -50,6 +59,43 @@ describe('IndyDidRegistry', function () {
       await expect(didRegistry.createDid(identity, didDocument))
         .to.be.revertedWithCustomError(didRegistry.baseInstance, DidErrors.DidAlreadyExist)
         .withArgs(identity)
+    })
+
+    it('Should fail if the DID being created by identity without required role', async function () {
+      didRegistry.connect(testAccounts.noRole.account)
+
+      await expect(
+        didRegistry.createDid(testAccounts.noRole.account.address, didDocument),
+      ).to.be.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
+    })
+
+    it('Should update and deactivate DID by identity owner', async function () {
+      // create DID document by trustee3
+      didRegistry.connect(testAccounts.trustee3.account)
+      await didRegistry.createDid(testAccounts.trustee3.account.address, didDocument)
+
+      // remove role from trustee3
+      didRegistry.connect(testAccounts.trustee.account)
+      await roleControl.revokeRole(ROLES.TRUSTEE, testAccounts.trustee3.account.address)
+
+      // update DID document and deactivate DID by trustee3
+      didRegistry.connect(testAccounts.trustee3.account)
+
+      const authorDid = `did:indybesu:${testActorAddress}`
+      const updatedDidDocument = createBaseDidDocument(authorDid, {
+        id: 'kid',
+        type: 'Ed25519VerificationKey2018',
+        controller: authorDid,
+        publicKeyMultibase: 'key',
+      })
+      await didRegistry.updateDid(testAccounts.trustee3.account.address, updatedDidDocument)
+
+      let didRecord = await didRegistry.resolveDid(testAccounts.trustee3.account.address)
+      expect(didRecord.document).to.be.deep.equal(updatedDidDocument)
+
+      await didRegistry.deactivateDid(testAccounts.trustee3.account.address)
+      didRecord = await didRegistry.resolveDid(testAccounts.trustee3.account.address)
+      expect(didRecord.metadata.deactivated).to.be.deep.equal(true)
     })
   })
 
@@ -131,11 +177,20 @@ describe('IndyDidRegistry', function () {
       const authorDid = `did:indybesu:testnet:${testActorAddress}`
       const authorDidDocument = createBaseDidDocument(authorDid)
 
-      let sig = await didRegistry.signCreateDidEndorsementData(testActorAddress, testActorPrivateKey, authorDidDocument)
+      const sig = await didRegistry.signCreateDidEndorsementData(
+        testActorAddress,
+        testActorPrivateKey,
+        authorDidDocument,
+      )
       await didRegistry.createDidSigned(testActorAddress, authorDidDocument, sig)
 
-      let didRecord = await didRegistry.resolveDid(testActorAddress)
+      const didRecord = await didRegistry.resolveDid(testActorAddress)
       expect(didRecord.document).to.be.deep.equal(authorDidDocument)
+    })
+
+    it('Should endorse DID update', async function () {
+      const authorDid = `did:indybesu:${testActorAddress}`
+      await createDidSigned(didRegistry, testActorAddress, authorDid)
 
       const updatedDidDocument = createBaseDidDocument(authorDid, {
         id: 'kid',
@@ -144,10 +199,14 @@ describe('IndyDidRegistry', function () {
         publicKeyMultibase: 'key',
       })
 
-      sig = await didRegistry.signUpdateDidEndorsementData(testActorAddress, testActorPrivateKey, updatedDidDocument)
+      const sig = await didRegistry.signUpdateDidEndorsementData(
+        testActorAddress,
+        testActorPrivateKey,
+        updatedDidDocument,
+      )
       await didRegistry.updateDidSigned(testActorAddress, updatedDidDocument, sig)
 
-      didRecord = await didRegistry.resolveDid(testActorAddress)
+      const didRecord = await didRegistry.resolveDid(testActorAddress)
       expect(didRecord.document).to.be.deep.equal(updatedDidDocument)
     })
   })
