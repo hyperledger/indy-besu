@@ -10,7 +10,7 @@ import {
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { ClErrors } from '../utils/errors'
+import { ClErrors, DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('SchemaRegistry', function () {
@@ -69,7 +69,7 @@ describe('SchemaRegistry', function () {
       const { id, schema } = createSchemaObject({ issuer })
 
       await expect(schemaRegistry.createSchema(testAccounts.trustee2.account.address, id, schema))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
         .withArgs(testAccounts.trustee2.account.address, testAccounts.trustee.account.address)
     })
   })
@@ -96,7 +96,7 @@ describe('SchemaRegistry', function () {
         schema,
       )
       await expect(schemaRegistry.createSchemaSigned(testAccounts.trustee2.account.address, id, schema, sig))
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
         .withArgs(testAccounts.trustee2.account.address, testActorAddress)
     })
 
@@ -112,7 +112,7 @@ describe('SchemaRegistry', function () {
       )
       await expect(schemaRegistry.createSchemaSigned(testActorAddress, id, schema, sig)).to.be.revertedWithCustomError(
         schemaRegistry.baseInstance,
-        ClErrors.UnauthorizedIssuer,
+        DidErrors.NotIdentityOwner,
       )
     })
   })

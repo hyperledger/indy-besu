@@ -81,7 +81,7 @@ pub mod test {
         schema_id: &SchemaId,
         tag: &str,
     ) -> CredentialDefinitionId {
-        CredentialDefinitionId::build(issuer_id, schema_id.as_ref(), tag)
+        CredentialDefinitionId::build(issuer_id, schema_id, tag)
     }
 
     fn credential_definition_value() -> serde_json::Value {

@@ -11,7 +11,7 @@ chain_id = 1337
 # address of an RPC node connected to the network
 node_address = 'http://127.0.0.1:8545'
 # address of deployed IndyDidRegistry smart contract
-did_contact_address = '0x0000000000000000000000000000000000018888'
+did_contact_address = '0x0000000000000000000000000000000000003333'
 schema_contact_address = '0x0000000000000000000000000000000000005555'
 # Path to the compiled IndyDidRegistry smart contract
 did_contact_spec_path = '/Users/indy-besu/smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json'

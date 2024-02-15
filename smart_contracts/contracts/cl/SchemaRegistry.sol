@@ -5,10 +5,10 @@ import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
 import { SchemaAlreadyExist } from "./ClErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
-import { CLRegistry } from "./CLRegistry.sol";
+import { DidValidator } from "../did/DidValidator.sol";
 import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
 
-contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLRegistry {
+contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, DidValidator {
     /**
      * Mapping to track created schemas by their id to the block number when it was created.
      */
@@ -52,7 +52,7 @@ contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLReg
         address actor,
         bytes32 id,
         bytes calldata schema
-    ) internal _uniqueSchemaId(id) _validIssuer(identity, actor) {
+    ) internal _uniqueSchemaId(id) identityOwner(identity, actor) {
         created[id] = block.number;
         emit SchemaCreated(id, actor, schema);
     }

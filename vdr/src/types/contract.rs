@@ -208,18 +208,18 @@ impl From<Log> for ContractEvent {
 }
 
 #[derive(Debug)]
-pub(crate) struct UintBytesParam(u64);
+pub(crate) struct MethodUintBytesParam(u64);
 
-impl From<u64> for UintBytesParam {
+impl From<u64> for MethodUintBytesParam {
     fn from(value: u64) -> Self {
-        UintBytesParam(value)
+        MethodUintBytesParam(value)
     }
 }
 
-impl TryFrom<UintBytesParam> for ContractParam {
+impl TryFrom<MethodUintBytesParam> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: UintBytesParam) -> Result<Self, Self::Error> {
+    fn try_from(value: MethodUintBytesParam) -> Result<Self, Self::Error> {
         Ok(ContractParam::FixedBytes(
             format_bytes32(value.0.to_be_bytes().as_slice())?.to_vec(),
         ))
@@ -227,18 +227,18 @@ impl TryFrom<UintBytesParam> for ContractParam {
 }
 
 #[derive(Debug)]
-pub(crate) struct MethodParam(&'static str);
+pub(crate) struct MethodStringParam(String);
 
-impl From<&'static str> for MethodParam {
-    fn from(value: &'static str) -> Self {
-        MethodParam(value)
+impl From<&str> for MethodStringParam {
+    fn from(value: &str) -> Self {
+        MethodStringParam(value.to_string())
     }
 }
 
-impl TryFrom<MethodParam> for ContractParam {
+impl TryFrom<MethodStringParam> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: MethodParam) -> Result<Self, Self::Error> {
-        Ok(ContractParam::String(value.0.to_string()))
+    fn try_from(value: MethodStringParam) -> Result<Self, Self::Error> {
+        Ok(ContractParam::String(value.0))
     }
 }

@@ -1,10 +1,8 @@
 use crate::{
     contracts::did::types::did::DID,
     error::{VdrError, VdrResult},
-    migration::{DID_METHOD, NETWORK},
-    CredentialDefinition, CredentialDefinitionId, SchemaId,
+    CredentialDefinition, SchemaId,
 };
-use log::warn;
 use log_derive::{logfn, logfn_inputs};
 use serde_json::json;
 
@@ -16,49 +14,6 @@ use indy_data_types::{
     did::DidValue,
     CredentialDefinitionId as IndyCredentialDefinitionId, SchemaId as IndySchemaId,
 };
-
-impl CredentialDefinitionId {
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub fn from_indy_format(id: &str) -> VdrResult<CredentialDefinitionId> {
-        let parts: Vec<&str> = id.split(':').collect();
-        let id = parts.get(0).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def id".to_string());
-
-            warn!(
-                "Error: {:?} during converting CredentialDefinitionId from indy format",
-                vdr_error
-            );
-
-            vdr_error
-        })?;
-        let schema_id = parts.get(3).ok_or_else(|| {
-            let vdr_error =
-                VdrError::CommonInvalidData("Invalid indy cred def schema id".to_string());
-
-            warn!(
-                "Error: {:?} during converting CredentialDefinitionId from indy format",
-                vdr_error
-            );
-
-            vdr_error
-        })?;
-        let tag = parts.get(4).ok_or_else(|| {
-            let vdr_error = VdrError::CommonInvalidData("Invalid indy cred def tag".to_string());
-
-            warn!(
-                "Error: {:?} during converting CredentialDefinitionId from indy format",
-                vdr_error
-            );
-
-            vdr_error
-        })?;
-        let issuer_did = DID::build(DID_METHOD, Some(NETWORK), id);
-
-        let cred_def_id = CredentialDefinitionId::build(&issuer_did, schema_id, tag);
-        Ok(cred_def_id)
-    }
-}
 
 impl CredentialDefinition {
     #[logfn(Trace)]

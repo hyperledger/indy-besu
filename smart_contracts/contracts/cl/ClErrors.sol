@@ -28,9 +28,3 @@ error CredentialDefinitionAlreadyExist(bytes32 id);
  * @param id Credential definition ID.
  */
 error CredentialDefinitionNotFound(bytes32 id);
-
-/**
- * @notice Error that occurs when issuer DID of Schema or CredentialDefinition is not owned by sender.
- * @param sender Sender account address.
- */
-error UnauthorizedIssuer(address sender, address owner);

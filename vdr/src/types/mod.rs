@@ -16,7 +16,7 @@ pub use transaction::{
 };
 
 pub(crate) use contract::{
-    ContractEvent, ContractOutput, ContractParam, MethodParam, UintBytesParam,
+    ContractEvent, ContractOutput, ContractParam, MethodStringParam, MethodUintBytesParam,
 };
 pub(crate) use event_query::{EventParser, EventQueryBuilder};
 pub(crate) use transaction::{

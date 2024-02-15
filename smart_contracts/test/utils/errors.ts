@@ -7,9 +7,11 @@ export namespace AuthErrors {
   export const Unauthorized = 'Unauthorized'
 }
 
-export namespace ClErrors {
-  export const UnauthorizedIssuer = 'UnauthorizedIssuer'
+export namespace DidErrors {
+  export const NotIdentityOwner = 'NotIdentityOwner'
+}
 
+export namespace ClErrors {
   // Schema errors
   export const SchemaAlreadyExist = 'SchemaAlreadyExist'
   export const SchemaNotFound = 'SchemaNotFound'
@@ -38,4 +40,10 @@ export namespace ValidatorControlErrors {
   export const SenderHasActiveValidator = 'SenderHasActiveValidator'
   export const CannotDeactivateLastValidator = 'CannotDeactivateLastValidator'
   export const ValidatorNotFound = 'ValidatorNotFound'
+}
+
+export namespace MigrationErrors {
+  export const DidMappingAlreadyExist = 'DidMappingAlreadyExist'
+  export const ResourceMappingAlreadyExist = 'ResourceMappingAlreadyExist'
+  export const InvalidEd25519Key = 'InvalidEd25519Key'
 }

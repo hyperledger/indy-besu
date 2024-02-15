@@ -7,7 +7,7 @@ const chainId = 1337
 const nodeAddress = 'http://127.0.0.1:8545'
 // set path to the compiled contract
 const didEthrRegistryConfig = {
-    address: '0x0000000000000000000000000000000000018888',
+    address: '0x0000000000000000000000000000000000003333',
     specPath: '/Users/indy-besu/smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json'
 }
 const schemaRegistryConfig = {

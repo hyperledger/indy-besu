@@ -4,9 +4,15 @@ use indy_besu_vdr::{
         build_create_credential_definition_transaction, resolve_credential_definition,
     },
     did_ethr_registry::build_did_set_attribute_transaction,
+    legacy_mapping_registry::{
+        build_create_did_mapping_transaction, build_create_resource_mapping_transaction,
+        build_get_resource_mapping_transaction,
+        parse_resource_mapping_result,
+    },
     role_control::build_assign_role_transaction,
     schema_registry::{build_create_schema_transaction, resolve_schema},
-    Address, ContractConfig, DidDocAttribute, LedgerClient, Role, Status, Transaction, Validity,
+    Address, ContractConfig, DidDocAttribute, Ed25519Signature, LedgerClient, LegacyDid,
+    LegacyVerkey, ResourceIdentifier, Role, Status, Transaction, Validity,
 };
 use indy_credx::types::{AttributeNames, CredentialDefinition, Schema};
 use indy_data_types::{CredentialDefinitionId, SchemaId};
@@ -206,6 +212,7 @@ struct BesuContracts {
     schema_registry: BesuContractConfig,
     credential_definition_registry: BesuContractConfig,
     role_control: BesuContractConfig,
+    legacy_mapping_registry: BesuContractConfig,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -235,6 +242,11 @@ impl BesuLedger {
             ContractConfig {
                 address: contracts.role_control.address.to_string(),
                 spec_path: Some(contracts.role_control.path.to_string()),
+                spec: None,
+            },
+            ContractConfig {
+                address: contracts.legacy_mapping_registry.address.to_string(),
+                spec_path: Some(contracts.legacy_mapping_registry.path.to_string()),
                 spec: None,
             },
         ]
@@ -300,6 +312,29 @@ impl BesuLedger {
             .await;
     }
 
+    pub async fn publish_did_mapping(
+        &self,
+        account: &Address,
+        did: &str,
+        legacy_did: &str,
+        legacy_verkey: &str,
+        legacy_signature: &[u8],
+        wallet: &BesuWallet,
+    ) {
+        let transaction = build_create_did_mapping_transaction(
+            &self.client,
+            account,
+            &indy_besu_vdr::DID::from(did),
+            &LegacyDid::from(legacy_did),
+            &LegacyVerkey::from(legacy_verkey),
+            &Ed25519Signature::from(legacy_signature),
+        )
+        .await
+        .unwrap();
+        self.sign_and_submit_transaction(&transaction, wallet, account)
+            .await;
+    }
+
     pub async fn publish_schema(
         &self,
         account: &Address,
@@ -317,6 +352,29 @@ impl BesuLedger {
         schema_id
     }
 
+    pub async fn publish_resource_mapping(
+        &self,
+        account: &Address,
+        did: &indy_besu_vdr::DID,
+        legacy_did: &indy_data_types::did::DidValue,
+        legacy_id: &ResourceIdentifier,
+        new_id: &ResourceIdentifier,
+        wallet: &BesuWallet,
+    ) {
+        let transaction = build_create_resource_mapping_transaction(
+            &self.client,
+            account,
+            did,
+            &LegacyDid::from(legacy_did.0.as_str()),
+            legacy_id,
+            new_id,
+        )
+        .await
+        .unwrap();
+        self.sign_and_submit_transaction(&transaction, wallet, account)
+            .await;
+    }
+
     pub async fn publish_cred_def(
         &self,
         account: &Address,
@@ -325,7 +383,7 @@ impl BesuLedger {
     ) -> indy_besu_vdr::CredentialDefinitionId {
         let cred_def_id = indy_besu_vdr::CredentialDefinitionId::build(
             &cred_def.issuer_id,
-            cred_def.schema_id.as_ref(),
+            &cred_def.schema_id,
             &cred_def.tag,
         );
         let transaction = build_create_credential_definition_transaction(
@@ -357,16 +415,33 @@ impl BesuLedger {
     }
 
     pub async fn get_schema(&self, id: &str) -> Schema {
-        let id = indy_besu_vdr::SchemaId::from_indy_format(id).unwrap();
-        let schema = resolve_schema(&self.client, &id).await.unwrap();
+        let schema_id = self.get_resource_mapping(id).await;
+        let schema = resolve_schema(
+            &self.client,
+            &indy_besu_vdr::SchemaId::from(schema_id.as_ref()),
+        )
+        .await
+        .unwrap();
         (&schema).into()
     }
 
     pub async fn get_cred_def(&self, id: &str) -> CredentialDefinition {
-        let id = indy_besu_vdr::CredentialDefinitionId::from_indy_format(id).unwrap();
-        let cred_def = resolve_credential_definition(&self.client, &id)
-            .await
-            .unwrap();
+        let cred_def_id = self.get_resource_mapping(id).await;
+        let cred_def = resolve_credential_definition(
+            &self.client,
+            &&indy_besu_vdr::CredentialDefinitionId::from(cred_def_id.as_ref()),
+        )
+        .await
+        .unwrap();
         (&cred_def).into()
+    }
+
+    pub async fn get_resource_mapping(&self, id: &str) -> indy_besu_vdr::ResourceIdentifier {
+        let transaction =
+            build_get_resource_mapping_transaction(&self.client, &ResourceIdentifier::from(id))
+                .await
+                .unwrap();
+        let response = self.client.submit_transaction(&transaction).await.unwrap();
+        parse_resource_mapping_result(&self.client, &response).unwrap()
     }
 }

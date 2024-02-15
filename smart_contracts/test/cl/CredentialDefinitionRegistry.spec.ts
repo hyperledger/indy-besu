@@ -13,7 +13,7 @@ import {
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { ClErrors } from '../utils/errors'
+import { ClErrors, DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('CredentialDefinitionRegistry', function () {
@@ -100,7 +100,7 @@ describe('CredentialDefinitionRegistry', function () {
           credDef,
         ),
       )
-        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
+        .to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, DidErrors.NotIdentityOwner)
         .withArgs(testAccounts.trustee2.account.address, testAccounts.trustee.account.address)
     })
   })
@@ -152,7 +152,7 @@ describe('CredentialDefinitionRegistry', function () {
           signature,
         ),
       )
-        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
+        .to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
         .withArgs(testAccounts.trustee2.account.address, testActorAddress)
     })
 
@@ -176,7 +176,7 @@ describe('CredentialDefinitionRegistry', function () {
           credDef,
           signature,
         ),
-      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, ClErrors.UnauthorizedIssuer)
+      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
   })
 })

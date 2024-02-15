@@ -14,7 +14,8 @@ use crate::{
     client::{GAS_LIMIT, GAS_PRICE},
     error::{VdrError, VdrResult},
     types::{
-        contract::UintBytesParam, signature::SignatureData, Address, ContractOutput, ContractParam,
+        contract::MethodUintBytesParam, signature::SignatureData, Address, ContractOutput,
+        ContractParam,
     },
     LedgerClient,
 };
@@ -486,7 +487,7 @@ impl TryFrom<&Nonce> for ContractParam {
     type Error = VdrError;
 
     fn try_from(value: &Nonce) -> Result<Self, Self::Error> {
-        UintBytesParam::from(value.0).try_into()
+        MethodUintBytesParam::from(value.0).try_into()
     }
 }
 
