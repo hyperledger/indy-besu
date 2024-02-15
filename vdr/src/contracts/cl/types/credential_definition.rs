@@ -1,4 +1,4 @@
-use crate::{error::VdrError, types::ContractParam, Address};
+use crate::{error::VdrError, types::ContractParam, Address, CredentialDefinitionId, VdrResult};
 
 use crate::{
     contracts::{cl::types::schema_id::SchemaId, did::types::did::DID},
@@ -18,6 +18,28 @@ pub struct CredentialDefinition {
     pub cred_def_type: SignatureType,
     pub tag: String,
     pub value: serde_json::Value,
+}
+
+impl CredentialDefinition {
+    pub fn id(&self) -> CredentialDefinitionId {
+        CredentialDefinitionId::build(&self.issuer_id, &self.schema_id, &self.tag)
+    }
+
+    pub fn validate(&self) -> VdrResult<()> {
+        if self.tag.is_empty() {
+            return Err(VdrError::InvalidCredentialDefinition(
+                "Tag is not provided".to_string(),
+            ));
+        }
+
+        if self.value.is_null() {
+            return Err(VdrError::InvalidCredentialDefinition(
+                "Value is not provided".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 impl TryFrom<&CredentialDefinition> for ContractParam {
@@ -84,7 +106,7 @@ pub mod test {
         CredentialDefinitionId::build(issuer_id, schema_id, tag)
     }
 
-    fn credential_definition_value() -> serde_json::Value {
+    pub fn credential_definition_value() -> serde_json::Value {
         json!({
             "n": "779...397",
             "rctxt": "774...977",

@@ -142,7 +142,6 @@ function endorseCredentialDefinition(
 // Prepare schema endorsing bytes which need to be signed by an identity owner 
 pub async fn build_create_schema_endorsing_data(
     client: &LedgerClient,
-    id: &SchemaId,
     schema: &Schema,
 ) -> VdrResult<TransactionEndorsingData>;
 
@@ -150,7 +149,6 @@ pub async fn build_create_schema_endorsing_data(
 pub async fn build_create_schema_signed_transaction(
     client: &LedgerClient,
     sender: &Address,
-    id: &SchemaId,
     schema: &Schema,
     signature: &SignatureData,
 ) -> VdrResult<Transaction>;

@@ -1050,10 +1050,6 @@ name = "futures-timer"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e64b03909df88034c26dc1547e8970b91f98bdb65165d6a4e9110d94263dbb2c"
-dependencies = [
- "gloo-timers",
- "send_wrapper",
-]
 
 [[package]]
 name = "futures-util"
@@ -1091,10 +1087,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "190092ea657667030ac6a35e305e62fc4dd69fd98ac98631e5d3a2b1575a12b5"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "wasi",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -1441,7 +1435,6 @@ dependencies = [
  "serde_json",
  "sha3",
  "thiserror",
- "web-sys",
  "web3",
 ]
 
@@ -2500,29 +2493,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b97ed7a9823b74f99c7742f5336af7be5ecd3eeafcb1507d1fa93347b1d589b0"
 
 [[package]]
-name = "send_wrapper"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f638d531eccd6e23b980caf34876660d38e265409d8e99b397ab71eb3612fad0"
-
-[[package]]
 name = "serde"
 version = "1.0.196"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "870026e60fa08c69f064aa766c10f10b1d62db9ccd4d0abb206472bee0ce3b32"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-wasm-bindgen"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3b143e2833c57ab9ad3ea280d21fd34e285a42837aeb0ee301f4f41890fa00e"
-dependencies = [
- "js-sys",
- "serde",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -3185,22 +3161,18 @@ dependencies = [
  "ethereum-types",
  "futures",
  "futures-timer",
- "getrandom",
  "headers",
  "hex",
  "idna 0.4.0",
- "js-sys",
  "jsonrpc-core",
  "log",
  "once_cell",
  "parking_lot",
  "pin-project",
- "rand",
  "reqwest",
  "rlp",
  "secp256k1 0.27.0",
  "serde",
- "serde-wasm-bindgen",
  "serde_json",
  "soketto",
  "tiny-keccak",
@@ -3208,8 +3180,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "url",
- "wasm-bindgen",
- "wasm-bindgen-futures",
  "web3-async-native-tls",
 ]
 

@@ -3,15 +3,15 @@ use crate::{
     contracts::{
         auth::Role,
         cl::types::{credential_definition::test::credential_definition, schema::test::schema},
-        did::{DID, ETHR_DID_METHOD},
     },
+    did_ethr_registry::ETHR_DID_METHOD,
     error::VdrResult,
     signer::basic_signer::{
         test::{basic_signer, TRUSTEE_ACC},
         BasicSigner,
     },
     types::{Address, SignatureData, Transaction},
-    LedgerClient, TransactionEndorsingData,
+    LedgerClient, TransactionEndorsingData, DID,
 };
 
 fn did(address: &Address) -> DID {
@@ -49,7 +49,6 @@ mod did {
                     did_doc::test::{default_ethr_did_document, TEST_DID_ETHR},
                     did_doc_attribute::DidDocAttribute,
                 },
-                DID,
             },
             types::did::ParsedDid,
         },
@@ -358,7 +357,7 @@ mod schema {
     ) -> (SchemaId, Schema) {
         let (schema_id, schema) = schema(did, None);
         let transaction_endorsing_data =
-            schema_registry::build_create_schema_endorsing_data(client, &schema_id, &schema)
+            schema_registry::build_create_schema_endorsing_data(client, &schema)
                 .await
                 .unwrap();
 
@@ -367,7 +366,6 @@ mod schema {
         let transaction = schema_registry::build_create_schema_signed_transaction(
             client,
             &TRUSTEE_ACC.clone(),
-            &schema_id,
             &schema,
             &signature,
         )
@@ -390,7 +388,6 @@ mod schema {
         let transaction = schema_registry::build_create_schema_transaction(
             &client,
             &TRUSTEE_ACC.clone(),
-            &schema_id,
             &schema,
         )
         .await
@@ -442,14 +439,10 @@ mod credential_definition {
 
         // create Schema
         let (schema_id, schema) = schema(&did, None);
-        let transaction = schema_registry::build_create_schema_transaction(
-            &client,
-            &TRUSTEE_ACC,
-            &schema_id,
-            &schema,
-        )
-        .await
-        .unwrap();
+        let transaction =
+            schema_registry::build_create_schema_transaction(&client, &TRUSTEE_ACC, &schema)
+                .await
+                .unwrap();
         sign_and_submit_transaction(&client, transaction, &signer).await;
 
         // write
@@ -636,8 +629,8 @@ mod role {
 
 mod validator {
     use crate::{
-        contracts::network::ValidatorAddresses, signer::basic_signer::test::basic_signer,
-        validator_control,
+        contracts::network::validator_info::ValidatorAddresses,
+        signer::basic_signer::test::basic_signer, validator_control,
     };
 
     use super::*;

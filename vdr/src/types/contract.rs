@@ -38,7 +38,7 @@ impl ContractSpec {
         let contract_spec = std::fs::read_to_string(spec_path).map_err(|err| {
             let vdr_error = VdrError::ContractInvalidSpec(format!(
                 "Unable to read contract spec file. Err: {:?}",
-                err
+                err.to_string()
             ));
 
             warn!(

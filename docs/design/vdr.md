@@ -754,7 +754,6 @@ pub async fn resolve_did(
 /// # Params
 /// - `client` client connected to the network where contract will be executed
 /// - `from` transaction sender account address
-/// - `id` id of schema to be created
 /// - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
 ///
 /// # Returns
@@ -762,7 +761,6 @@ pub async fn resolve_did(
 pub async fn build_create_schema_transaction(
   client: &LedgerClient,
   from: &Address,
-  id: &SchemaId,
   schema: &Schema,
 ) -> VdrResult<Transaction>;
 
@@ -770,14 +768,12 @@ pub async fn build_create_schema_transaction(
 ///
 /// #Params
 ///  - `client` client connected to the network where contract will be executed
-///  - `id` id of schema to be created
 ///  - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
 ///
 /// #Returns
 ///   data: TransactionEndorsingData - transaction endorsement data to sign
 pub async fn build_create_schema_endorsing_data(
   client: &LedgerClient,
-  id: &SchemaId,
   schema: &Schema,
 ) -> VdrResult<TransactionEndorsingData>;
 
@@ -787,7 +783,6 @@ pub async fn build_create_schema_endorsing_data(
 ///
 /// #Params
 ///  - `client` client connected to the network where contract will be executed
-///  - `id` id of schema to be created
 ///  - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
 ///  - `signature` signature of schema issuer
 ///
@@ -796,7 +791,6 @@ pub async fn build_create_schema_endorsing_data(
 pub async fn build_create_schema_signed_transaction(
   client: &LedgerClient,
   sender: &Address,
-  id: &SchemaId,
   schema: &Schema,
   signature: &SignatureData,
 ) -> VdrResult<Transaction>

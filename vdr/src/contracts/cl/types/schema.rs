@@ -1,7 +1,7 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
-    Address,
+    Address, SchemaId, VdrResult,
 };
 use std::collections::HashSet;
 
@@ -16,6 +16,32 @@ pub struct Schema {
     pub version: String,
     #[serde(rename = "attrNames")]
     pub attr_names: HashSet<String>,
+}
+
+impl Schema {
+    pub fn id(&self) -> SchemaId {
+        SchemaId::build(&self.issuer_id, &self.name, &self.version)
+    }
+
+    pub fn validate(&self) -> VdrResult<()> {
+        if self.name.is_empty() {
+            return Err(VdrError::InvalidSchema("Name is not provided".to_string()));
+        }
+
+        if self.version.is_empty() {
+            return Err(VdrError::InvalidSchema(
+                "Version is not provided".to_string(),
+            ));
+        }
+
+        if self.attr_names.is_empty() {
+            return Err(VdrError::InvalidSchema(
+                "Attributes are not provided".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 impl TryFrom<&Schema> for ContractParam {
@@ -77,12 +103,18 @@ pub mod test {
         contracts::{cl::types::schema_id::SchemaId, did::types::did_doc::test::ISSUER_ID},
         utils::rand_string,
     };
+    use once_cell::sync::Lazy;
 
     pub const SCHEMA_ID: &str =
         "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0";
     pub const SCHEMA_NAME: &str = "F1DClaFEzi3t";
     pub const SCHEMA_VERSION: &str = "1.0.0";
     pub const SCHEMA_ATTRIBUTE_FIRST_NAME: &str = "First Name";
+    pub static SCHEMA_ATTRIBUTES: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert(SCHEMA_ATTRIBUTE_FIRST_NAME.to_string());
+        attr_names
+    });
 
     pub fn schema_id(issuer_id: &DID, name: &str) -> SchemaId {
         SchemaId::build(issuer_id, name, SCHEMA_VERSION)
@@ -91,14 +123,12 @@ pub mod test {
     pub fn schema(issuer_id: &DID, name: Option<&str>) -> (SchemaId, Schema) {
         let name = name.map(String::from).unwrap_or_else(rand_string);
         let id = schema_id(issuer_id, name.as_str());
-        let mut attr_names: HashSet<String> = HashSet::new();
-        attr_names.insert(SCHEMA_ATTRIBUTE_FIRST_NAME.to_string());
 
         let schema = Schema {
             issuer_id: issuer_id.clone(),
             name,
             version: SCHEMA_VERSION.to_string(),
-            attr_names,
+            attr_names: SCHEMA_ATTRIBUTES.clone(),
         };
         (id, schema)
     }

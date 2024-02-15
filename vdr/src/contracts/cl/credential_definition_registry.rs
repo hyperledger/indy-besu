@@ -39,7 +39,7 @@ pub async fn build_create_credential_definition_transaction(
     id: &CredentialDefinitionId,
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<Transaction> {
-    // TODO: validate credential definition
+    credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -70,6 +70,7 @@ pub async fn build_create_credential_definition_endorsing_data(
     id: &CredentialDefinitionId,
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<TransactionEndorsingData> {
+    credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -104,7 +105,7 @@ pub async fn build_create_credential_definition_signed_transaction(
     credential_definition: &CredentialDefinition,
     signature: &SignatureData,
 ) -> VdrResult<Transaction> {
-    // TODO: validate credential definition
+    credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
@@ -207,7 +208,6 @@ pub fn parse_credential_definition_created_event(
     client: &LedgerClient,
     log: &EventLog,
 ) -> VdrResult<CredentialDefinitionCreatedEvent> {
-    // TODO: validate schema
     EventParser::new()
         .set_contract(CONTRACT_NAME)
         .set_event(EVENT_CREDENTIAL_DEFINITION_CREATED)
@@ -243,11 +243,21 @@ pub async fn resolve_credential_definition(
 
     if events.len() != 1 {
         return Err(VdrError::ClientInvalidResponse(
-            format!("Unable to resolve schema: Unexpected amout of schema created events received for id: {:?}", id)
+            format!("Unable to resolve schema: Unexpected amount of schema created events received for id: {:?}", id)
         ));
     }
 
     let cred_def = parse_credential_definition_created_event(client, &events[0])?.cred_def;
+
+    let cred_def_id = cred_def.id();
+    if &cred_def_id != id {
+        return Err(VdrError::InvalidCredentialDefinition(format!(
+            "Credential Definition ID {} does not match to requested {}",
+            cred_def_id.to_string(),
+            id.to_string()
+        )));
+    }
+
     Ok(cred_def)
 }
 
@@ -260,7 +270,9 @@ pub mod test {
         },
         contracts::{
             cl::types::{
-                credential_definition::test::{credential_definition, CREDENTIAL_DEFINITION_TAG},
+                credential_definition::test::{
+                    credential_definition, credential_definition_value, CREDENTIAL_DEFINITION_TAG,
+                },
                 schema::test::SCHEMA_ID,
                 schema_id::SchemaId,
             },
@@ -272,6 +284,8 @@ pub mod test {
 
     mod build_create_credential_definition_transaction {
         use super::*;
+        use rstest::rstest;
+        use serde_json::Value;
 
         #[async_std::test]
         async fn build_create_credential_definition_transaction_test() {
@@ -329,6 +343,32 @@ pub mod test {
             };
             assert_eq!(expected_transaction, transaction);
         }
+
+        #[rstest]
+        #[case("", credential_definition_value())]
+        #[case(CREDENTIAL_DEFINITION_TAG, Value::Null)]
+        async fn build_create_credential_definition_transaction_errors(
+            #[case] tag: &str,
+            #[case] value: Value,
+        ) {
+            init_env_logger();
+            let client = mock_client();
+            let (id, mut cred_def) =
+                credential_definition(&DID::from(ISSUER_ID), &SchemaId::from(SCHEMA_ID), Some(tag));
+            cred_def.tag = tag.to_string();
+            cred_def.value = value;
+
+            let err = build_create_credential_definition_transaction(
+                &client,
+                &TRUSTEE_ACC,
+                &id,
+                &cred_def,
+            )
+            .await
+            .unwrap_err();
+
+            assert!(matches!(err, VdrError::InvalidCredentialDefinition { .. }));
+        }
     }
 
     mod build_resolve_credential_definition_transaction {
@@ -360,8 +400,8 @@ pub mod test {
     }
 
     mod parse_resolve_credential_definition_result {
-        use super::*;
-
+        // use super::*;
+        //
         // #[test]
         // fn parse_resolve_credential_definition_result_test() {
         //     init_env_logger();
