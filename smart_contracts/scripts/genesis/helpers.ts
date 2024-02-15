@@ -48,13 +48,11 @@ export function buildProxySection(
   return {
     [address]: {
       comment: `Proxy: ${comment}`,
-      balance: '0',
       code: `0x${proxyBytecode}`,
       storage,
     },
     [`0x${implementationAddress}`]: {
       comment: `Implementation: ${comment}`,
-      balance: '0',
       code: `0x${implementationBytecode}`,
     },
   }
@@ -76,7 +74,6 @@ export function buildSection(
   return {
     [address]: {
       comment,
-      balance: '0',
       code: `0x${bytecode}`,
       storage,
     },

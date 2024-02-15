@@ -57,6 +57,12 @@ pub enum VdrError {
 
     #[error("Could not get transaction: {}", _0)]
     GetTransactionError(String),
+
+    #[error("Invalid schema: {}", _0)]
+    InvalidSchema(String),
+
+    #[error("Invalid credential definition: {}", _0)]
+    InvalidCredentialDefinition(String),
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;

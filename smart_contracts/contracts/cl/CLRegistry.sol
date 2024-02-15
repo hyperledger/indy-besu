@@ -14,14 +14,6 @@ contract CLRegistry {
     UniversalDidResolverInterface internal _didResolver;
 
     /**
-     * Checks that actor matches to the identity
-     */
-    modifier _identityOwner(address identity, address actor) {
-        if (identity != actor) revert NotIdentityOwner(actor, identity);
-        _;
-    }
-
-    /**
      * @dev Check that the Issuer DID exist, authorized for actor, and active.
      * @param did        The Issuer's Account.
      * @param identity   The Issuer's DID.

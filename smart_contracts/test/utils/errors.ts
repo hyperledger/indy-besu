@@ -16,7 +16,7 @@ export namespace ClErrors {
   export const CredentialDefinitionNotFound = 'CredentialDefinitionNotFound'
 }
 
-export namespace DidError {
+export namespace DidErrors {
   export const DidNotFound = 'DidNotFound'
   export const DidAlreadyExist = 'DidAlreadyExist'
   export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'
@@ -44,4 +44,10 @@ export namespace ValidatorControlErrors {
   export const SenderHasActiveValidator = 'SenderHasActiveValidator'
   export const CannotDeactivateLastValidator = 'CannotDeactivateLastValidator'
   export const ValidatorNotFound = 'ValidatorNotFound'
+}
+
+export namespace MigrationErrors {
+  export const DidMappingAlreadyExist = 'DidMappingAlreadyExist'
+  export const ResourceMappingAlreadyExist = 'ResourceMappingAlreadyExist'
+  export const InvalidEd25519Key = 'InvalidEd25519Key'
 }

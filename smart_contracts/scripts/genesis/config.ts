@@ -2,7 +2,8 @@ import {
   AccountControlConfig,
   CredentialDefinitionsConfig,
   EthereumDidRegistryConfig,
-  IndyDidRegistryConfig,
+  IndybesuDidRegistryConfig,
+  LegacyMappingRegistryConfig,
   RolesConfig,
   SchemasConfig,
   UniversalDidResolverConfig,
@@ -17,25 +18,27 @@ export const outFile = 'ContractsGenesis.json'
 export interface Config {
   accountControl: AccountControlConfig
   credentialDefinitionRegistry: CredentialDefinitionsConfig
-  indyDidRegistry: IndyDidRegistryConfig
+  indybesuDidRegistry: IndybesuDidRegistryConfig
   ethereumDidRegistry: EthereumDidRegistryConfig
   roleControl: RolesConfig
   schemaRegistry: SchemasConfig
   universalDidResolver: UniversalDidResolverConfig
   upgradeControl: UpgradeControlConfig
   validatorControl: ValidatorsConfig
+  legacyMapping: LegacyMappingRegistryConfig
 }
 
 const contractsAddresses = {
-  didRegistry: '0x0000000000000000000000000000000000003333',
+  indybesuDidRegistry: '0x0000000000000000000000000000000000003333',
   credentialDefinitionRegistry: '0x0000000000000000000000000000000000004444',
   schemas: '0x0000000000000000000000000000000000005555',
   roles: '0x0000000000000000000000000000000000006666',
   validators: '0x0000000000000000000000000000000000007777',
   accountControl: '0x0000000000000000000000000000000000008888',
   upgradeControl: '0x0000000000000000000000000000000000009999',
+  legacyMappingRegistry: '0x0000000000000000000000000000000000017777',
+  ethereumDidRegistry: '0x0000000000000000000000000000000000018888',
   universalDidResolver: '0x000000000000000000000000000000000019999',
-  ethereumDIDRegistry: '0x0000000000000000000000000000000000018888',
 }
 
 export const config: Config = {
@@ -58,9 +61,9 @@ export const config: Config = {
       upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
-  indyDidRegistry: {
+  indybesuDidRegistry: {
     name: 'IndyDidRegistry',
-    address: contractsAddresses.didRegistry,
+    address: contractsAddresses.indybesuDidRegistry,
     description: 'Smart contract to manage DIDs',
     data: {
       upgradeControlAddress: contractsAddresses.upgradeControl,
@@ -68,7 +71,7 @@ export const config: Config = {
   },
   ethereumDidRegistry: {
     name: 'EthereumExtDidRegistry',
-    address: contractsAddresses.ethereumDIDRegistry,
+    address: contractsAddresses.ethereumDidRegistry,
     description: 'Ethereum registry for ERC-1056 ethr did methods',
     data: {
       upgradeControlAddress: contractsAddresses.upgradeControl,
@@ -123,8 +126,8 @@ export const config: Config = {
     address: contractsAddresses.universalDidResolver,
     description: 'Smart contract to resolve DIDs from various DID registries',
     data: {
-      etheriumDidRegistryAddress: contractsAddresses.ethereumDIDRegistry,
-      didRegistryAddress: contractsAddresses.didRegistry,
+      etheriumDidRegistryAddress: contractsAddresses.ethereumDidRegistry,
+      indybesuDidRegistryAddress: contractsAddresses.indybesuDidRegistry,
       upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },
@@ -160,6 +163,15 @@ export const config: Config = {
         },
       ],
       roleControlContractAddress: contractsAddresses.roles,
+      upgradeControlAddress: contractsAddresses.upgradeControl,
+    },
+  },
+  legacyMapping: {
+    name: 'LegacyMappingRegistry',
+    address: contractsAddresses.legacyMappingRegistry,
+    description: 'Smart contract to store mapping of legacy identifiers to new one',
+    data: {
+      universalDidResolver: contractsAddresses.universalDidResolver,
       upgradeControlAddress: contractsAddresses.upgradeControl,
     },
   },

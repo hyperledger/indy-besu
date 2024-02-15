@@ -17,6 +17,10 @@
     "roleControl": {
       "address": "0x0000000000000000000000000000000000006666",
       "path": "../../smart_contracts/artifacts/contracts/auth/RoleControl.sol/RoleControl.json"
+    },
+    "legacyMappingRegistry": {
+      "address": "0x0000000000000000000000000000000000017777",
+      "path": "../../smart_contracts/artifacts/contracts/migration/LegacyMappingRegistry.sol/LegacyMappingRegistry.json"
     }
   }
 }

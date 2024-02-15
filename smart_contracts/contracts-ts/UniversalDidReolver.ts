@@ -20,6 +20,7 @@ export class UniversalDidResolver extends Contract {
       sender: metadata.sender,
       created: metadata.created,
       updated: metadata.updated,
+      versionId: metadata.versionId,
       deactivated: metadata.deactivated,
     }
   }

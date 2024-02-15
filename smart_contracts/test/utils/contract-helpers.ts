@@ -1,7 +1,8 @@
-import { concat, getAddress, getBytes, keccak256, SigningKey } from 'ethers'
+import { getBytes } from 'ethers'
 import {
   CredentialDefinitionRegistry,
   IndyDidRegistry,
+  LegacyMappingRegistry,
   RoleControl,
   SchemaRegistry,
   UniversalDidResolver,
@@ -40,6 +41,16 @@ export class TestableUpgradeControl extends testableContractMixin(UpgradeControl
 
 export class TestableUniversalDidResolver extends testableContractMixin(UniversalDidResolver) {}
 
+export class TestableLegacyMappingRegistry extends testableContractMixin(LegacyMappingRegistry) {}
+
+function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
+  return class extends Base {
+    public get baseInstance() {
+      return this.instance
+    }
+  }
+}
+
 export async function deployRoleControl() {
   const roleControl = await new RoleControl().deployProxy({ params: [ZERO_ADDRESS] })
   const testAccounts = await getTestAccounts(roleControl)
@@ -61,29 +72,38 @@ export async function deployUniversalDidResolver() {
   const { indyDidRegistry, testAccounts } = await deployIndyDidRegistry()
   const ethereumDIDRegistry = await new EthereumDIDRegistry().deploy()
 
-  const universalDidReolver = await new TestableUniversalDidResolver().deployProxy({
+  const universalDidResolver = await new TestableUniversalDidResolver().deployProxy({
     params: [ZERO_ADDRESS, indyDidRegistry.address, ethereumDIDRegistry.address],
   })
 
-  return { universalDidReolver, ethereumDIDRegistry, indyDidRegistry, testAccounts }
+  return { universalDidResolver, ethereumDIDRegistry, indyDidRegistry, testAccounts }
 }
 
 export async function deploySchemaRegistry() {
-  const { universalDidReolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
+  const { universalDidResolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
   const schemaRegistry = await new TestableSchemaRegistry().deployProxy({
-    params: [ZERO_ADDRESS, universalDidReolver.address],
+    params: [ZERO_ADDRESS, universalDidResolver.address],
   })
 
-  return { universalDidReolver, indyDidRegistry, schemaRegistry, testAccounts }
+  return { universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts }
 }
 
 export async function deployCredentialDefinitionRegistry() {
-  const { universalDidReolver, indyDidRegistry, schemaRegistry, testAccounts } = await deploySchemaRegistry()
+  const { universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts } = await deploySchemaRegistry()
   const credentialDefinitionRegistry = await new TestableCredentialDefinitionRegistry().deployProxy({
-    params: [ZERO_ADDRESS, universalDidReolver.address, schemaRegistry.address],
+    params: [ZERO_ADDRESS, universalDidResolver.address, schemaRegistry.address],
   })
 
-  return { credentialDefinitionRegistry, universalDidReolver, indyDidRegistry, schemaRegistry, testAccounts }
+  return { credentialDefinitionRegistry, universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts }
+}
+
+export async function deployLegacyMappingRegistry() {
+  const { universalDidResolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
+  const legacyMappingRegistry = await new TestableLegacyMappingRegistry().deployProxy({
+    params: [ZERO_ADDRESS, universalDidResolver.address],
+  })
+
+  return { universalDidResolver, indyDidRegistry, legacyMappingRegistry, testAccounts }
 }
 
 export async function createDid(didRegistry: IndyDidRegistry, identity: string, did: string) {
@@ -115,12 +135,4 @@ export async function createSchemaSigned(schemaRegistry: SchemaRegistry, identit
   )
   await schemaRegistry.createSchemaSigned(identity, id, issuerId, schema, signature)
   return { id, schema }
-}
-
-function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
-  return class extends Base {
-    public get baseInstance() {
-      return this.instance
-    }
-  }
 }

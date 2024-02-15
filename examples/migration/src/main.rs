@@ -9,6 +9,7 @@ use indy_besu_vdr::{
     CredentialDefinition, DidDocAttribute, PublicKeyAttribute, PublicKeyPurpose, PublicKeyType,
     Role, Schema, ServiceAttribute, ServiceEndpoint,
 };
+use serde_json::json;
 
 use crate::{holder::Holder, issuer::Issuer, trustee::Trustee, verifier::Verifier};
 
@@ -52,11 +53,13 @@ async fn main() {
     let (schema_id, schema) = issuer.create_schema().await;
     issuer.publish_schema_to_indy(&schema).await;
     println!("  2.4 Issuer publish Cred Def");
-    let (_, cred_def) = issuer.create_cred_def(&schema_id).await;
+    let (cred_def_id, cred_def) = issuer.create_cred_def(&schema_id).await;
     issuer.publish_cred_def_to_indy(&cred_def).await;
     println!("  DID: {}", issuer.indy_did);
-    println!("  Schema: {:?}", schema);
-    println!("  Credential Definition: {:?}", cred_def);
+    println!("  Schema: {}", json!(schema).to_string());
+    println!("  SchemaId: {}", schema_id.to_string());
+    println!("  Credential Definition: {}", json!(cred_def).to_string());
+    println!("  Credential Definition Id: {}", cred_def_id.to_string());
 
     /*
      * Step 3: Before Ledger migration (use Indy) issue credential to Holder and verify Proof using Indy Ledger
@@ -107,7 +110,11 @@ async fn main() {
     holder.use_besu_ledger();
     verifier.use_besu_ledger();
 
-    println!("  4.2 Issuer publish DID Service and Public Key");
+    // publish DID mapping
+    println!("  4.2 Issuer publish DID mapping");
+    issuer.publish_did_mapping_to_besu().await;
+
+    println!("  4.3 Issuer publish DID Service and Public Key");
     let service = DidDocAttribute::Service(ServiceAttribute {
         type_: "IndyService".to_string(),
         service_endpoint: ServiceEndpoint::String(issuer.service.to_string()),
@@ -124,15 +131,28 @@ async fn main() {
     });
     issuer.publish_did_attribute_to_besu(&key).await;
 
-    println!("  4.3 Issuer publish Schema");
+    println!("  4.4 Issuer publish Schema");
     let schema = Schema::from_indy_format(&schema, &issuer.besu_did).unwrap();
-    let schema_id = issuer.publish_schema_to_besu(&schema).await;
+    let new_schema_id = issuer.publish_schema_to_besu(&schema).await;
+    println!("  New SchemaId: {:?}", new_schema_id.as_ref());
+    println!("  4.5 Issuer publish Schema ID mapping");
+    issuer
+        .publish_schema_id_mapping_to_besu(&issuer.indy_did, &schema_id, &new_schema_id)
+        .await;
 
-    println!("  4.4 Issuer publish Credential Definition");
+    println!("  4.6 Issuer publish Credential Definition");
     let cred_def =
-        CredentialDefinition::from_indy_format(&cred_def, &issuer.besu_did, schema_id.as_ref())
+        CredentialDefinition::from_indy_format(&cred_def, &issuer.besu_did, new_schema_id.as_ref())
             .unwrap();
-    issuer.publish_cred_def_to_besu(&cred_def).await;
+    let new_cred_def_id = issuer.publish_cred_def_to_besu(&cred_def).await;
+    println!(
+        "  New Credential Definition Id: {:?}",
+        new_cred_def_id.as_ref()
+    );
+    println!("  4.7 Issuer publish Credential Definition ID mapping");
+    issuer
+        .publish_cred_def_id_mapping_to_besu(&issuer.indy_did, &cred_def_id, &new_cred_def_id)
+        .await;
 
     /*
      * Step 5: Verify existing credential using Besu Ledger

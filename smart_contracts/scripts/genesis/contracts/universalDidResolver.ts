@@ -5,7 +5,7 @@ import { buildProxySection, slots } from '../helpers'
 
 export interface UniversalDidResolverConfig extends ContractConfig {
   data: {
-    didRegistryAddress: string
+    indybesuDidRegistryAddress: string
     etheriumDidRegistryAddress: string
     upgradeControlAddress: string
   }
@@ -18,7 +18,7 @@ export function universalDidResolver() {
   // address of upgrade control contact stored in slot 0
   storage[slots['0']] = padLeft(data.upgradeControlAddress, 64)
   // address of DID registry contact stored in slot 1
-  storage[slots['1']] = padLeft(data.didRegistryAddress, 64)
+  storage[slots['1']] = padLeft(data.indybesuDidRegistryAddress, 64)
   // address of etherium DID registry contact stored in slot 2
   storage[slots['2']] = padLeft(data.etheriumDidRegistryAddress, 64)
   return buildProxySection(name, address, description, storage)

@@ -10,7 +10,7 @@ import {
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { ClErrors, DidError } from '../utils/errors'
+import { ClErrors, DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('SchemaRegistry', function () {
@@ -99,7 +99,7 @@ describe('SchemaRegistry', function () {
       await createDid(didRegistry, testAccounts.trustee2.account.address, issuerId2)
       await expect(
         schemaRegistry.createSchema(testAccounts.trustee2.account.address, id, issuerId, schema),
-      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidError.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
   })
 
@@ -122,7 +122,7 @@ describe('SchemaRegistry', function () {
 
       await expect(schemaRegistry.createSchema(issuerAddress, id, ethrIssuerId, schema)).to.be.revertedWithCustomError(
         schemaRegistry.baseInstance,
-        DidError.NotIdentityOwner,
+        DidErrors.NotIdentityOwner,
       )
     })
 
@@ -186,7 +186,7 @@ describe('SchemaRegistry', function () {
       )
       await expect(
         schemaRegistry.createSchemaSigned(testAccounts.trustee2.account.address, id, authorDid, schema, sig),
-      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidError.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
 
     it('Should fail if Schema is being endorsed with invalid signature', async function () {
@@ -202,7 +202,7 @@ describe('SchemaRegistry', function () {
       )
       await expect(
         schemaRegistry.createSchemaSigned(testActorAddress, id, authorDid, schema, sig),
-      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidError.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
   })
 })

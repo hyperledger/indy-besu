@@ -95,6 +95,12 @@ impl ContractOutput {
             .ok_or_else(|| VdrError::ContractInvalidResponseData("Missing bytes value".to_string()))
     }
 
+    pub fn get_string(&self, index: usize) -> VdrResult<String> {
+        self.get_item(index)?.into_string().ok_or_else(|| {
+            VdrError::ContractInvalidResponseData("Missing string value".to_string())
+        })
+    }
+
     pub fn get_address(&self, index: usize) -> VdrResult<Address> {
         let address_str = self.get_item(index)?.to_string();
 

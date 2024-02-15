@@ -769,3 +769,197 @@ mod validator {
         assert!(!validator_list.contains(&new_validator_address));
     }
 }
+
+mod mapping {
+    use super::*;
+    use crate::{
+        client::client::test::client,
+        contracts::{
+            cl::types::schema::test::{SCHEMA_NAME, SCHEMA_VERSION},
+            migration::types::did::{LegacyDid, LegacyVerkey},
+        },
+        legacy_mapping_registry, Ed25519Signature, ResourceIdentifier, SchemaId,
+    };
+    use ed25519_dalek::{SigningKey, VerifyingKey};
+    use indy_data_types::did::DidValue;
+    use rand::rngs::OsRng;
+
+    fn generate_legacy_did() -> (LegacyDid, LegacyVerkey, SigningKey) {
+        let mut csprng = OsRng;
+        let signing_key: SigningKey = SigningKey::generate(&mut csprng);
+        let verifying_key: VerifyingKey = signing_key.verifying_key();
+        let did = bs58::encode(&verifying_key.as_bytes()[..16]).into_string();
+        let verkey = bs58::encode(&verifying_key).into_string();
+        (
+            LegacyDid::from(did.as_str()),
+            LegacyVerkey::from(verkey.as_str()),
+            signing_key,
+        )
+    }
+
+    #[async_std::test]
+    async fn demo_create_mappings() {
+        let signer = basic_signer();
+        let client = client();
+
+        let did = DID::build(ETHR_DID_METHOD, None, TRUSTEE_ACCOUNT.as_ref());
+        let (legacy_did, legacy_verkey, _) = generate_legacy_did();
+        let legacy_signature = Ed25519Signature::from(vec![1, 2, 3, 4, 5, 6].as_slice());
+
+        // create DID mapping
+        let transaction = legacy_mapping_registry::build_create_did_mapping_transaction(
+            &client,
+            &TRUSTEE_ACCOUNT.clone(),
+            &did,
+            &legacy_did,
+            &legacy_verkey,
+            &legacy_signature,
+        )
+        .await
+        .unwrap();
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // read DID mapping
+        let transaction =
+            legacy_mapping_registry::build_get_did_mapping_transaction(&client, &legacy_did)
+                .await
+                .unwrap();
+        let response = client.submit_transaction(&transaction).await.unwrap();
+        let resolved_did =
+            legacy_mapping_registry::parse_did_mapping_result(&client, &response).unwrap();
+        assert_eq!(did, resolved_did);
+
+        // create mapping for schema id
+        let legacy_schema_id = indy_data_types::SchemaId::new(
+            &DidValue(legacy_did.to_string()),
+            SCHEMA_NAME,
+            SCHEMA_VERSION,
+        );
+        let legacy_schema_id = ResourceIdentifier::from(&legacy_schema_id);
+        let schema_id = SchemaId::build(&did, SCHEMA_NAME, SCHEMA_VERSION);
+        let schema_id = ResourceIdentifier::from(&schema_id);
+
+        let transaction = legacy_mapping_registry::build_create_resource_mapping_transaction(
+            &client,
+            &TRUSTEE_ACCOUNT.clone(),
+            &did,
+            &legacy_did,
+            &legacy_schema_id,
+            &schema_id,
+        )
+        .await
+        .unwrap();
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // read schema mapping
+        let transaction = legacy_mapping_registry::build_get_resource_mapping_transaction(
+            &client,
+            &legacy_schema_id,
+        )
+        .await
+        .unwrap();
+        let response = client.submit_transaction(&transaction).await.unwrap();
+        let resolved_schema_id =
+            legacy_mapping_registry::parse_resource_mapping_result(&client, &response).unwrap();
+        assert_eq!(schema_id, resolved_schema_id);
+    }
+
+    #[async_std::test]
+    async fn demo_endorse_mappings() {
+        let mut signer = basic_signer();
+        let client = client();
+        let (identity, _) = signer.create_key(None).unwrap();
+
+        let did = DID::build(ETHR_DID_METHOD, None, identity.as_ref());
+        let (legacy_did, legacy_verkey, _) = generate_legacy_did();
+        let legacy_signature = Ed25519Signature::from(vec![1, 2, 3, 4, 5, 6].as_slice());
+
+        // endorse DID mapping
+        let transaction_endorsing_data =
+            legacy_mapping_registry::build_create_did_mapping_endorsing_data(
+                &client,
+                &did,
+                &legacy_did,
+                &legacy_verkey,
+                &legacy_signature,
+            )
+            .await
+            .unwrap();
+
+        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
+
+        let transaction = legacy_mapping_registry::build_create_did_mapping_signed_transaction(
+            &client,
+            &TRUSTEE_ACCOUNT,
+            &did,
+            &legacy_did,
+            &legacy_verkey,
+            &legacy_signature,
+            &signature,
+        )
+        .await
+        .unwrap();
+
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // read DID mapping
+        let transaction =
+            legacy_mapping_registry::build_get_did_mapping_transaction(&client, &legacy_did)
+                .await
+                .unwrap();
+        let response = client.submit_transaction(&transaction).await.unwrap();
+        let resolved_did =
+            legacy_mapping_registry::parse_did_mapping_result(&client, &response).unwrap();
+        assert_eq!(did, resolved_did);
+
+        // endorse mapping for schema id
+        let legacy_schema_id = indy_data_types::SchemaId::new(
+            &DidValue(legacy_did.to_string()),
+            SCHEMA_NAME,
+            SCHEMA_VERSION,
+        );
+        let legacy_schema_id = ResourceIdentifier::from(&legacy_schema_id);
+        let schema_id = SchemaId::build(&did, SCHEMA_NAME, SCHEMA_VERSION);
+        let schema_id = ResourceIdentifier::from(&schema_id);
+
+        let transaction_endorsing_data =
+            legacy_mapping_registry::build_create_resource_mapping_endorsing_data(
+                &client,
+                &did,
+                &legacy_did,
+                &legacy_schema_id,
+                &schema_id,
+            )
+            .await
+            .unwrap();
+
+        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
+
+        let transaction =
+            legacy_mapping_registry::build_create_resource_mapping_signed_transaction(
+                &client,
+                &TRUSTEE_ACCOUNT,
+                &did,
+                &legacy_did,
+                &legacy_schema_id,
+                &schema_id,
+                &signature,
+            )
+            .await
+            .unwrap();
+
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+
+        // read schema mapping
+        let transaction = legacy_mapping_registry::build_get_resource_mapping_transaction(
+            &client,
+            &legacy_schema_id,
+        )
+        .await
+        .unwrap();
+        let response = client.submit_transaction(&transaction).await.unwrap();
+        let resolved_schema_id =
+            legacy_mapping_registry::parse_resource_mapping_result(&client, &response).unwrap();
+        assert_eq!(schema_id, resolved_schema_id);
+    }
+}

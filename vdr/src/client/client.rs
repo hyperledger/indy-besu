@@ -217,7 +217,7 @@ pub mod test {
         client::MockClient, types::transaction::test::read_transaction, utils::init_env_logger,
     };
     use once_cell::sync::Lazy;
-    use std::{env, fs, sync::RwLock};
+    use std::{env, fs};
 
     pub const CHAIN_ID: u64 = 1337;
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
@@ -229,6 +229,8 @@ pub mod test {
     pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
     pub const ETHR_DID_REGISTRY_PATH: &str =
         "did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json";
+    pub const LEGACY_MAPPING_REGISTRY_PATH: &str =
+        "migration/LegacyMappingRegistry.sol/LegacyMappingRegistry.json";
     pub const RPC_NODE_ADDRESS: &str = "http://127.0.0.1:8545";
     pub const CLIENT_NODE_ADDRESSES: [&str; 4] = [
         "http://127.0.0.1:21001",
@@ -256,6 +258,9 @@ pub mod test {
 
     pub static ETHR_DID_REGISTRY_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x0000000000000000000000000000000000018888"));
+
+    pub static LEGACY_MAPPING_REGISTRY_ADDRESS: Lazy<Address> =
+        Lazy::new(|| Address::from("0x0000000000000000000000000000000000017777"));
 
     pub static TRUSTEE_ACCOUNT: Lazy<Address> =
         Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
@@ -304,6 +309,11 @@ pub mod test {
             ContractConfig {
                 address: INDY_REGISTRY_ADDRESS.to_string(),
                 spec_path: Some(build_contract_path(INDY_DID_REGISTRY_PATH)),
+                spec: None,
+            },
+            ContractConfig {
+                address: LEGACY_MAPPING_REGISTRY_ADDRESS.to_string(),
+                spec_path: Some(build_contract_path(LEGACY_MAPPING_REGISTRY_PATH)),
                 spec: None,
             },
         ]

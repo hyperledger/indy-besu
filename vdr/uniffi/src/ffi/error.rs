@@ -52,6 +52,12 @@ pub enum VdrError {
 
     #[error("Could not get transaction: {}", msg)]
     GetTransactionError { msg: String },
+
+    #[error("Invalid schema: {}", msg)]
+    InvalidSchema { msg: String },
+
+    #[error("Invalid credential definition: {}", msg)]
+    InvalidCredentialDefinition { msg: String },
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;
@@ -80,6 +86,10 @@ impl From<VdrError_> for VdrError {
             VdrError_::CommonInvalidData(msg) => VdrError::CommonInvalidData { msg },
             VdrError_::QuorumNotReached(msg) => VdrError::QuorumNotReached { msg },
             VdrError_::GetTransactionError(msg) => VdrError::GetTransactionError { msg },
+            VdrError_::InvalidSchema(msg) => VdrError::InvalidSchema { msg },
+            VdrError_::InvalidCredentialDefinition(msg) => {
+                VdrError::InvalidCredentialDefinition { msg }
+            }
         }
     }
 }

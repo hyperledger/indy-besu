@@ -5,6 +5,7 @@ import {
   credentialDefinitionRegistry,
   ethereumDidRegistry,
   indyDidRegistry,
+  legacyMappingRegistry,
   roleControl,
   schemaRegistry,
   universalDidResolver,
@@ -23,6 +24,7 @@ function main() {
     ...universalDidResolver(),
     ...schemaRegistry(),
     ...credentialDefinitionRegistry(),
+    ...legacyMappingRegistry(),
   }
   writeJson(contracts, outFile)
 }

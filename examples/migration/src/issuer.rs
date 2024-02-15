@@ -2,7 +2,7 @@ use crate::{
     ledger::{BesuLedger, IndyLedger, Ledgers},
     wallet::{BesuWallet, IndyWallet},
 };
-use indy_besu_vdr::{Address, DidDocAttribute, DID};
+use indy_besu_vdr::{Address, DidDocAttribute, ResourceIdentifier, DID};
 use indy_credx::types::{
     AttributeNames, AttributeValues, Credential, CredentialDefinition, CredentialDefinitionConfig,
     CredentialDefinitionId, CredentialDefinitionPrivate, CredentialKeyCorrectnessProof,
@@ -190,6 +190,18 @@ impl Issuer {
             .publish_did_attribute(&self.account, &self.besu_did, attribute, &self.besu_wallet)
             .await
     }
+    pub async fn publish_did_mapping_to_besu(&self) {
+        self.besu_ledger
+            .publish_did_mapping(
+                &self.account,
+                &self.besu_did,
+                &self.indy_did,
+                &self.edkey,
+                &vec![1, 2, 3, 4, 5, 6, 7, 8, 9],
+                &self.besu_wallet,
+            )
+            .await
+    }
 
     pub async fn publish_schema_to_besu(
         &self,
@@ -200,12 +212,48 @@ impl Issuer {
             .await
     }
 
+    pub async fn publish_schema_id_mapping_to_besu(
+        &self,
+        legacy_did: &str,
+        legacy_schema_id: &SchemaId,
+        new_schema_id: &indy_besu_vdr::SchemaId,
+    ) {
+        self.besu_ledger
+            .publish_resource_mapping(
+                &self.account,
+                &indy_besu_vdr::DID::from(self.besu_did.as_str()),
+                &indy_data_types::did::DidValue(legacy_did.to_string()),
+                &ResourceIdentifier::from(legacy_schema_id.0.as_str()),
+                &ResourceIdentifier::from(new_schema_id.as_ref()),
+                &self.besu_wallet,
+            )
+            .await
+    }
+
     pub async fn publish_cred_def_to_besu(
         &self,
         cred_def: &indy_besu_vdr::CredentialDefinition,
     ) -> indy_besu_vdr::CredentialDefinitionId {
         self.besu_ledger
             .publish_cred_def(&self.account, cred_def, &self.besu_wallet)
+            .await
+    }
+
+    pub async fn publish_cred_def_id_mapping_to_besu(
+        &self,
+        legacy_did: &str,
+        legacy_cred_def_id: &CredentialDefinitionId,
+        new_cred_def_id: &indy_besu_vdr::CredentialDefinitionId,
+    ) {
+        self.besu_ledger
+            .publish_resource_mapping(
+                &self.account,
+                &indy_besu_vdr::DID::from(self.besu_did.as_str()),
+                &indy_data_types::did::DidValue(legacy_did.to_string()),
+                &ResourceIdentifier::from(legacy_cred_def_id.0.as_str()),
+                &ResourceIdentifier::from(new_cred_def_id.as_ref()),
+                &self.besu_wallet,
+            )
             .await
     }
 

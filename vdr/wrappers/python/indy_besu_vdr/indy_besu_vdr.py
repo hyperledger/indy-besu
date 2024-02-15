@@ -258,15 +258,15 @@ class _UniffiRustCallStatus(ctypes.Structure):
     # These match the values from the uniffi::rustcalls module
     CALL_SUCCESS = 0
     CALL_ERROR = 1
-    CALL_UNEXPECTED_ERROR = 2
+    CALL_PANIC = 2
 
     def __str__(self):
         if self.code == _UniffiRustCallStatus.CALL_SUCCESS:
             return "_UniffiRustCallStatus(CALL_SUCCESS)"
         elif self.code == _UniffiRustCallStatus.CALL_ERROR:
             return "_UniffiRustCallStatus(CALL_ERROR)"
-        elif self.code == _UniffiRustCallStatus.CALL_UNEXPECTED_ERROR:
-            return "_UniffiRustCallStatus(CALL_UNEXPECTED_ERROR)"
+        elif self.code == _UniffiRustCallStatus.CALL_PANIC:
+            return "_UniffiRustCallStatus(CALL_PANIC)"
         else:
             return "_UniffiRustCallStatus(<invalid code>)"
 
@@ -295,7 +295,7 @@ def _uniffi_check_call_status(error_ffi_converter, call_status):
             raise InternalError("_rust_call_with_error: CALL_ERROR, but error_ffi_converter is None")
         else:
             raise error_ffi_converter.lift(call_status.error_buf)
-    elif call_status.code == _UniffiRustCallStatus.CALL_UNEXPECTED_ERROR:
+    elif call_status.code == _UniffiRustCallStatus.CALL_PANIC:
         # When the rust code sees a panic, it tries to construct a _UniffiRustBuffer
         # with the message.  But if that code panics, then it just sends back
         # an empty buffer.
@@ -308,23 +308,13 @@ def _uniffi_check_call_status(error_ffi_converter, call_status):
         raise InternalError("Invalid _UniffiRustCallStatus code: {}".format(
             call_status.code))
 
-def _uniffi_trait_interface_call(call_status, make_call, write_return_value):
-    try:
-        return write_return_value(make_call())
-    except Exception as e:
-        call_status.code = _UniffiRustCallStatus.CALL_UNEXPECTED_ERROR
-        call_status.error_buf = _UniffiConverterString.lower(repr(e))
+# A function pointer for a callback as defined by UniFFI.
+# Rust definition `fn(handle: u64, method: u32, args: _UniffiRustBuffer, buf_ptr: *mut _UniffiRustBuffer) -> int`
+_UNIFFI_FOREIGN_CALLBACK_T = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_ulonglong, ctypes.c_ulong, ctypes.POINTER(ctypes.c_char), ctypes.c_int, ctypes.POINTER(_UniffiRustBuffer))
 
-def _uniffi_trait_interface_call_with_error(call_status, make_call, write_return_value, error_type, lower_error):
-    try:
-        try:
-            return write_return_value(make_call())
-        except error_type as e:
-            call_status.code = _UniffiRustCallStatus.CALL_ERROR
-            call_status.error_buf = lower_error(e)
-    except Exception as e:
-        call_status.code = _UniffiRustCallStatus.CALL_UNEXPECTED_ERROR
-        call_status.error_buf = _UniffiConverterString.lower(repr(e))
+# UniFFI future continuation
+_UNIFFI_FUTURE_CONTINUATION_T = ctypes.CFUNCTYPE(None, ctypes.c_size_t, ctypes.c_int8)
+
 class _UniffiPointerManagerCPython:
     """
     Manage giving out pointers to Python objects on CPython
@@ -499,9 +489,21 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_endorsing_data() != 54516:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_endorsing_data() != 23405:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_signed_transaction() != 52132:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_transaction() != 4679:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_signed_transaction() != 40911:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_transaction() != 55435:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_endorsing_data() != 16022:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_signed_transaction() != 21759:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_transaction() != 49732:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_endorsing_data() != 53121:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -549,9 +551,13 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_events_query() != 35752:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_mapping_transaction() != 9840:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_owner_transaction() != 29722:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_identity_nonce_transaction() != 21686:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_resource_mapping_transaction() != 26696:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_role_transaction() != 34920:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -583,6 +589,8 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_event_response() != 5583:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_mapping_result() != 26573:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_nonce_result() != 38919:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_owner_changed_event_response() != 45369:
@@ -600,6 +608,8 @@ def _uniffi_check_api_checksums(lib):
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_did_result() != 15878:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_schema_result() != 15793:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resource_mapping_result() != 47018:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_func_resolve_credential_definition() != 411:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -627,15 +637,6 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_constructor_transaction_new() != 38765:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-
-
-# Define FFI callback types
-UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK = ctypes.CFUNCTYPE(None,ctypes.c_size_t,ctypes.c_int8,
-)
-UNIFFI_CALLBACK_INTERFACE_FREE = ctypes.CFUNCTYPE(None,ctypes.c_uint64,
-)
-
-# Define FFI structs
 
 # A ctypes library to expose the extern-C FFI definitions.
 # This is an implementation detail which will be called internally by the public API.
@@ -781,6 +782,33 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_endorsing_data.a
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_endorsing_data.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_endorsing_data.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_endorsing_data.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_signed_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_signed_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_signed_transaction.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -796,6 +824,33 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_transaction.argt
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_endorsing_data.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_endorsing_data.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_signed_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_signed_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_schema_endorsing_data.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -961,6 +1016,11 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_did_events_query.argtyp
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_did_events_query.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_did_mapping_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_did_mapping_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_did_owner_transaction.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -971,6 +1031,11 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_identity_nonce_transact
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_identity_nonce_transaction.restype = ctypes.c_void_p
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_resource_mapping_transaction.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_resource_mapping_transaction.restype = ctypes.c_void_p
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_role_transaction.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1059,6 +1124,12 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_event_response.argtypes
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_event_response.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_mapping_result.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_mapping_result.restype = _UniffiRustBuffer
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_nonce_result.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1113,6 +1184,12 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_schema_result.argty
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resolve_schema_result.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resource_mapping_result.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resource_mapping_result.restype = _UniffiRustBuffer
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_resolve_credential_definition.argtypes = (
     ctypes.c_void_p,
     _UniffiRustBuffer,
@@ -1152,7 +1229,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rustbuffer_reserve.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rustbuffer_reserve.restype = _UniffiRustBuffer
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u8.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u8.restype = None
@@ -1171,7 +1248,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u8.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u8.restype = ctypes.c_uint8
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i8.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i8.restype = None
@@ -1190,7 +1267,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i8.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i8.restype = ctypes.c_int8
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u16.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u16.restype = None
@@ -1209,7 +1286,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u16.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u16.restype = ctypes.c_uint16
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i16.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i16.restype = None
@@ -1228,7 +1305,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i16.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i16.restype = ctypes.c_int16
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u32.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u32.restype = None
@@ -1247,7 +1324,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u32.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u32.restype = ctypes.c_uint32
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i32.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i32.restype = None
@@ -1266,7 +1343,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i32.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i32.restype = ctypes.c_int32
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u64.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_u64.restype = None
@@ -1285,7 +1362,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u64.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_u64.restype = ctypes.c_uint64
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i64.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_i64.restype = None
@@ -1304,7 +1381,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i64.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_i64.restype = ctypes.c_int64
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_f32.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_f32.restype = None
@@ -1323,7 +1400,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_f32.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_f32.restype = ctypes.c_float
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_f64.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_f64.restype = None
@@ -1342,7 +1419,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_f64.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_f64.restype = ctypes.c_double
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer.restype = None
@@ -1361,7 +1438,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer.argtypes = (
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer.restype = ctypes.c_void_p
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_rust_buffer.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_rust_buffer.restype = None
@@ -1380,7 +1457,7 @@ _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_rust_buffer.argtypes = 
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_rust_buffer.restype = _UniffiRustBuffer
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_void.argtypes = (
     ctypes.c_void_p,
-    UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK,
+    _UNIFFI_FUTURE_CONTINUATION_T,
     ctypes.c_size_t,
 )
 _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_void.restype = None
@@ -1415,12 +1492,30 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_credential_def
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_endorsing_data.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_endorsing_data.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_endorsing_data.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_endorsing_data.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_signed_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_signed_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_mapping_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_signed_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_signed_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_did_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_endorsing_data.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_endorsing_data.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_signed_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_signed_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_resource_mapping_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_endorsing_data.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_create_schema_endorsing_data.restype = ctypes.c_uint16
@@ -1490,12 +1585,18 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_changed_trans
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_events_query.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_events_query.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_mapping_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_mapping_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_owner_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_did_owner_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_identity_nonce_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_identity_nonce_transaction.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_resource_mapping_transaction.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_resource_mapping_transaction.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_role_transaction.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_build_get_role_transaction.restype = ctypes.c_uint16
@@ -1541,6 +1642,9 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_delegate_changed_
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_event_response.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_event_response.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_mapping_result.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_mapping_result.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_nonce_result.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_did_nonce_result.restype = ctypes.c_uint16
@@ -1568,6 +1672,9 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_did_result.re
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_schema_result.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resolve_schema_result.restype = ctypes.c_uint16
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resource_mapping_result.argtypes = (
+)
+_UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_parse_resource_mapping_result.restype = ctypes.c_uint16
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_resolve_credential_definition.argtypes = (
 )
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_checksum_func_resolve_credential_definition.restype = ctypes.c_uint16
@@ -1622,7 +1729,7 @@ _UniffiContinuationPointerManager = _UniffiPointerManager()
 
 # Continuation callback for async functions
 # lift the return value or error and resolve the future, causing the async function to resume.
-@UNIFFI_RUST_FUTURE_CONTINUATION_CALLBACK
+@_UNIFFI_FUTURE_CONTINUATION_T
 def _uniffi_continuation_callback(future_ptr, poll_code):
     (eventloop, future) = _UniffiContinuationPointerManager.release_pointer(future_ptr)
     eventloop.call_soon_threadsafe(_uniffi_set_future_result, future, poll_code)
@@ -3081,6 +3188,26 @@ class VdrError:  # type: ignore
         def __repr__(self):
             return "VdrError.GetTransactionError({})".format(str(self))
     _UniffiTempVdrError.GetTransactionError = GetTransactionError # type: ignore
+    class InvalidSchema(_UniffiTempVdrError):
+
+        def __init__(self, msg):
+            super().__init__(", ".join([
+                "msg={!r}".format(msg),
+            ]))
+            self.msg = msg
+        def __repr__(self):
+            return "VdrError.InvalidSchema({})".format(str(self))
+    _UniffiTempVdrError.InvalidSchema = InvalidSchema # type: ignore
+    class InvalidCredentialDefinition(_UniffiTempVdrError):
+
+        def __init__(self, msg):
+            super().__init__(", ".join([
+                "msg={!r}".format(msg),
+            ]))
+            self.msg = msg
+        def __repr__(self):
+            return "VdrError.InvalidCredentialDefinition({})".format(str(self))
+    _UniffiTempVdrError.InvalidCredentialDefinition = InvalidCredentialDefinition # type: ignore
 
 VdrError = _UniffiTempVdrError # type: ignore
 del _UniffiTempVdrError
@@ -3154,6 +3281,14 @@ class _UniffiConverterTypeVdrError(_UniffiConverterRustBuffer):
             return VdrError.GetTransactionError(
                 msg=_UniffiConverterString.read(buf),
             )
+        if variant == 18:
+            return VdrError.InvalidSchema(
+                msg=_UniffiConverterString.read(buf),
+            )
+        if variant == 19:
+            return VdrError.InvalidCredentialDefinition(
+                msg=_UniffiConverterString.read(buf),
+            )
         raise InternalError("Raw enum value doesn't match any cases")
 
     @staticmethod
@@ -3205,6 +3340,12 @@ class _UniffiConverterTypeVdrError(_UniffiConverterRustBuffer):
         if isinstance(value, VdrError.GetTransactionError):
             _UniffiConverterString.check_lower(value.msg)
             return
+        if isinstance(value, VdrError.InvalidSchema):
+            _UniffiConverterString.check_lower(value.msg)
+            return
+        if isinstance(value, VdrError.InvalidCredentialDefinition):
+            _UniffiConverterString.check_lower(value.msg)
+            return
 
     @staticmethod
     def write(value, buf):
@@ -3254,6 +3395,12 @@ class _UniffiConverterTypeVdrError(_UniffiConverterRustBuffer):
             _UniffiConverterString.write(value.msg, buf)
         if isinstance(value, VdrError.GetTransactionError):
             buf.write_i32(17)
+            _UniffiConverterString.write(value.msg, buf)
+        if isinstance(value, VdrError.InvalidSchema):
+            buf.write_i32(18)
+            _UniffiConverterString.write(value.msg, buf)
+        if isinstance(value, VdrError.InvalidCredentialDefinition):
+            buf.write_i32(19)
             _UniffiConverterString.write(value.msg, buf)
 
 
@@ -3699,6 +3846,96 @@ def build_create_did_endorsing_data(client: "LedgerClient",did: "str",did_doc: "
         _UniffiConverterTypeVdrError,
     )
 
+def build_create_did_mapping_endorsing_data(client: "LedgerClient",did: "str",legacy_identifier: "str",legacy_verkey: "str",ed25519_signature: "bytes"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    _UniffiConverterString.check_lower(legacy_verkey)
+    
+    _UniffiConverterBytes.check_lower(ed25519_signature)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_endorsing_data(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(legacy_identifier),
+        _UniffiConverterString.lower(legacy_verkey),
+        _UniffiConverterBytes.lower(ed25519_signature)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransactionEndorsingData.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_did_mapping_signed_transaction(client: "LedgerClient",_from: "str",did: "str",legacy_identifier: "str",legacy_verkey: "str",ed25519_signature: "bytes",signature: "SignatureData"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    _UniffiConverterString.check_lower(legacy_verkey)
+    
+    _UniffiConverterBytes.check_lower(ed25519_signature)
+    
+    _UniffiConverterTypeSignatureData.check_lower(signature)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_signed_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(legacy_identifier),
+        _UniffiConverterString.lower(legacy_verkey),
+        _UniffiConverterBytes.lower(ed25519_signature),
+        _UniffiConverterTypeSignatureData.lower(signature)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_did_mapping_transaction(client: "LedgerClient",_from: "str",did: "str",legacy_identifier: "str",legacy_verkey: "str",ed25519_signature: "bytes"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    _UniffiConverterString.check_lower(legacy_verkey)
+    
+    _UniffiConverterBytes.check_lower(ed25519_signature)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_did_mapping_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(legacy_identifier),
+        _UniffiConverterString.lower(legacy_verkey),
+        _UniffiConverterBytes.lower(ed25519_signature)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
 def build_create_did_signed_transaction(client: "LedgerClient",_from: "str",did: "str",did_doc: "str",signature: "SignatureData"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
@@ -3741,6 +3978,96 @@ def build_create_did_transaction(client: "LedgerClient",_from: "str",did: "str",
         _UniffiConverterString.lower(_from),
         _UniffiConverterString.lower(did),
         _UniffiConverterString.lower(did_doc)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_resource_mapping_endorsing_data(client: "LedgerClient",did: "str",legacy_issuer_identifier: "str",legacy_identifier: "str",new_identifier: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(legacy_issuer_identifier)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    _UniffiConverterString.check_lower(new_identifier)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_endorsing_data(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(legacy_issuer_identifier),
+        _UniffiConverterString.lower(legacy_identifier),
+        _UniffiConverterString.lower(new_identifier)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransactionEndorsingData.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_resource_mapping_signed_transaction(client: "LedgerClient",_from: "str",did: "str",legacy_issuer_identifier: "str",legacy_identifier: "str",new_identifier: "str",signature: "SignatureData"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(legacy_issuer_identifier)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    _UniffiConverterString.check_lower(new_identifier)
+    
+    _UniffiConverterTypeSignatureData.check_lower(signature)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_signed_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(legacy_issuer_identifier),
+        _UniffiConverterString.lower(legacy_identifier),
+        _UniffiConverterString.lower(new_identifier),
+        _UniffiConverterTypeSignatureData.lower(signature)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_create_resource_mapping_transaction(client: "LedgerClient",_from: "str",did: "str",legacy_issuer_identifier: "str",legacy_identifier: "str",new_identifier: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(_from)
+    
+    _UniffiConverterString.check_lower(did)
+    
+    _UniffiConverterString.check_lower(legacy_issuer_identifier)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    _UniffiConverterString.check_lower(new_identifier)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_create_resource_mapping_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(_from),
+        _UniffiConverterString.lower(did),
+        _UniffiConverterString.lower(legacy_issuer_identifier),
+        _UniffiConverterString.lower(legacy_identifier),
+        _UniffiConverterString.lower(new_identifier)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
@@ -4314,6 +4641,24 @@ def build_get_did_events_query(client: "LedgerClient",did: "str",from_block: "ty
         _UniffiConverterTypeVdrError,
     )
 
+def build_get_did_mapping_transaction(client: "LedgerClient",legacy_identifier: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_did_mapping_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(legacy_identifier)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
 def build_get_did_owner_transaction(client: "LedgerClient",did: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
@@ -4341,6 +4686,24 @@ def build_get_identity_nonce_transaction(client: "LedgerClient",identity: "str")
         _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_identity_nonce_transaction(
         _UniffiConverterTypeLedgerClient.lower(client),
         _UniffiConverterString.lower(identity)),
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
+        _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
+        # lift function
+        _UniffiConverterTypeTransaction.lift,
+        # Error FFI converter
+        _UniffiConverterTypeVdrError,
+    )
+
+def build_get_resource_mapping_transaction(client: "LedgerClient",legacy_identifier: "str"):
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterString.check_lower(legacy_identifier)
+    
+    return _uniffi_rust_call_async(
+        _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_build_get_resource_mapping_transaction(
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterString.lower(legacy_identifier)),
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_poll_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_complete_pointer,
         _UniffiLib.ffi_indy_besu_vdr_uniffi_rust_future_free_pointer,
@@ -4615,6 +4978,16 @@ def parse_did_event_response(client: "LedgerClient",log: "EventLog") -> "DidEven
         _UniffiConverterTypeEventLog.lower(log)))
 
 
+def parse_did_mapping_result(client: "LedgerClient",bytes: "bytes") -> "str":
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterBytes.check_lower(bytes)
+    
+    return _UniffiConverterString.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_did_mapping_result,
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterBytes.lower(bytes)))
+
+
 def parse_did_nonce_result(client: "LedgerClient",bytes: "bytes") -> "int":
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
@@ -4705,6 +5078,16 @@ def parse_resolve_schema_result(client: "LedgerClient",bytes: "bytes") -> "str":
         _UniffiConverterBytes.lower(bytes)))
 
 
+def parse_resource_mapping_result(client: "LedgerClient",bytes: "bytes") -> "str":
+    _UniffiConverterTypeLedgerClient.check_lower(client)
+    
+    _UniffiConverterBytes.check_lower(bytes)
+    
+    return _UniffiConverterString.lift(_rust_call_with_error(_UniffiConverterTypeVdrError,_UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_func_parse_resource_mapping_result,
+        _UniffiConverterTypeLedgerClient.lower(client),
+        _UniffiConverterBytes.lower(bytes)))
+
+
 def resolve_credential_definition(client: "LedgerClient",id: "str"):
     _UniffiConverterTypeLedgerClient.check_lower(client)
     
@@ -4785,8 +5168,14 @@ __all__ = [
     "build_create_credential_definition_signed_transaction",
     "build_create_credential_definition_transaction",
     "build_create_did_endorsing_data",
+    "build_create_did_mapping_endorsing_data",
+    "build_create_did_mapping_signed_transaction",
+    "build_create_did_mapping_transaction",
     "build_create_did_signed_transaction",
     "build_create_did_transaction",
+    "build_create_resource_mapping_endorsing_data",
+    "build_create_resource_mapping_signed_transaction",
+    "build_create_resource_mapping_transaction",
     "build_create_schema_endorsing_data",
     "build_create_schema_signed_transaction",
     "build_create_schema_transaction",
@@ -4810,8 +5199,10 @@ __all__ = [
     "build_did_set_attribute_transaction",
     "build_get_did_changed_transaction",
     "build_get_did_events_query",
+    "build_get_did_mapping_transaction",
     "build_get_did_owner_transaction",
     "build_get_identity_nonce_transaction",
+    "build_get_resource_mapping_transaction",
     "build_get_role_transaction",
     "build_get_validators_transaction",
     "build_has_role_transaction",
@@ -4827,6 +5218,7 @@ __all__ = [
     "parse_did_changed_result",
     "parse_did_delegate_changed_event_response",
     "parse_did_event_response",
+    "parse_did_mapping_result",
     "parse_did_nonce_result",
     "parse_did_owner_changed_event_response",
     "parse_did_owner_result",
@@ -4836,6 +5228,7 @@ __all__ = [
     "parse_resolve_credential_definition_result",
     "parse_resolve_did_result",
     "parse_resolve_schema_result",
+    "parse_resource_mapping_result",
     "resolve_credential_definition",
     "resolve_did",
     "resolve_schema",

@@ -2,7 +2,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { createBaseDidDocument } from '../../utils'
 import { deployUniversalDidResolver, TestableUniversalDidResolver } from '../utils/contract-helpers'
-import { DidError } from '../utils/errors'
+import { DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('UniversalDidResolver', function () {
@@ -15,7 +15,7 @@ describe('UniversalDidResolver', function () {
 
   async function deployUniversalDidResolverFixture() {
     const {
-      universalDidReolver: universalDidReolverInit,
+      universalDidResolver: universalDidReolverInit,
       indyDidRegistry,
       testAccounts: testAccountsInit,
     } = await deployUniversalDidResolver()
@@ -71,7 +71,7 @@ describe('UniversalDidResolver', function () {
       const incorrectDid = 'did:ethr:ab$ddfgh354345'
 
       await expect(universalDidResolver.resolveMetadata(incorrectDid))
-        .revertedWithCustomError(universalDidResolver.baseInstance, DidError.IncorrectDid)
+        .revertedWithCustomError(universalDidResolver.baseInstance, DidErrors.IncorrectDid)
         .withArgs(incorrectDid)
     })
   })

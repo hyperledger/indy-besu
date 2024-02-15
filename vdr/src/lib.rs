@@ -41,6 +41,14 @@ pub use contracts::{
             did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},
         },
     },
+    migration::{
+        legacy_mapping_registry,
+        types::{
+            did::{LegacyDid, LegacyVerkey},
+            ed25519_signature::Ed25519Signature,
+            resource_identifier::ResourceIdentifier,
+        },
+    },
     network::validator_control,
     StringOrVector,
 };

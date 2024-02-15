@@ -3,14 +3,14 @@ import { config } from '../config'
 import { ContractConfig } from '../contractConfig'
 import { buildProxySection, slots } from '../helpers'
 
-export interface IndyDidRegistryConfig extends ContractConfig {
+export interface IndybesuDidRegistryConfig extends ContractConfig {
   data: {
     upgradeControlAddress: string
   }
 }
 
 export function indyDidRegistry() {
-  const { name, address, description, data } = config.indyDidRegistry
+  const { name, address, description, data } = config.indybesuDidRegistry
   const storage: any = {}
 
   storage[slots['0']] = padLeft(data.upgradeControlAddress, 64)

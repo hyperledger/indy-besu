@@ -1,7 +1,7 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
-    CredentialDefinitionId,
+    CredentialDefinitionId, VdrResult,
 };
 
 use crate::contracts::{cl::types::schema_id::SchemaId, did::types::did::DID};
@@ -31,6 +31,22 @@ pub struct CredentialDefinition {
 impl CredentialDefinition {
     pub fn id(&self) -> CredentialDefinitionId {
         CredentialDefinitionId::build(&self.issuer_id, &self.schema_id, &self.tag)
+    }
+
+    pub fn validate(&self) -> VdrResult<()> {
+        if self.tag.is_empty() {
+            return Err(VdrError::InvalidCredentialDefinition(
+                "Tag is not provided".to_string(),
+            ));
+        }
+
+        if self.value.is_null() {
+            return Err(VdrError::InvalidCredentialDefinition(
+                "Value is not provided".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 }
 
@@ -102,7 +118,7 @@ pub mod test {
     pub const _CREDENTIAL_DEFINITION_ID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/CLAIM_DEF/did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0/default";
     pub const CREDENTIAL_DEFINITION_TAG: &str = "default";
 
-    fn credential_definition_value() -> serde_json::Value {
+    pub fn credential_definition_value() -> serde_json::Value {
         json!({
             "n": "779...397",
             "rctxt": "774...977",

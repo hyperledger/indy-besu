@@ -13,7 +13,7 @@ import {
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { ClErrors, DidError } from '../utils/errors'
+import { ClErrors, DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('CredentialDefinitionRegistry', function () {
@@ -140,7 +140,7 @@ describe('CredentialDefinitionRegistry', function () {
           schemaId,
           credDef,
         ),
-      ).to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, DidError.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
   })
 
@@ -167,7 +167,7 @@ describe('CredentialDefinitionRegistry', function () {
           schemaId,
           credDef,
         ),
-      ).to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, DidError.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(credentialDefinitionRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
 
     it('Should fail if Credential Definition is being created with invalid Issuer ID', async function () {
@@ -261,7 +261,7 @@ describe('CredentialDefinitionRegistry', function () {
           credDef,
           signature,
         ),
-      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidError.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
 
     it('Should fail if Schema is being endorsed with invalid signature', async function () {
@@ -287,7 +287,7 @@ describe('CredentialDefinitionRegistry', function () {
           credDef,
           signature,
         ),
-      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidError.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(schemaRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
   })
 })

@@ -1,7 +1,7 @@
 use crate::{
     error::VdrError,
     types::{ContractOutput, ContractParam},
-    SchemaId,
+    SchemaId, VdrResult,
 };
 use std::collections::HashSet;
 
@@ -28,6 +28,26 @@ pub struct Schema {
 impl Schema {
     pub fn id(&self) -> SchemaId {
         SchemaId::build(&self.issuer_id, &self.name, &self.version)
+    }
+
+    pub fn validate(&self) -> VdrResult<()> {
+        if self.name.is_empty() {
+            return Err(VdrError::InvalidSchema("Name is not provided".to_string()));
+        }
+
+        if self.version.is_empty() {
+            return Err(VdrError::InvalidSchema(
+                "Version is not provided".to_string(),
+            ));
+        }
+
+        if self.attr_names.is_empty() {
+            return Err(VdrError::InvalidSchema(
+                "Attributes are not provided".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 }
 
@@ -91,12 +111,18 @@ impl TryFrom<ContractOutput> for SchemaRecord {
 pub mod test {
     use super::*;
     use crate::{contracts::did::types::did_doc::test::TEST_ETHR_DID, utils::rand_string};
+    use once_cell::sync::Lazy;
 
     pub const SCHEMA_ID: &str =
         "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0";
     pub const SCHEMA_NAME: &str = "F1DClaFEzi3t";
     pub const SCHEMA_VERSION: &str = "1.0.0";
     pub const SCHEMA_ATTRIBUTE_FIRST_NAME: &str = "First Name";
+    pub static SCHEMA_ATTRIBUTES: Lazy<HashSet<String>> = Lazy::new(|| {
+        let mut attr_names: HashSet<String> = HashSet::new();
+        attr_names.insert(SCHEMA_ATTRIBUTE_FIRST_NAME.to_string());
+        attr_names
+    });
 
     pub fn schema(issuer_id: &DID, name: Option<&str>) -> Schema {
         let name = name.map(String::from).unwrap_or_else(rand_string);
@@ -107,7 +133,7 @@ pub mod test {
             issuer_id: issuer_id.clone(),
             name,
             version: SCHEMA_VERSION.to_string(),
-            attr_names,
+            attr_names: SCHEMA_ATTRIBUTES.clone(),
         }
     }
 

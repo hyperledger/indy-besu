@@ -15,7 +15,7 @@ impl CredentialDefinitionId {
                 "{}/{}/{}/{}",
                 issuer_id.as_ref(),
                 Self::ID_PATH,
-                schema_id.as_ref(),
+                schema_id.unique_id(),
                 tag
             )
             .as_str(),

@@ -1,4 +1,4 @@
-use indy_besu_vdr::{did_resolver, Address, DidDocument, DID, DidResolutionOptions};
+use indy_besu_vdr::{did_resolver, DidResolutionOptions, DID};
 use wasm_bindgen::prelude::*;
 
 use crate::{

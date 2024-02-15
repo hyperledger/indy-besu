@@ -7,8 +7,8 @@ import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 import { CredentialDefinitionRecord } from "./CredentialDefinitionTypes.sol";
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
 import { CredentialDefinitionAlreadyExist, CredentialDefinitionNotFound } from "./ClErrors.sol";
-import { CLRegistry } from "./CLRegistry.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
+import { CLRegistry } from "./CLRegistry.sol";
 
 contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, ControlledUpgradeable, CLRegistry {
     /**

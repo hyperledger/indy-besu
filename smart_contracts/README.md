@@ -46,6 +46,8 @@ The following folders should be generated as the result:
     * [ValidatorControl TS contract wrapper class](./contracts-ts/ValidatorControl.ts)
 * [UpgradeControl](./contracts/upgrade/UpgradeControlInterface.sol) - contract to control deployed smart contracts and their versions (proposing and approving new versions).
     * [Upgrading TS contract wrapper class](./contracts-ts/UpgradeControl.ts)
+* [LegacyMappingRegistry](./contracts/migration/LegacyMappingRegistryInterface.sol) - contract to store mapping for legacy identifiers.
+    * [LegacyMappingRegistry TS contract wrapper class](./contracts-ts/LegacyMappingRegistry.ts)
 
 ### Demos
 

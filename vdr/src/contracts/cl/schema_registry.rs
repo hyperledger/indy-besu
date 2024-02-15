@@ -35,7 +35,7 @@ pub async fn build_create_schema_transaction(
     from: &Address,
     schema: &Schema,
 ) -> VdrResult<Transaction> {
-    // TODO: validate schema
+    schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
     let id = schema.id();
     TransactionBuilder::new()
@@ -65,6 +65,7 @@ pub async fn build_create_schema_endorsing_data(
     client: &LedgerClient,
     schema: &Schema,
 ) -> VdrResult<TransactionEndorsingData> {
+    schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
     let id = schema.id();
     TransactionEndorsingDataBuilder::new()
@@ -98,6 +99,7 @@ pub async fn build_create_schema_signed_transaction(
     schema: &Schema,
     signature: &SignatureData,
 ) -> VdrResult<Transaction> {
+    schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
     let id = schema.id();
     TransactionBuilder::new()
@@ -150,7 +152,6 @@ pub async fn build_resolve_schema_transaction(
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<SchemaRecord> {
-    // TODO: validate schema
     TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
@@ -177,7 +178,18 @@ pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<S
         )));
     }
     let schema_record = parse_resolve_schema_result(client, &response)?;
-    Ok(schema_record.schema)
+    let schema = schema_record.schema;
+
+    let schema_id = schema.id();
+    if &schema_id != id {
+        return Err(VdrError::InvalidSchema(format!(
+            "Schema ID {} does not match to requested {}",
+            schema_id.to_string(),
+            id.to_string()
+        )));
+    }
+
+    Ok(schema)
 }
 
 #[cfg(test)]
@@ -188,7 +200,7 @@ pub mod test {
             mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TEST_ACCOUNT,
         },
         contracts::{
-            cl::types::schema::test::{schema, SCHEMA_NAME},
+            cl::types::schema::test::{schema, SCHEMA_ATTRIBUTES, SCHEMA_NAME, SCHEMA_VERSION},
             did::types::{did::DID, did_doc::test::TEST_ETHR_DID},
         },
     };
@@ -196,6 +208,8 @@ pub mod test {
 
     mod build_create_schema_transaction {
         use super::*;
+        use rstest::rstest;
+        use std::collections::HashSet;
 
         #[async_std::test]
         async fn build_create_schema_transaction_test() {
@@ -237,6 +251,28 @@ pub mod test {
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
+        }
+
+        #[rstest]
+        #[case::name_not_provided("", SCHEMA_VERSION, &SCHEMA_ATTRIBUTES)]
+        #[case::version_not_provided(SCHEMA_NAME, "", &SCHEMA_ATTRIBUTES)]
+        #[case::attributes_not_provided(SCHEMA_NAME, SCHEMA_VERSION, &HashSet::new())]
+        async fn build_create_schema_transaction_errors(
+            #[case] name: &str,
+            #[case] version: &str,
+            #[case] attributes: &HashSet<String>,
+        ) {
+            let client = mock_client();
+            let mut schema = schema(&DID::from(TEST_ETHR_DID), Some(name));
+            schema.name = name.to_string();
+            schema.version = version.to_string();
+            schema.attr_names = attributes.clone();
+
+            let err = build_create_schema_transaction(&client, &TEST_ACCOUNT, &schema)
+                .await
+                .unwrap_err();
+
+            assert!(matches!(err, VdrError::InvalidSchema { .. }));
         }
     }
 

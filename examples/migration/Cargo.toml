@@ -12,7 +12,7 @@ async-trait = "0.1.73"
 indy-credx = "1.1.1"
 bs58 = "0.5.0"
 futures = "0.1.23"
-indy-data-types = "0.6.1"
+indy-data-types = "0.7.1"
 indy-besu-vdr = { path = "../../vdr", features = ["migration", "basic_signer"] }
 indy-vdr = { git = "https://github.com/hyperledger/indy-vdr.git" }
 serde = "1.0.188"

@@ -1924,7 +1924,7 @@ dependencies = [
  "ethers-core",
  "futures 0.3.30",
  "hex",
- "indy-data-types 0.7.1",
+ "indy-data-types",
  "log",
  "log-derive",
  "once_cell",
@@ -1959,27 +1959,10 @@ checksum = "ba445ec807f219abb5ea41c20c753aaa4aa90494d3d1d2900b2f2703205d04e2"
 dependencies = [
  "env_logger",
  "ffi-support",
- "indy-data-types 0.7.1",
+ "indy-data-types",
  "log",
  "once_cell",
  "rand",
- "regex",
- "serde",
- "serde_json",
- "sha2",
- "zeroize",
-]
-
-[[package]]
-name = "indy-data-types"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bc9972c657fd152d394f61b00d677aa8a700abd8c39137164e399a1d9fd0c6d"
-dependencies = [
- "anoncreds-clsignatures",
- "hex",
- "indy-utils",
- "once_cell",
  "regex",
  "serde",
  "serde_json",
@@ -2010,20 +1993,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "indy-utils"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09d7e0cdcece8d97982e82aba5b0cb8c7e87ffb5f4fa48b935a3647d24db5439"
-dependencies = [
- "bs58",
- "once_cell",
- "regex",
- "serde",
- "thiserror",
- "zeroize",
-]
-
-[[package]]
 name = "indy-vdr"
 version = "0.4.1"
 source = "git+https://github.com/hyperledger/indy-vdr.git#6dbf40d66a031abf9690d7670cde4b21dadf8745"
@@ -2038,7 +2007,7 @@ dependencies = [
  "futures-util",
  "hex",
  "indy-blssignatures",
- "indy-data-types 0.7.1",
+ "indy-data-types",
  "log",
  "once_cell",
  "percent-encoding",
@@ -2298,7 +2267,7 @@ dependencies = [
  "futures 0.1.31",
  "indy-besu-vdr",
  "indy-credx",
- "indy-data-types 0.6.1",
+ "indy-data-types",
  "indy-vdr",
  "serde",
  "serde_json",

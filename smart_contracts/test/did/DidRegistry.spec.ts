@@ -6,7 +6,7 @@ import {
   testActorAddress,
   testActorPrivateKey,
 } from '../utils/contract-helpers'
-import { DidError } from '../utils/errors'
+import { DidErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('IndyDidRegistry', function () {
@@ -40,7 +40,7 @@ describe('IndyDidRegistry', function () {
 
     it('Should fail if resolving DID does not exist', async function () {
       await expect(didRegistry.resolveDid(identity))
-        .to.revertedWithCustomError(didRegistry.baseInstance, DidError.DidNotFound)
+        .to.revertedWithCustomError(didRegistry.baseInstance, DidErrors.DidNotFound)
         .withArgs(identity)
     })
 
@@ -48,7 +48,7 @@ describe('IndyDidRegistry', function () {
       await didRegistry.createDid(identity, didDocument)
 
       await expect(didRegistry.createDid(identity, didDocument))
-        .to.be.revertedWithCustomError(didRegistry.baseInstance, DidError.DidAlreadyExist)
+        .to.be.revertedWithCustomError(didRegistry.baseInstance, DidErrors.DidAlreadyExist)
         .withArgs(identity)
     })
   })
@@ -70,13 +70,13 @@ describe('IndyDidRegistry', function () {
       didRegistry.connect(testAccounts.trustee2.account)
       await expect(didRegistry.updateDid(identity, didDocument)).to.revertedWithCustomError(
         didRegistry.baseInstance,
-        DidError.NotIdentityOwner,
+        DidErrors.NotIdentityOwner,
       )
     })
 
     it('Should fail if the DID being updated does not exists', async function () {
       await expect(didRegistry.updateDid(identity, didDocument))
-        .to.revertedWithCustomError(didRegistry.baseInstance, DidError.DidNotFound)
+        .to.revertedWithCustomError(didRegistry.baseInstance, DidErrors.DidNotFound)
         .withArgs(identity)
     })
 
@@ -85,7 +85,7 @@ describe('IndyDidRegistry', function () {
       await didRegistry.deactivateDid(identity)
 
       await expect(didRegistry.updateDid(identity, didDocument))
-        .to.revertedWithCustomError(didRegistry.baseInstance, DidError.DidHasBeenDeactivated)
+        .to.revertedWithCustomError(didRegistry.baseInstance, DidErrors.DidHasBeenDeactivated)
         .withArgs(identity)
     })
   })
@@ -105,13 +105,13 @@ describe('IndyDidRegistry', function () {
       await didRegistry.deactivateDid(identity)
 
       await expect(didRegistry.deactivateDid(identity))
-        .to.revertedWithCustomError(didRegistry.baseInstance, DidError.DidHasBeenDeactivated)
+        .to.revertedWithCustomError(didRegistry.baseInstance, DidErrors.DidHasBeenDeactivated)
         .withArgs(identity)
     })
 
     it('Should fail if the DID being deactivated does not exists', async function () {
       await expect(didRegistry.deactivateDid(identity))
-        .to.revertedWithCustomError(didRegistry.baseInstance, DidError.DidNotFound)
+        .to.revertedWithCustomError(didRegistry.baseInstance, DidErrors.DidNotFound)
         .withArgs(identity)
     })
 
@@ -121,7 +121,7 @@ describe('IndyDidRegistry', function () {
       didRegistry.connect(testAccounts.trustee2.account)
       await expect(didRegistry.deactivateDid(identity)).to.revertedWithCustomError(
         didRegistry.baseInstance,
-        DidError.NotIdentityOwner,
+        DidErrors.NotIdentityOwner,
       )
     })
   })

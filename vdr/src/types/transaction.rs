@@ -661,11 +661,11 @@ pub mod test {
             VdrError::ClientInvalidTransaction("Transaction `sender` is not set".to_string())
         )]
         #[case::invalid_from_address(
-            CONTRACT_NAME_EXAMPLE,
-            CONTRACT_METHOD_EXAMPLE,
-            Some(TransactionType::Write),
-            INVALID_ACC_ADDRESS,
-            VdrError::ClientInvalidTransaction("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        CONTRACT_METHOD_EXAMPLE,
+        Some(TransactionType::Write),
+        INVALID_ACC_ADDRESS,
+        VdrError::ClientInvalidTransaction("".to_string())
         )]
         async fn transaction_builder_tests(
             #[case] contract: Option<&str>,
