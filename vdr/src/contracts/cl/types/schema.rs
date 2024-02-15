@@ -103,18 +103,12 @@ pub mod test {
         contracts::{cl::types::schema_id::SchemaId, did::types::did_doc::test::ISSUER_ID},
         utils::rand_string,
     };
-    use once_cell::sync::Lazy;
 
     pub const SCHEMA_ID: &str =
         "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0";
     pub const SCHEMA_NAME: &str = "F1DClaFEzi3t";
     pub const SCHEMA_VERSION: &str = "1.0.0";
     pub const SCHEMA_ATTRIBUTE_FIRST_NAME: &str = "First Name";
-
-    pub static SCHEMA_ATTRIBUTES: Lazy<HashSet<String>> = Lazy::new(|| {
-        let attributes = vec![SCHEMA_ATTRIBUTE_FIRST_NAME.to_string()];
-        attributes.into_iter().collect()
-    });
 
     pub fn schema_id(issuer_id: &DID, name: &str) -> SchemaId {
         SchemaId::build(issuer_id, name, SCHEMA_VERSION)

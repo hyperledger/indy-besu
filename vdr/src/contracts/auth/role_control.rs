@@ -164,6 +164,9 @@ pub mod test {
     };
     use std::sync::RwLock;
 
+    pub static ACCOUNT_ROLES: [Role; 4] =
+        [Role::Empty, Role::Trustee, Role::Steward, Role::Endorser];
+
     pub const NEW_ACCOUNT: &str = "0x0886328869e4e1f401e1052a5f4aae8b45f42610";
 
     fn account() -> Address {
