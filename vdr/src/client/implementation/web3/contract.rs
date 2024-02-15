@@ -115,3 +115,26 @@ impl Debug for Web3Contract {
         write!(f, r#"Web3Contract {{ address: {:?} }}"#, self.address)
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use crate::{
+        client::client::test::{mock_client, INVALID_ADDRESS},
+        validator_control::test::VALIDATOR_CONTROL_NAME,
+    };
+
+    use super::*;
+    #[async_std::test]
+    async fn function_method_does_not_exist() {
+        let client = mock_client();
+        let contract = client
+            .contract(&VALIDATOR_CONTROL_NAME.to_string())
+            .unwrap();
+
+        let err = contract.function(INVALID_ADDRESS).unwrap_err();
+
+        assert!(matches!(
+            err,  | VdrError::ContractInvalidName { .. }
+        ));
+    }
+}
