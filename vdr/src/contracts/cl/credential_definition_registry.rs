@@ -400,8 +400,8 @@ pub mod test {
     }
 
     mod parse_resolve_credential_definition_result {
-        use super::*;
-
+        // use super::*;
+        //
         // #[test]
         // fn parse_resolve_credential_definition_result_test() {
         //     init_env_logger();

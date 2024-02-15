@@ -213,9 +213,11 @@ impl Debug for LedgerClient {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{client::MockClient, signer::basic_signer::test::basic_signer};
+    use crate::{
+        client::MockClient, types::transaction::test::read_transaction, utils::init_env_logger,
+    };
     use once_cell::sync::Lazy;
-    use std::{env, fs, sync::RwLock};
+    use std::{env, fs};
 
     pub const CHAIN_ID: u64 = 1337;
     pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
@@ -313,6 +315,7 @@ pub mod test {
     }
 
     pub fn mock_client() -> LedgerClient {
+        init_env_logger();
         let mut ledger_client = LedgerClient::new(
             CHAIN_ID,
             RPC_NODE_ADDRESS,
@@ -326,38 +329,6 @@ pub mod test {
 
         ledger_client.client = Box::new(client);
         ledger_client
-    }
-
-    pub fn write_transaction() -> Transaction {
-        let transaction = Transaction {
-            type_: TransactionType::Write,
-            from: Some(TRUSTEE_ACC.clone()),
-            to: VALIDATOR_CONTROL_ADDRESS.clone(),
-            nonce: Some(DEFAULT_NONCE.clone()),
-            chain_id: CHAIN_ID,
-            data: vec![],
-            signature: RwLock::new(None),
-            hash: None,
-        };
-        let signer = basic_signer();
-        let sign_bytes = transaction.get_signing_bytes().unwrap();
-        let signature = signer.sign(&sign_bytes, TRUSTEE_ACC.as_ref()).unwrap();
-        transaction.set_signature(signature);
-
-        transaction
-    }
-
-    pub fn read_transaction() -> Transaction {
-        Transaction {
-            type_: TransactionType::Read,
-            from: None,
-            to: VALIDATOR_CONTROL_ADDRESS.clone(),
-            nonce: None,
-            chain_id: CHAIN_ID,
-            data: vec![],
-            signature: RwLock::new(None),
-            hash: None,
-        }
     }
 
     pub fn mock_custom_client(client: Box<dyn Client>) -> LedgerClient {
@@ -413,17 +384,17 @@ pub mod test {
                 name: VALIDATOR_CONTROL_NAME.to_string(),
                 abi: Value::Array(vec ! []),
             }),
-        }], VdrError::ContractInvalidSpec("".to_string()))]
+        }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]
         #[case::non_existent_spec_path(vec![ContractConfig {
             address: VALIDATOR_CONTROL_ADDRESS.to_string(),
             spec_path: Some(build_contract_path("")),
             spec: None,
-        }], VdrError::ContractInvalidSpec("".to_string()))]
+        }], VdrError::ContractInvalidSpec("Unable to read contract spec file. Err: \"Is a directory (os error 21)\"".to_string()))]
         #[case::empty_contract_spec(vec![ContractConfig {
             address: VALIDATOR_CONTROL_ADDRESS.to_string(),
             spec_path: None,
             spec: None,
-        }], VdrError::ContractInvalidSpec("".to_string()))]
+        }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]
         fn test_create_client_errors(
             #[case] contract_config: Vec<ContractConfig>,
             #[case] expected_error: VdrError,
@@ -432,12 +403,12 @@ pub mod test {
                 .err()
                 .unwrap();
 
-            assert!(matches!(client_err, expected_error));
+            assert_eq!(client_err, expected_error);
         }
 
         #[rstest]
-        #[case::empty_recipient_address("", VdrError::ClientInvalidTransaction("".to_string()))]
-        #[case::invalid_recipient_address(INVALID_ADDRESS, VdrError::ClientInvalidTransaction("".to_string()))]
+        #[case::empty_recipient_address("", VdrError::ClientInvalidTransaction("Invalid transaction target address \"0x\"".to_string()))]
+        #[case::invalid_recipient_address(INVALID_ADDRESS, VdrError::ClientInvalidTransaction("Invalid transaction target address \"0x123\"".to_string()))]
         async fn call_transaction_various_recipient_addresses(
             #[case] recipient_address: &str,
             #[case] expected_error: VdrError,
@@ -450,7 +421,7 @@ pub mod test {
 
             let error = client.submit_transaction(&transaction).await.unwrap_err();
 
-            assert!(matches!(error, expected_error));
+            assert_eq!(error, expected_error);
         }
 
         #[async_std::test]

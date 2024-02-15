@@ -14,8 +14,7 @@ use crate::{
     client::{GAS_LIMIT, GAS_PRICE},
     error::{VdrError, VdrResult},
     types::{
-        contract::MethodUintBytesParam, signature::SignatureData, Address, ContractOutput,
-        ContractParam,
+        signature::SignatureData, Address, ContractOutput, ContractParam, MethodUintBytesParam,
     },
     LedgerClient,
 };
@@ -256,6 +255,17 @@ impl TransactionBuilder {
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
     pub async fn build(self, client: &LedgerClient) -> VdrResult<Transaction> {
+        if self.contract.is_empty() {
+            return Err(VdrError::ClientInvalidState(
+                "Contract name is not set".to_string(),
+            ));
+        }
+        if self.method.is_empty() {
+            return Err(VdrError::ClientInvalidState(
+                "Contract method is not set".to_string(),
+            ));
+        }
+
         let contract = client.contract(&self.contract)?;
 
         let data = contract
@@ -323,13 +333,21 @@ impl TransactionParser {
         bytes: &[u8],
     ) -> VdrResult<T> {
         if bytes.is_empty() {
-            let vdr_error =
-                VdrError::ContractInvalidResponseData("Empty response bytes".to_string());
-
-            warn!("Error: {:?} during transaction output parse", vdr_error);
-
-            return Err(vdr_error);
+            return Err(VdrError::ContractInvalidResponseData(
+                "Empty response bytes".to_string(),
+            ));
         }
+        if self.contract.is_empty() {
+            return Err(VdrError::ClientInvalidState(
+                "Contract name is not set".to_string(),
+            ));
+        }
+        if self.method.is_empty() {
+            return Err(VdrError::ClientInvalidState(
+                "Contract method is not set".to_string(),
+            ));
+        }
+
         let contract = client.contract(&self.contract)?;
         let output = contract
             .function(&self.method)?
@@ -501,7 +519,10 @@ pub struct BlockDetails {
 pub mod test {
     use super::*;
     use crate::{
-        client::client::test::{mock_client, write_transaction, INVALID_ADDRESS},
+        client::client::test::{
+            mock_client, CHAIN_ID, DEFAULT_NONCE, INVALID_ADDRESS, TRUSTEE_ACC,
+            VALIDATOR_CONTROL_ADDRESS,
+        },
         contracts::network::test::{
             ADD_VALIDATOR_METHOD, VALIDATOR_ADDRESS, VALIDATOR_CONTROL_NAME, VALIDATOR_LIST_BYTES,
         },
@@ -512,6 +533,32 @@ pub mod test {
     const INVALID_ACC_ADDRESS: Option<&str> = Some(INVALID_ADDRESS);
     const CONTRACT_METHOD_EXAMPLE: Option<&str> = Some(ADD_VALIDATOR_METHOD);
     const CONTRACT_NAME_EXAMPLE: Option<&str> = Some(VALIDATOR_CONTROL_NAME);
+
+    pub fn write_transaction() -> Transaction {
+        Transaction {
+            type_: TransactionType::Write,
+            from: Some(TRUSTEE_ACC.clone()),
+            to: VALIDATOR_CONTROL_ADDRESS.clone(),
+            nonce: Some(DEFAULT_NONCE.clone()),
+            chain_id: CHAIN_ID,
+            data: vec![],
+            signature: RwLock::new(None),
+            hash: None,
+        }
+    }
+
+    pub fn read_transaction() -> Transaction {
+        Transaction {
+            type_: TransactionType::Read,
+            from: None,
+            to: VALIDATOR_CONTROL_ADDRESS.clone(),
+            nonce: None,
+            chain_id: CHAIN_ID,
+            data: vec![],
+            signature: RwLock::new(None),
+            hash: None,
+        }
+    }
 
     #[cfg(test)]
     pub mod txn_test {
@@ -586,39 +633,39 @@ pub mod test {
 
         #[rstest]
         #[case::contract_name_does_not_set(
-            None,
-            CONTRACT_METHOD_EXAMPLE,
-            Some(TransactionType::Read),
-            None,
-            VdrError::ContractInvalidName("".to_string())
+        None,
+        CONTRACT_METHOD_EXAMPLE,
+        Some(TransactionType::Read),
+        None,
+        VdrError::ClientInvalidState("Contract name is not set".to_string())
         )]
         #[case::contract_method_does_not_set(
-            CONTRACT_NAME_EXAMPLE,
-            None,
-            Some(TransactionType::Read),
-            None,
-            VdrError::ContractInvalidName("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        None,
+        Some(TransactionType::Read),
+        None,
+        VdrError::ClientInvalidState("Contract method is not set".to_string())
         )]
         #[case::contract_method_does_not_exist(
-            CONTRACT_NAME_EXAMPLE,
-            INVALID_METHOD,
-            Some(TransactionType::Read),
-            None,
-            VdrError::ContractInvalidName("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        INVALID_METHOD,
+        Some(TransactionType::Read),
+        None,
+        VdrError::ContractInvalidName("123".to_string())
         )]
         #[case::write_sender_does_not_set(
-            CONTRACT_NAME_EXAMPLE,
-            CONTRACT_METHOD_EXAMPLE,
-            Some(TransactionType::Write),
-            None,
-            VdrError::ClientInvalidTransaction("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        CONTRACT_METHOD_EXAMPLE,
+        Some(TransactionType::Write),
+        None,
+        VdrError::ClientInvalidTransaction("Transaction `sender` is not set".to_string())
         )]
         #[case::invalid_from_address(
-            CONTRACT_NAME_EXAMPLE,
-            CONTRACT_METHOD_EXAMPLE,
-            Some(TransactionType::Write),
-            INVALID_ACC_ADDRESS,
-            VdrError::ClientInvalidTransaction("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        CONTRACT_METHOD_EXAMPLE,
+        Some(TransactionType::Write),
+        INVALID_ACC_ADDRESS,
+        VdrError::ClientInvalidTransaction("".to_string())
         )]
         async fn transaction_builder_tests(
             #[case] contract: Option<&str>,
@@ -652,8 +699,8 @@ pub mod test {
             let result = builder.build(&client).await;
 
             match result {
-                Ok(ref txn) => assert_eq!(txn.type_, txn_type.unwrap()),
-                Err(ref err) => assert!(matches!(err.clone(), expected_error)),
+                Ok(txn) => assert_eq!(txn.type_, txn_type.unwrap()),
+                Err(err) => assert_eq!(err, expected_error),
             }
         }
     }
@@ -669,34 +716,34 @@ pub mod test {
 
         #[rstest]
         #[case::empty_response_bytes(
-            CONTRACT_NAME_EXAMPLE,
-            CONTRACT_METHOD_EXAMPLE,
-            EMPTY_RESPONSE,
-            VdrError::ContractInvalidResponseData("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        CONTRACT_METHOD_EXAMPLE,
+        EMPTY_RESPONSE,
+        VdrError::ContractInvalidResponseData("Empty response bytes".to_string())
         )]
         #[case::contract_not_set(
-            None,
-            CONTRACT_METHOD_EXAMPLE,
-            VALIDATOR_LIST_BYTES,
-            VdrError::ContractInvalidName("".to_string())
+        None,
+        CONTRACT_METHOD_EXAMPLE,
+        VALIDATOR_LIST_BYTES,
+        VdrError::ClientInvalidState("Contract name is not set".to_string())
         )]
         #[case::contract_does_not_exist(
-            INVALID_CONTRACT,
-            CONTRACT_METHOD_EXAMPLE,
-            VALIDATOR_LIST_BYTES,
-            VdrError::ContractInvalidName("".to_string())
+        INVALID_CONTRACT,
+        CONTRACT_METHOD_EXAMPLE,
+        VALIDATOR_LIST_BYTES,
+        VdrError::ContractInvalidName("123".to_string())
         )]
         #[case::contract_method_not_set(
-            CONTRACT_NAME_EXAMPLE,
-            None,
-            VALIDATOR_LIST_BYTES,
-            VdrError::ContractInvalidName("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        None,
+        VALIDATOR_LIST_BYTES,
+        VdrError::ClientInvalidState("Contract method is not set".to_string())
         )]
         #[case::contract_method_does_not_exist(
-            CONTRACT_NAME_EXAMPLE,
-            INVALID_METHOD,
-            VALIDATOR_LIST_BYTES,
-            VdrError::ContractInvalidName("".to_string())
+        CONTRACT_NAME_EXAMPLE,
+        INVALID_METHOD,
+        VALIDATOR_LIST_BYTES,
+        VdrError::ContractInvalidName("123".to_string())
         )]
         async fn transaction_parser_tests(
             #[case] contract: Option<&str>,
@@ -717,7 +764,7 @@ pub mod test {
 
             let result = parser.parse::<ValidatorAddresses>(&client, response.as_slice());
 
-            assert!(matches!(result.unwrap_err(), expected_error));
+            assert_eq!(result.unwrap_err(), expected_error);
         }
     }
 }

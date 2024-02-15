@@ -3,7 +3,7 @@ mod contract;
 mod event_query;
 mod signature;
 mod status;
-mod transaction;
+pub(crate) mod transaction;
 
 pub use address::Address;
 pub use contract::{ContractConfig, ContractSpec};
