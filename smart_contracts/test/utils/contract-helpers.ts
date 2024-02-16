@@ -1,6 +1,7 @@
 import { getBytes } from 'ethers'
 import {
   CredentialDefinitionRegistry,
+  EthereumExtDidRegistry,
   IndyDidRegistry,
   LegacyMappingRegistry,
   RoleControl,
@@ -15,9 +16,9 @@ import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 export const testActorAddress = '0x2036C6CD85692F0Fb2C26E6c6B2ECed9e4478Dfd'
 export const testActorPrivateKey = getBytes('0xa285ab66393c5fdda46d6fbad9e27fafd438254ab72ad5acb681a0e9f20f5d7b')
 
-export class EthereumDIDRegistry extends testableContractMixin(Contract) {
+export class TestableEthereumDIDRegistry extends testableContractMixin(Contract) {
   constructor() {
-    super(EthereumDIDRegistry.name)
+    super(EthereumExtDidRegistry.name)
   }
 }
 
@@ -62,7 +63,7 @@ export async function deployIndyDidRegistry() {
 
 export async function deployUniversalDidResolver() {
   const { roleControl, indyDidRegistry, testAccounts } = await deployIndyDidRegistry()
-  const ethereumDIDRegistry = await new EthereumDIDRegistry().deploy()
+  const ethereumDIDRegistry = await new TestableEthereumDIDRegistry().deploy()
 
   const universalDidResolver = await new TestableUniversalDidResolver().deployProxy({
     params: [ZERO_ADDRESS, indyDidRegistry.address, ethereumDIDRegistry.address],

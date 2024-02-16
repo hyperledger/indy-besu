@@ -5,10 +5,10 @@ import { DidNotFound, IncorrectDid, NotIdentityOwner } from "../did/DidErrors.so
 import { DidMetadata } from "../did/DidTypes.sol";
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { Errors } from "../utils/Errors.sol";
-import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound } from "./ClErrors.sol";
+import { InvalidIssuerId, IssuerHasBeenDeactivated, IssuerNotFound } from "./AnoncredsErrors.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
 
-contract CLRegistry {
+contract AnoncredsRegistry {
     /**
      * @dev Reference to the contract that resolves DIDs
      */

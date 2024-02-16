@@ -4,7 +4,7 @@ use crate::{
     CredentialDefinitionId, VdrResult,
 };
 
-use crate::contracts::{cl::types::schema_id::SchemaId, did::types::did::DID};
+use crate::contracts::{anoncreds::types::schema_id::SchemaId, did::types::did::DID};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -135,7 +135,9 @@ impl TryFrom<ContractOutput> for CredentialDefinitionRecord {
 pub mod test {
     use super::*;
     use crate::{
-        contracts::{cl::types::schema::test::SCHEMA_ID, did::types::did_doc::test::TEST_ETHR_DID},
+        contracts::{
+            anoncreds::types::schema::test::SCHEMA_ID, did::types::did_doc::test::TEST_ETHR_DID,
+        },
         utils::rand_string,
     };
     use serde_json::json;

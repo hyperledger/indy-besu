@@ -17,14 +17,14 @@ mod test;
 
 pub use client::{Client, Contract, LedgerClient};
 pub use contracts::{
-    auth::{role_control, Role},
-    cl::{
+    anoncreds::{
         credential_definition_registry, schema_registry,
         types::{
             credential_definition::CredentialDefinition,
             credential_definition_id::CredentialDefinitionId, schema::Schema, schema_id::SchemaId,
         },
     },
+    auth::{role_control, Role},
     did::{
         did_ethr_registry, did_indy_registry, did_resolver,
         types::{

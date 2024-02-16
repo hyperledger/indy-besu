@@ -1,4 +1,4 @@
-## DID/CL Registries approach 
+## DID/Anoncreds Registries approach 
 
 General design for smart contracts oriented for storing objects like DID Document, Schema, Credential Definition.
 The main question is whether we need to validate storing object or not? 

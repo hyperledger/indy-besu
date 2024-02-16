@@ -1,4 +1,4 @@
-# CL Registry
+# AnonCreds Registry
 
 ## Schema
 

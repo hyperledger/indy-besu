@@ -1,5 +1,5 @@
 import { concat, getBytes, keccak256, Signature, toUtf8Bytes, toUtf8String } from 'ethers'
-import { CredentialDefinitionMetadataStruct } from '../typechain-types/contracts/cl/CredentialDefinitionRegistry'
+import { CredentialDefinitionMetadataStruct } from '../typechain-types/contracts/anoncreds/CredentialDefinitionRegistry'
 import { Contract } from '../utils/contract'
 
 export type CredentialDefinitionRecord = {

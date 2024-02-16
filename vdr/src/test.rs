@@ -1,8 +1,10 @@
 use crate::{
     client::client::test::{client, TRUSTEE_ACCOUNT},
     contracts::{
+        anoncreds::types::{
+            credential_definition::test::credential_definition, schema::test::schema,
+        },
         auth::{role_control, Role},
-        cl::types::{credential_definition::test::credential_definition, schema::test::schema},
         did::{did_indy_registry, types::did_doc::test::did_doc, DidRecord, DID, ETHR_DID_METHOD},
     },
     signer::basic_signer::{test::basic_signer, BasicSigner},
@@ -775,7 +777,7 @@ mod mapping {
     use crate::{
         client::client::test::client,
         contracts::{
-            cl::types::schema::test::{SCHEMA_NAME, SCHEMA_VERSION},
+            anoncreds::types::schema::test::{SCHEMA_NAME, SCHEMA_VERSION},
             migration::types::did::{LegacyDid, LegacyVerkey},
         },
         legacy_mapping_registry, Ed25519Signature, ResourceIdentifier, SchemaId,

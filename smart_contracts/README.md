@@ -38,9 +38,9 @@ The following folders should be generated as the result:
     * [IndyDidRegistry TS contract wrapper class](./contracts-ts/IndyDidRegistry.ts)
 * [EthereumExtDidRegistry](./contracts/did/EthereumExtDidRegistry.sol) - [Ethereum DID Registry](https://github.com/uport-project/ethr-did-registry/tree/master) extended with permission checks
     * [DidRegistry TS contract wrapper class](./contracts-ts/EthereumDIDRegistry.ts)
-* [SchemaRegistry](./contracts/cl/SchemaRegistryInterface.sol) - contract to manage Schemas
+* [SchemaRegistry](contracts/anoncreds/SchemaRegistryInterface.sol) - contract to manage Schemas
     * [SchemaRegistry TS contract wrapper class](./contracts-ts/SchemaRegistry.ts)
-* [CredentialDefinitionRegistry](./contracts/cl/CredentialDefinitionRegistryInterface.sol) - contract to manage CL Credential Definitions
+* [CredentialDefinitionRegistry](contracts/anoncreds/CredentialDefinitionRegistryInterface.sol) - contract to manage Credential Definitions
     * [CredentialDefinitionRegistry TS contract wrapper class](./contracts-ts/CredentialDefinitionRegistry.ts)
 * [ValidatorControl](./contracts/network/ValidatorControlInterface.sol) - contract to manage network validator nodes.
     * [ValidatorControl TS contract wrapper class](./contracts-ts/ValidatorControl.ts)

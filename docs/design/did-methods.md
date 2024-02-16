@@ -2,7 +2,7 @@
 
 Out of box Ledger provides an ability to use one of two supported DID methods: `did:ethr` or `did:indybesu`.
 
-Contracts implementing both methods are deployed on the network and integrated with `CL Registry`.
+Contracts implementing both methods are deployed on the network and integrated with `Anoncreds Registry`.
 
 Ledger `permission` related modules are implemented in a way to use **account address** but not a DID.
 

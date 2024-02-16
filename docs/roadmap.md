@@ -14,7 +14,7 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
 * Network identity implementation:
     * Indy2 DID method
       * Basic DID Document validation
-    * CL Registry:
+    * Anoncreds Registry:
       * Schema and Credential Definition registries with basic validation
 * Migration:
     * Design of migration from legacy (Indy) network
@@ -23,7 +23,7 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
 * VDR:
     * Client library preparing and executing Ledger transactions (native part)
     * Support Indy2 DID Method
-    * CL Anoncreds entities (schema, credential definition)
+    * Anoncreds Anoncreds entities (schema, credential definition)
 * CI/CD
     * Basic pipelines
 * Docs
@@ -33,8 +33,8 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
 
 * Network identity implementation:
     * Deprecate Indy2 method in favor of using `did:ethr` contract and specification
-    * CL Registry: implement event approach matching to `did:ethr` design
-    * Endorsement support for DID Documents and CL entities
+    * Anoncreds Registry: implement event approach matching to `did:ethr` design
+    * Endorsement support for DID Documents and Anoncreds entities
 * Network Permission implementation:
     * Restrict execution of transactions exclusively to users with specific roles
 * Network configuration
@@ -80,7 +80,7 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
   * Support Indy 2.0 in ACA-Py
 * Migration:
     * Process finalization
-* CL Registry:
+* Anoncreds Registry:
     * Revocation entities support
 * Command Line Interface
 * CI/CD

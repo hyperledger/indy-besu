@@ -62,20 +62,20 @@ package "Smart Contracts" {
             component [Universal Did Resolver]
             note bottom of [Universal Did Resolver]
               Resolve Issuer DID from various DID registries
-              - used by CL contracts to verify did existence and owner
+              - used by AnonCreds contracts to verify did existence and owner
             end note
         }
 
-        package "CL" {
+        package "Anoncreds" {
 
             component [Schema Registry]
             note bottom of [Schema Registry]
-              Store CL schemas
+              Store AnonCreds schemas
             end note
 
             component [Credential Definition Registry]
             note top of [Credential Definition Registry]
-              Store CL Credential Definitions
+              Store AnonCreds Credential Definitions
             end note
         }
 

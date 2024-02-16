@@ -2,7 +2,7 @@ use log_derive::{logfn, logfn_inputs};
 
 use crate::{
     client::LedgerClient,
-    contracts::cl::types::{
+    contracts::anoncreds::types::{
         schema::{Schema, SchemaRecord},
         schema_id::{ParsedSchemaId, SchemaId},
     },
@@ -206,7 +206,9 @@ pub mod test {
     use crate::{
         client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT},
         contracts::{
-            cl::types::schema::test::{schema, SCHEMA_ATTRIBUTES, SCHEMA_NAME, SCHEMA_VERSION},
+            anoncreds::types::schema::test::{
+                schema, SCHEMA_ATTRIBUTES, SCHEMA_NAME, SCHEMA_VERSION,
+            },
             did::types::{did::DID, did_doc::test::TEST_ETHR_DID},
         },
     };

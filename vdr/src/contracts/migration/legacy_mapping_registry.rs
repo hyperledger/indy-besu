@@ -219,7 +219,7 @@ pub async fn build_create_resource_mapping_transaction(
 }
 
 /// Prepared data for execution of LegacyMappingRegistry.createResourceMapping contract method to
-///     endorse a new CL mapping.
+///     endorse a new resource mapping.
 ///
 /// #Params
 /// - `client` client connected to the network where contract will be executed

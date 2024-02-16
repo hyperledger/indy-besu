@@ -17,7 +17,7 @@
 - Identity:
   - [DID Methods](design/did-methods.md) - Supported DID method
     - [IndyBesu DID Registry](design/indybesu-did-registry.md) - `indybesu` DID Registry
-  - [CL Registry](design/cl-registry.md)
+  - [Anoncreds Registry](design/cl-registry.md)
 - [Client](design/vdr.md) - design of VDR library
 
 ### Migration documents
@@ -27,7 +27,7 @@
 ### Development designs
 
 - [Roadmap](./roadmap.md)
-- [DID and CL registers approach](./design/registry.md)
+- [DID and Anoncreds registers approach](./design/registry.md)
 - [Transaction Endorsement](./design/endorsement.md)
 - [Contract upgradability](./design/upgradability.md)
 - [Legacy identifiers support](./design/legacy-identifiers-support.md)
