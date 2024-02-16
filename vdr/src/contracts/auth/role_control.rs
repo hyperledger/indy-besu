@@ -156,44 +156,38 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<R
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TRUSTEE_ACC,
-        },
-        utils::init_env_logger,
+    use crate::client::client::test::{
+        mock_client, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TEST_ACCOUNT, TRUSTEE_ACCOUNT,
     };
     use std::sync::RwLock;
 
     pub static ACCOUNT_ROLES: [Role; 4] =
         [Role::Empty, Role::Trustee, Role::Steward, Role::Endorser];
 
-    pub const NEW_ACCOUNT: &str = "0x0886328869e4e1f401e1052a5f4aae8b45f42610";
-
-    fn account() -> Address {
-        Address::from(NEW_ACCOUNT)
-    }
-
     mod build_assign_role_transaction {
         use super::*;
 
         #[async_std::test]
         async fn build_assign_role_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let expected_data = vec![
                 136, 165, 191, 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 134, 50,
-                136, 105, 228, 225, 244, 1, 225, 5, 42, 95, 74, 174, 139, 69, 244, 38, 16,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219,
+                108, 141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
             ];
 
-            let transaction =
-                build_assign_role_transaction(&client, &TRUSTEE_ACC, &Role::Trustee, &account())
-                    .await
-                    .unwrap();
+            let transaction = build_assign_role_transaction(
+                &client,
+                &TRUSTEE_ACCOUNT,
+                &Role::Trustee,
+                &TEST_ACCOUNT,
+            )
+            .await
+            .unwrap();
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TRUSTEE_ACCOUNT.clone()),
                 to: ROLE_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
@@ -211,22 +205,25 @@ pub mod test {
 
         #[async_std::test]
         async fn build_revoke_role_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let expected_data = vec![
                 76, 187, 135, 211, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 134, 50,
-                136, 105, 228, 225, 244, 1, 225, 5, 42, 95, 74, 174, 139, 69, 244, 38, 16,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219,
+                108, 141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
             ];
 
-            let transaction =
-                build_revoke_role_transaction(&client, &TRUSTEE_ACC, &Role::Trustee, &account())
-                    .await
-                    .unwrap();
+            let transaction = build_revoke_role_transaction(
+                &client,
+                &TRUSTEE_ACCOUNT,
+                &Role::Trustee,
+                &TEST_ACCOUNT,
+            )
+            .await
+            .unwrap();
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TRUSTEE_ACCOUNT.clone()),
                 to: ROLE_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
@@ -244,14 +241,13 @@ pub mod test {
 
         #[async_std::test]
         async fn build_get_role_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let expected_data = vec![
-                68, 39, 103, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 134, 50, 136, 105, 228,
-                225, 244, 1, 225, 5, 42, 95, 74, 174, 139, 69, 244, 38, 16,
+                68, 39, 103, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141, 198,
+                198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
             ];
 
-            let transaction = build_get_role_transaction(&client, &account())
+            let transaction = build_get_role_transaction(&client, &TEST_ACCOUNT)
                 .await
                 .unwrap();
 
@@ -275,7 +271,6 @@ pub mod test {
 
         #[test]
         fn parse_get_role_result_test() {
-            init_env_logger();
             let client = mock_client();
             let result = vec![0; 32];
             let expected_role = Role::Empty;
@@ -291,15 +286,14 @@ pub mod test {
 
         #[async_std::test]
         async fn build_has_role_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let expected_data = vec![
                 158, 151, 184, 246, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 134, 50,
-                136, 105, 228, 225, 244, 1, 225, 5, 42, 95, 74, 174, 139, 69, 244, 38, 16,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219,
+                108, 141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
             ];
 
-            let transaction = build_has_role_transaction(&client, &Role::Trustee, &account())
+            let transaction = build_has_role_transaction(&client, &Role::Trustee, &TEST_ACCOUNT)
                 .await
                 .unwrap();
 
@@ -323,7 +317,6 @@ pub mod test {
 
         #[test]
         fn parse_has_role_result_test() {
-            init_env_logger();
             let client = mock_client();
             let result = vec![0; 32];
             let expected_has_role = false;

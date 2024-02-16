@@ -7,7 +7,9 @@ package "Ethereum Network" {
             component [Account Control]
             component [Validator Control]
             component [Upgrade Control]
+            component [IndyBesu Did Registry]
             component [Ethereum Did Registry]
+            component [Universal Did Resolver]
             component [Schema Registry]
             component [Credential Definition Registry]
         }
@@ -37,7 +39,6 @@ together {
           Interact with a network node
           - ping network
           - submit transaction
-          - submit event query
           - retrieve transaction receipt
         end note
     }

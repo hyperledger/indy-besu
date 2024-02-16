@@ -1,11 +1,11 @@
-export function createBaseDidDocument(did: string) {
+export function createBaseDidDocument(did: string, key?: any) {
   const kid = `${did}#KEY-1`
   return JSON.stringify({
     '@context': ['https://www.w3.org/ns/did/v1'],
     id: did,
     controller: [did],
     verificationMethod: [
-      {
+      key || {
         id: kid,
         type: 'Ed25519VerificationKey2018',
         controller: did,
@@ -23,19 +23,18 @@ export function createBaseDidDocument(did: string) {
 }
 
 interface CreateSchemaParams {
-  issuer: string
+  issuerId: string
   name?: string
   version?: string
   attrNames?: string[]
 }
 
 export function createSchemaObject({
-  issuer,
+  issuerId,
   name = 'BasicIdentity',
   version = '1.0.0',
   attrNames = ['First Name', 'Last Name'],
 }: CreateSchemaParams) {
-  const issuerId = `did:ethr:${issuer}`
   const id = `${issuerId}/anoncreds/v0/SCHEMA/${name}/${version}`
   return {
     id,
@@ -50,7 +49,7 @@ export function createSchemaObject({
 }
 
 interface CreateCredentialDefinitionParams {
-  issuer: string
+  issuerId: string
   schemaId: string
   credDefType?: string
   tag?: string
@@ -58,7 +57,7 @@ interface CreateCredentialDefinitionParams {
 }
 
 export function createCredentialDefinitionObject({
-  issuer,
+  issuerId,
   schemaId,
   credDefType = 'CL',
   tag = 'BasicIdentity',
@@ -69,7 +68,6 @@ export function createCredentialDefinitionObject({
     z: '632...005',
   },
 }: CreateCredentialDefinitionParams) {
-  const issuerId = `did:ethr:${issuer}`
   const id = `${issuerId}/anoncreds/v0/CLAIM_DEF/${schemaId}/${tag}`
   return {
     id,

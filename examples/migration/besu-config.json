@@ -3,7 +3,7 @@
   "nodeAddress": "http://127.0.0.1:8545",
   "contracts": {
     "didRegistry": {
-      "address": "0x0000000000000000000000000000000000003333",
+      "address": "0x0000000000000000000000000000000000018888",
       "path": "../../smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json"
     },
     "schemaRegistry": {
@@ -19,7 +19,7 @@
       "path": "../../smart_contracts/artifacts/contracts/auth/RoleControl.sol/RoleControl.json"
     },
     "legacyMappingRegistry": {
-      "address": "0x0000000000000000000000000000000000019999",
+      "address": "0x0000000000000000000000000000000000017777",
       "path": "../../smart_contracts/artifacts/contracts/migration/LegacyMappingRegistry.sol/LegacyMappingRegistry.json"
     }
   }

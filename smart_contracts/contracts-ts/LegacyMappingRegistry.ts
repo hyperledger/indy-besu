@@ -1,8 +1,8 @@
-import { Signature } from 'ethers'
+import { concat, Signature, toUtf8Bytes } from 'ethers'
 import { Contract } from '../utils/contract'
 
 export class LegacyMappingRegistry extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000019999'
+  public static readonly defaultAddress = '0x0000000000000000000000000000000000017777'
 
   constructor(sender?: any) {
     super(LegacyMappingRegistry.name, sender)
@@ -77,5 +77,39 @@ export class LegacyMappingRegistry extends Contract {
 
   public async resourceMapping(id: string): Promise<string> {
     return this.instance.resourceMapping(id)
+  }
+
+  public async signDidMappingEndorsementData(
+    legacyMappingRegistry: LegacyMappingRegistry,
+    identity: string,
+    privateKey: Uint8Array,
+    identifier: string,
+    ed25519Key: Uint8Array,
+    ed25519Signature: Uint8Array,
+  ) {
+    return this.signEndorsementData(
+      privateKey,
+      concat([identity, toUtf8Bytes('createDidMapping'), toUtf8Bytes(identifier), ed25519Key, ed25519Signature]),
+    )
+  }
+
+  public async signResourceMappingEndorsementData(
+    legacyMappingRegistry: LegacyMappingRegistry,
+    identity: string,
+    privateKey: Uint8Array,
+    legacyIssuerIdentifier: string,
+    legacyIdentifier: string,
+    newIdentifier: string,
+  ) {
+    return this.signEndorsementData(
+      privateKey,
+      concat([
+        identity,
+        toUtf8Bytes('createResourceMapping'),
+        toUtf8Bytes(legacyIssuerIdentifier),
+        toUtf8Bytes(legacyIdentifier),
+        toUtf8Bytes(newIdentifier),
+      ]),
+    )
   }
 }

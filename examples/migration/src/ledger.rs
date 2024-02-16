@@ -341,15 +341,13 @@ impl BesuLedger {
         schema: &indy_besu_vdr::Schema,
         wallet: &BesuWallet,
     ) -> indy_besu_vdr::SchemaId {
-        let schema_id =
-            indy_besu_vdr::SchemaId::build(&schema.issuer_id, &schema.name, &schema.version);
         let transaction =
-            build_create_schema_transaction(&self.client, account, &schema_id, schema)
+            build_create_schema_transaction(&self.client, account, schema)
                 .await
                 .unwrap();
         self.sign_and_submit_transaction(&transaction, wallet, account)
             .await;
-        schema_id
+        schema.id()
     }
 
     pub async fn publish_resource_mapping(
@@ -381,22 +379,16 @@ impl BesuLedger {
         cred_def: &indy_besu_vdr::CredentialDefinition,
         wallet: &BesuWallet,
     ) -> indy_besu_vdr::CredentialDefinitionId {
-        let cred_def_id = indy_besu_vdr::CredentialDefinitionId::build(
-            &cred_def.issuer_id,
-            &cred_def.schema_id,
-            &cred_def.tag,
-        );
         let transaction = build_create_credential_definition_transaction(
             &self.client,
             account,
-            &cred_def_id,
             cred_def,
         )
         .await
         .unwrap();
         self.sign_and_submit_transaction(&transaction, wallet, account)
             .await;
-        cred_def_id
+        cred_def.id()
     }
 
     async fn sign_and_submit_transaction(

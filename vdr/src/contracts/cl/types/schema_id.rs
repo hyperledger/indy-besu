@@ -31,10 +31,6 @@ impl SchemaId {
     pub fn hash(&self) -> Vec<u8> {
         sha3::Keccak256::digest(self.0.as_bytes()).to_vec()
     }
-
-    pub(crate) fn to_filter(&self) -> String {
-        hex::encode(self.hash())
-    }
 }
 
 impl TryFrom<&SchemaId> for ContractParam {

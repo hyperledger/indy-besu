@@ -44,7 +44,7 @@ enum Status {
 }
 
 impl LedgerClient {
-    /// Create indy2 client interacting with ledger
+    /// Create indybesu client interacting with ledger
     ///
     /// # Params
     ///  - `chain_id` - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
@@ -271,6 +271,99 @@ struct SignatureData {
 ```
 
 ## Contracts/Requests methods
+
+### DID IndyBesu
+ 
+#### Writes
+
+```rust
+/// Prepare transaction executing `DidRegistry.createDid` smart contract method to create a new DID on the Ledger
+///
+/// #Params
+///  param: client: LedgerClient - Ledger client
+///  param: from: string - sender account address
+///  param: did: string - DID to create
+///  param: did_document: DidDocument - DID Document matching to the specification: https://www.w3.org/TR/did-core/
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_create_did_transaction(
+    client: LedgerClient,
+    from: String,
+    did: String,
+    did_document: DidDoc,
+) -> Transaction {
+    unimplemented!();
+}
+```
+
+```rust
+/// Prepare transaction executing `DidRegistry.updateDid` smart contract method to update an existing DID Document
+///
+/// #Params
+///  param: client: LedgerClient - Ledger client
+///  param: from: string - sender account address
+///  param: did: string - DID to update
+///  param: did_document: DidDocument - DID Document matching to the specification: https://www.w3.org/TR/did-core/
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_update_did_transaction(
+  client: LedgerClient,
+  from: String,
+  did: String,
+  did_document: DidDoc,
+) -> Transaction;
+```
+
+```rust
+/// Prepare transaction executing `DidRegistry.deactivateDid` smart contract method to deactivate an existing DID
+///
+/// #Params
+///  param: client: LedgerClient - Ledger client
+///  param: from: string - sender account address
+///  param: did: string - did to deactivate
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_deactivate_did_transaction(
+    client: LedgerClient,
+    from: String,
+    did: String,
+) -> Transaction;
+```
+
+#### Resolve
+
+```rust
+/// Prepare transaction executing `DidRegistry.resolveDid` smart contract method to resolve a DID
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: did - DID to resolve
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_resolve_did_transaction(
+    client: LedgerClient,
+    did: String,
+) -> Transaction;
+```
+
+```rust
+/// Parse response for of `DidRegistry.resolveDid` smart contract 
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: response: bytes - received response
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_parse_resolve_did_response(
+    client: LedgerClient,
+    response: bytes,
+) -> DidDocumentWithMeta;
+```
 
 ### DID Ethr
 
@@ -726,7 +819,11 @@ pub fn parse_did_owner_changed_event_response(
 /// # Returns
 ///   Parsed DID event object
 pub fn parse_did_event_response(client: &LedgerClient, event: &EventLog) -> VdrResult<DidEvents>;
+```
 
+### Resolve DID
+
+```rust
 /// Single step function to resolve a DidDocument with metadata for the given DID
 ///
 /// # Params
@@ -743,7 +840,6 @@ pub async fn resolve_did(
 ) -> VdrResult<DidDocumentWithMeta>
 ```
 
-
 ### Schema
 
 #### Create Schema
@@ -756,115 +852,60 @@ pub async fn resolve_did(
 /// - `from` transaction sender account address
 /// - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
 ///
-/// # Returns
-/// Write transaction to sign and submit
-pub async fn build_create_schema_transaction(
-  client: &LedgerClient,
-  from: &Address,
-  schema: &Schema,
-) -> VdrResult<Transaction>;
-
-/// Prepared data for execution of SchemaRegistry.createSchema contract method to endorse a new Schema
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
-///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
-pub async fn build_create_schema_endorsing_data(
-  client: &LedgerClient,
-  schema: &Schema,
-) -> VdrResult<TransactionEndorsingData>;
-
-/// Build transaction to execute SchemaRegistry.createSchemaSigned contract method to
-///   endorse a new Schema
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
-///  - `signature` signature of schema issuer
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-pub async fn build_create_schema_signed_transaction(
-  client: &LedgerClient,
-  sender: &Address,
-  schema: &Schema,
-  signature: &SignatureData,
-) -> VdrResult<Transaction>
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_create_schema_transaction(
+    client: LedgerClient,
+    from: String,
+    schema: Schema,
+) -> Transaction;
 ```
 
 #### Resolve Schema
 
 ```rust
-/// Build transaction to execute SchemaRegistry.schemasCreated contract method to get
-///   block number when Schema was created
+/// Prepare transaction executing `SchemaRegistry.resolveSchema` smart contract method 
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `id` identifier of target schema
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: id - id of Schema to resolve
 ///
 /// #Returns
-///   transaction: Transaction - prepared read transaction object to submit
-pub async fn build_get_schema_created_transaction(
-  client: &LedgerClient,
-  id: &SchemaId,
-) -> VdrResult<Transaction>;
-
-/// Build event query to get SchemaRegistry.SchemaCreated event from the ledger
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `id` identifier of target schema
-///  - `from_block` start block
-///  - `to_block` finish block
-///
-/// #Returns
-///   query: EventQuery - prepared event query to send
-#[logfn(Ifo)]
-pub async fn build_get_schema_query(
-  client: &LedgerClient,
-  id: &SchemaId,
-  from_block: Option<&Block>,
-  to_block: Option<&Block>,
-) -> VdrResult<EventQuery>
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_resolve_schema_transaction(
+    client: LedgerClient,
+    id: String,
+) -> Transaction;
 ```
 
 ```rust
-/// Parse the result of execution SchemaRegistry.schemas contract method to receive
-///   block number when a schema was created
+/// Parse response for of `SchemaRegistry.resolveSchema` smart contract 
 ///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: response: bytes - received response bytes
 ///
-/// # Returns
-///   Block when the schema was created
-pub fn parse_schema_created_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Block>;
-
-/// Parse SchemaRegistry.SchemaCreated from the event log.
-///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
-///
-/// # Returns
-///   Parsed Schema object
-pub fn parse_schema_created_event(client: &LedgerClient, log: &EventLog) -> VdrResult<SchemaCreatedEvent>
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_parse_resolve_schema_response(
+    client: LedgerClient,
+    response: bytes,
+) -> SchemaWithMeta;
 ```
 
 ```rust
-/// Single step function to resolve a Schema for the given ID
+/// Single step function to resolve schema from the ledger
 ///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `id` id of schema to resolve
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: id - id of Schema to resolve
 ///
-/// # Returns
-///   Resolved Schema object
-pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<Schema>;
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_resolve_schema(
+    client: LedgerClient,
+    id: String,
+) -> Schema;
 ```
 
 ### Credential Definition
@@ -872,128 +913,71 @@ pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<S
 #### Create Credential Definition
 
 ```rust
-/// Build transaction to execute CredentialDefinitionRegistry.createCredentialDefinition contract
-/// method to create a new Credential Definition
-///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `id` id of credential definition to be created
-/// - `credential_definition` Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition
-///
-/// # Returns
-/// Write transaction to sign and submit
-pub async fn build_create_credential_definition_transaction(
-  client: &LedgerClient,
-  from: &Address,
-  id: &CredentialDefinitionId,
-  credential_definition: &CredentialDefinition,
-) -> VdrResult<Transaction>;
-
-/// Prepared data for endorsing CredentialDefinitionRegistry.createCredentialDefinition contract method
+/// Prepare transaction executing CredentialDefinitionRegistry.createCredentialDefinition smart contract method
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-/// - `id` id of credential definition to be created
-/// - `credential_definition` Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: from: string - sender account address
+///  param: cred_def - Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition 
+///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
-pub async fn build_create_credential_definition_endorsing_data(
-  client: &LedgerClient,
-  id: &CredentialDefinitionId,
-  credential_definition: &CredentialDefinition,
-) -> VdrResult<TransactionEndorsingData>;
-
-/// Build transaction to execute CredentialDefinitionRegistry.createCredentialDefinitionSigned contract method to
-///   endorse a new Credential Definition
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-/// - `id` id of credential definition to be created
-/// - `credential_definition` Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition
-///  - `signature` signature of schema issuer
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-pub async fn build_create_credential_definition_signed_transaction(
-  client: &LedgerClient,
-  from: &Address,
-  id: &CredentialDefinitionId,
-  credential_definition: &CredentialDefinition,
-  signature: &SignatureData,
-) -> VdrResult<Transaction>
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_create_credential_definition_transaction(
+    client: LedgerClient,
+    from: String,
+    cred_def: CredentialDefinition,
+    options: Option<BuildTxnOptions>,
+) -> Transaction;
 ```
 
 #### Resolve Credential DefinitionCredential Definition
 
 ```rust
-/// Build transaction to execute CredentialDefinitionRegistry.credDefs contract method to get
-///   block number when a Credential Definition was created
+/// Prepare transaction executing CredentialDefinitionRegistry.resolveCredentialDefinition smart contract method
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `id` identifier of target credential definition
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: id - id of Credential Definition to resolve
+///  param: options: Option<BuildTxnOptions> - (Optional) extra data required for transaction preparation
 ///
 /// #Returns
-///   transaction: Transaction - prepared read transaction object to submit
-pub async fn build_get_credential_definition_created_transaction(
-  client: &LedgerClient,
-  id: &CredentialDefinitionId,
-) -> VdrResult<Transaction>;
-
-/// Build event query to get CredentialDefinitionRegistry.CredentialDefinitionCreated event from the ledger
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `id` identifier of target credential definition
-///  - `from_block` start block
-///  - `to_block` finish block
-///
-/// #Returns
-///   query: EventQuery - prepared event query to send
-pub async fn build_get_credential_definition_query(
-  client: &LedgerClient,
-  id: &CredentialDefinitionId,
-  from_block: Option<&Block>,
-  to_block: Option<&Block>,
-) -> VdrResult<EventQuery>
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_build_resolve_credential_definition_transaction(
+    client: LedgerClient,
+    id: String,
+    options: Option<BuildTransactionOptions>,
+) -> Transaction;
 ```
 
 ```rust
-/// Parse the result of execution CredentialDefinitionRegistry.credDefs contract method to receive
-///   block number when a credential definition was created
+/// Parse response for of `CredentialDefinitionRegistry.resolveCredentialDefinition` smart contract 
 ///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: response: bytes - received response bytes
 ///
-/// # Returns
-///   Block when the credential definition was created
-pub fn parse_credential_definition_created_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Block>;
-
-/// Parse CredentialDefinitionRegistry.CredentialDefinitionCreated from the event log.
-///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
-///
-/// # Returns
-///   Parsed Credential Definition event object
-pub fn parse_credential_definition_created_event(client: &LedgerClient, log: &EventLog) -> VdrResult<CredentialDefinitionCreatedEvent>
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_parse_resolve_credential_definition_response(
+    client: LedgerClient,
+    response: bytes,
+) -> CredentialDefinitionWithMeta;
 ```
 
 ```rust
-/// Single step function to resolve a Credential Definition for the given ID
+/// Single step function to resolve credential definition from the ledger
 ///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `id` id of schema to resolve
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: id - id of Credential Definition to resolve
 ///
-/// # Returns
-///   Resolved Credential Definition object
-pub async fn resolve_credential_definition(client: &LedgerClient, id: &CredentialDefinitionId) -> VdrResult<CredentialDefinition>;
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+fn indy_vdr_resolve_credential_definition(
+    client: LedgerClient,
+    id: String,
+) -> CredentialDefinition;
 ```
 
 ### Auth
@@ -1158,4 +1142,219 @@ fn indy_vdr_parse_get_validators_response(
 struct ValidatorList {
     validators: Vec<string>
 }
+```
+
+### DID Ethr
+
+#### Writes
+
+```rust
+/// Change owner of ethr DID 
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: from: string - sender account address
+///  param: did: string - DID to change ownership
+///  param: new_owner: string - account addres sof new owner
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+pub async fn build_did_change_owner_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    new_owner: &Address,
+) -> VdrResult<Transaction>;
+
+/// Endorsing version of method to change owner for ethr DID 
+pub async fn build_did_change_owner_signed_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    new_owner: &Address,
+    signature: &Signature,
+) -> VdrResult<Transaction>;
+
+/// An identity can assign multiple delegates to manage signing on their behalf for specific purposes.
+/// Function to add a new delegate for a DID
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: from: string - sender account address
+///  param: did: string - DID to add delegate
+///  param: delegate_type: string - type of delegation
+///  param: delegate: string - account address of delegate
+///  param: validity: Option<u64> - delegate validity time
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+pub async fn build_did_add_delegate_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    delegate_type: &DelegateType,
+    delegate: &Address,
+    validity: Option<u64>,
+) -> VdrResult<Transaction>;
+
+/// Endorsing version of method to add a delegate for ethr DID
+pub async fn build_did_add_delegate_signed_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    delegate_type: &DelegateType,
+    delegate: &Address,
+    validity: Option<u64>,
+    signature: &Signature,
+) -> VdrResult<Transaction>;
+
+/// An identity can assign multiple delegates to manage signing on their behalf for specific purposes.
+/// Function to remove a delegate for a DID
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: from: string - sender account address
+///  param: did: string - DID to remove delegate
+///  param: delegate_type: string - type of delegation
+///  param: delegate: number - account address of delegate
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+pub async fn build_did_revoke_delegate_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    delegate_type: &DelegateType,
+    delegate: &Address,
+) -> VdrResult<Transaction>;
+
+/// Endorsing version of method to remove a delegate for ethr DID
+pub async fn build_did_revoke_delegate_signed_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    delegate_type: &DelegateType,
+    delegate: &Address,
+    signature: &Signature,
+) -> VdrResult<Transaction>;
+
+/// An identity may need to publish some information that is only needed off-chain but still requires the security benefits of using a blockchain.
+/// Function to add an attribute associated with the DID
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: from: string - sender account address
+///  param: did: string - DID to add attribute
+///  param: attribute: DidDocAttribute - attribute to add
+///  param: validity: Option<u64> - attribute validity time
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+pub async fn build_did_set_attribute_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    attribute: &DidDocAttribute,
+    validity: Option<Validity>,
+) -> VdrResult<Transaction>;
+
+/// Endorsing version of method to add an attribute for ethr DID
+pub async fn build_did_set_attribute_signed_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    did: &DID,
+    attribute: &DidDocAttribute,
+    validity: Option<Validity>,
+    signature: &Signature,
+) -> VdrResult<Transaction>;
+
+/// An identity may need to publish some information that is only needed off-chain but still requires the security benefits of using a blockchain.
+/// Function to remove an attribute associated with the DID
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: from: string - sender account address
+///  param: did: string - DID to add attribute
+///  param: attribute: DidDocAttribute - attribute to add
+///  param: validity: Option<u64> - attribute validity time
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+pub async fn build_did_revoke_attribute_transaction(
+    client: &LedgerClient,
+    _from: &Address,
+    did: &DID,
+    attribute: &DidDocAttribute,
+) -> VdrResult<Transaction>;
+
+/// Endorsing version of method to remove an attribute for ethr DID
+pub async fn build_did_revoke_attribute_signed_transaction(
+    client: &LedgerClient,
+    from: &Address,
+    _did: &DID,
+    attribute: &DidDocAttribute,
+    signature: &Signature,
+) -> VdrResult<Transaction>;
+```
+
+#### Resolve
+
+```rust
+/// Build a transaction to query a block when a DID was changed lst time.
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: did: string - DID to get the chnaged block number
+///
+/// #Returns
+///   transaction: Transaction - prepared transaction object 
+pub async fn build_did_changed_transaction(
+    client: &LedgerClient,
+    did: &DID,
+) -> VdrResult<Transaction>;
+
+/// Parse response of `EthrDidRegistry.changed` smart contract 
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: response: bytes - received response
+///
+/// #Returns
+///   block - block number when an identity was changed last time (0 - mean that identity has never been changed)
+pub fn parse_did_changed_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Block>;
+
+/// Build an query to retrieve log events raised for the given DID  
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: did: string - DID to query log events
+///  param: block: Option<number> - Specific block number to retrieve events 
+///
+/// #Returns
+///   query: EventQuery - prepared event query to submit
+pub async fn build_get_did_event_query(
+    client: &LedgerClient,
+    did: &DID,
+    block: Option<&Block>,
+) -> VdrResult<EventQuery>;
+
+/// Parse log response of query for DID events
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: log: RawLog - received log events
+///
+/// #Returns
+///   events - parsed events raised for the DID
+pub fn parse_did_event_response(client: &LedgerClient, log: &RawLog) -> VdrResult<DIDEvents>;
+
+/// Single step function to resolve DID DDocument for teh given DID
+///
+/// #Params
+///  param: client: Ledger - client (Ethereum client - for example web3::Http)
+///  param: did: string - DID to get a DID Document 
+///
+/// #Returns
+///   DidDocument - Received DID DDocument
+pub async fn resolve_did(client: &LedgerClient, did: &DID) -> VdrResult<DidDocument>;
 ```

@@ -1,13 +1,13 @@
 import fs from "fs";
 import secp256k1 from "secp256k1";
 
-import { LedgerClient, EthrDidRegistry, SchemaRegistry } from "indy-besu-vdr";
+import { LedgerClient, EthrDidRegistry, DidResolver, SchemaRegistry } from "indy-besu-vdr";
 
 const chainId = 1337
 const nodeAddress = 'http://127.0.0.1:8545'
 // set path to the compiled contract
 const didEthrRegistryConfig = {
-    address: '0x0000000000000000000000000000000000003333',
+    address: '0x0000000000000000000000000000000000018888',
     specPath: '/Users/indy-besu/smart_contracts/artifacts/contracts/did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json'
 }
 const schemaRegistryConfig = {
@@ -52,9 +52,10 @@ async function demo() {
     console.log('2. Publish and Modify DID')
     const did = 'did:ethr:' + identity.address
     const serviceAttribute = {"serviceEndpoint":"http://10.0.0.2","type":"TestService"}
-    let endorsingData = await EthrDidRegistry.buildDidSetAttributeEndorsingData(client, did, serviceAttribute, BigInt(100000))
+    const validity = BigInt(1000)
+    let endorsingData = await EthrDidRegistry.buildDidSetAttributeEndorsingData(client, did, serviceAttribute, validity)
     let authorSignature = sign(endorsingData.getSigningBytes(), identity.secret)
-    let transaction = await EthrDidRegistry.buildDidSetAttributeSignedTransaction(client, trustee.address, did, serviceAttribute, BigInt(100000), authorSignature)
+    let transaction = await EthrDidRegistry.buildDidSetAttributeSignedTransaction(client, trustee.address, did, serviceAttribute, validity, authorSignature)
     let transactionSignature = sign(transaction.getSigningBytes(), trustee.secret)
     transaction.setSignature(transactionSignature)
     let txnHash = await client.submitTransaction(transaction)
@@ -62,21 +63,21 @@ async function demo() {
     console.log('Transaction receipt: ' + receipt)
 
     console.log('3. Resolve DID Document')
-    const didWithMeta = await EthrDidRegistry.resolveDid(client, did, null)
+    const didWithMeta = await DidResolver.resolveDid(client, did, null)
     console.log('Resolved DID Document: ' + JSON.stringify(didWithMeta, null, 2))
 
     console.log('4. Publish Schema')
     const name  = (Math.random() + 1).toString(36).substring(7)
-    const schemaId = `did:ethr:test:${identity.address}/anoncreds/v0/SCHEMA/${name}/1.0.0`
+    const schemaId = `${did}/anoncreds/v0/SCHEMA/${name}/1.0.0`
     const schema = {
         "attrNames": [ "First Name", "Last Name" ],
-        "issuerId": `did:ethr:test:${identity.address}`,
+        "issuerId": did,
         "name": name,
         "version": "1.0.0"
     }
-    let schemaEndorsingData = await SchemaRegistry.buildCreateSchemaEndorsingData(client, schemaId, schema)
+    let schemaEndorsingData = await SchemaRegistry.buildCreateSchemaEndorsingData(client, schema)
     authorSignature =  sign(schemaEndorsingData.getSigningBytes(), identity.secret)
-    transaction = await SchemaRegistry.buildCreateSchemaSignedTransaction(client, trustee.address, schemaId, schema, authorSignature)
+    transaction = await SchemaRegistry.buildCreateSchemaSignedTransaction(client, trustee.address, schema, authorSignature)
     transactionSignature = sign(transaction.getSigningBytes(), trustee.secret)
     transaction.setSignature(transactionSignature)
     txnHash = await client.submitTransaction(transaction)

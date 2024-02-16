@@ -86,7 +86,7 @@ pub async fn build_create_did_mapping_endorsing_data(
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
         .add_param(&identity)?
-        .add_param(MethodStringParam::from(METHOD_CREATE_DID_MAPPING))?
+        .add_param(&MethodStringParam::from(METHOD_CREATE_DID_MAPPING))?
         .add_param(legacy_identifier)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
@@ -125,9 +125,9 @@ pub async fn build_create_did_mapping_signed_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_DID_MAPPING_SIGNED)
         .add_param(&identity)?
-        .add_param(signature.v())?
-        .add_param(signature.r())?
-        .add_param(signature.s())?
+        .add_param(&signature.v())?
+        .add_param(&signature.r())?
+        .add_param(&signature.s())?
         .add_param(legacy_identifier)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
@@ -243,7 +243,7 @@ pub async fn build_create_resource_mapping_endorsing_data(
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
         .add_param(&identity)?
-        .add_param(MethodStringParam::from(METHOD_CREATE_RESOURCE_MAPPING))?
+        .add_param(&MethodStringParam::from(METHOD_CREATE_RESOURCE_MAPPING))?
         .add_param(legacy_issuer_identifier)?
         .add_param(legacy_identifier)?
         .add_param(new_identifier)?
@@ -281,9 +281,9 @@ pub async fn build_create_resource_mapping_signed_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_RESOURCE_MAPPING_SIGNED)
         .add_param(&identity)?
-        .add_param(signature.v())?
-        .add_param(signature.r())?
-        .add_param(signature.s())?
+        .add_param(&signature.v())?
+        .add_param(&signature.r())?
+        .add_param(&signature.s())?
         .add_param(legacy_issuer_identifier)?
         .add_param(legacy_identifier)?
         .add_param(new_identifier)?
@@ -343,10 +343,11 @@ pub mod test {
     use super::*;
     use crate::{
         client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, LEGACY_MAPPING_REGISTRY_ADDRESS, TRUSTEE_ACC,
+            mock_client, CHAIN_ID, DEFAULT_NONCE, LEGACY_MAPPING_REGISTRY_ADDRESS, TEST_ACCOUNT,
         },
-        contracts::did::types::{did::DID, did_doc::test::ISSUER_ID},
+        contracts::{did::types::did::DID, types::did_doc::test::TEST_ETHR_DID},
     };
+
     use std::sync::RwLock;
 
     const LEGACY_DID: &str = "VsKV7grR1BUE29mG2Fm2kX";
@@ -363,8 +364,8 @@ pub mod test {
             let client = mock_client();
             let transaction = build_create_did_mapping_transaction(
                 &client,
-                &TRUSTEE_ACC,
-                &DID::from(ISSUER_ID),
+                &TEST_ACCOUNT,
+                &DID::from(TEST_ETHR_DID),
                 &LegacyDid::from(LEGACY_DID),
                 &LegacyVerkey::from(LEGACY_VERKEY),
                 &Ed25519Signature::from(LEGACY_SIGNATURE.as_slice()),
@@ -373,7 +374,7 @@ pub mod test {
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: LEGACY_MAPPING_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
@@ -436,8 +437,8 @@ pub mod test {
             let client = mock_client();
             let transaction = build_create_resource_mapping_transaction(
                 &client,
-                &TRUSTEE_ACC,
-                &DID::from(ISSUER_ID),
+                &TEST_ACCOUNT,
+                &DID::from(TEST_ETHR_DID),
                 &LegacyDid::from(LEGACY_DID),
                 &ResourceIdentifier::from(LEGACY_SCHEMA_ID),
                 &ResourceIdentifier::from(NEW_SCHEMA_ID),
@@ -446,7 +447,7 @@ pub mod test {
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: LEGACY_MAPPING_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,

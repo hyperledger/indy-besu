@@ -505,7 +505,7 @@ impl TryFrom<&Nonce> for ContractParam {
     type Error = VdrError;
 
     fn try_from(value: &Nonce) -> Result<Self, Self::Error> {
-        MethodUintBytesParam::from(value.0).try_into()
+        (&MethodUintBytesParam::from(value.0)).try_into()
     }
 }
 
@@ -520,7 +520,7 @@ pub mod test {
     use super::*;
     use crate::{
         client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, INVALID_ADDRESS, TRUSTEE_ACC,
+            mock_client, CHAIN_ID, DEFAULT_NONCE, INVALID_ADDRESS, TRUSTEE_ACCOUNT,
             VALIDATOR_CONTROL_ADDRESS,
         },
         contracts::network::test::{
@@ -537,7 +537,7 @@ pub mod test {
     pub fn write_transaction() -> Transaction {
         Transaction {
             type_: TransactionType::Write,
-            from: Some(TRUSTEE_ACC.clone()),
+            from: Some(TRUSTEE_ACCOUNT.clone()),
             to: VALIDATOR_CONTROL_ADDRESS.clone(),
             nonce: Some(DEFAULT_NONCE.clone()),
             chain_id: CHAIN_ID,
@@ -633,32 +633,32 @@ pub mod test {
 
         #[rstest]
         #[case::contract_name_does_not_set(
-        None,
-        CONTRACT_METHOD_EXAMPLE,
-        Some(TransactionType::Read),
-        None,
-        VdrError::ClientInvalidState("Contract name is not set".to_string())
+            None,
+            CONTRACT_METHOD_EXAMPLE,
+            Some(TransactionType::Read),
+            None,
+            VdrError::ClientInvalidState("Contract name is not set".to_string())
         )]
         #[case::contract_method_does_not_set(
-        CONTRACT_NAME_EXAMPLE,
-        None,
-        Some(TransactionType::Read),
-        None,
-        VdrError::ClientInvalidState("Contract method is not set".to_string())
+            CONTRACT_NAME_EXAMPLE,
+            None,
+            Some(TransactionType::Read),
+            None,
+            VdrError::ClientInvalidState("Contract method is not set".to_string())
         )]
         #[case::contract_method_does_not_exist(
-        CONTRACT_NAME_EXAMPLE,
-        INVALID_METHOD,
-        Some(TransactionType::Read),
-        None,
-        VdrError::ContractInvalidName("123".to_string())
+            CONTRACT_NAME_EXAMPLE,
+            INVALID_METHOD,
+            Some(TransactionType::Read),
+            None,
+            VdrError::ContractInvalidName("123".to_string())
         )]
         #[case::write_sender_does_not_set(
-        CONTRACT_NAME_EXAMPLE,
-        CONTRACT_METHOD_EXAMPLE,
-        Some(TransactionType::Write),
-        None,
-        VdrError::ClientInvalidTransaction("Transaction `sender` is not set".to_string())
+            CONTRACT_NAME_EXAMPLE,
+            CONTRACT_METHOD_EXAMPLE,
+            Some(TransactionType::Write),
+            None,
+            VdrError::ClientInvalidTransaction("Transaction `sender` is not set".to_string())
         )]
         #[case::invalid_from_address(
         CONTRACT_NAME_EXAMPLE,
@@ -716,34 +716,34 @@ pub mod test {
 
         #[rstest]
         #[case::empty_response_bytes(
-        CONTRACT_NAME_EXAMPLE,
-        CONTRACT_METHOD_EXAMPLE,
-        EMPTY_RESPONSE,
-        VdrError::ContractInvalidResponseData("Empty response bytes".to_string())
+            CONTRACT_NAME_EXAMPLE,
+            CONTRACT_METHOD_EXAMPLE,
+            EMPTY_RESPONSE,
+            VdrError::ContractInvalidResponseData("Empty response bytes".to_string())
         )]
         #[case::contract_not_set(
-        None,
-        CONTRACT_METHOD_EXAMPLE,
-        VALIDATOR_LIST_BYTES,
-        VdrError::ClientInvalidState("Contract name is not set".to_string())
+            None,
+            CONTRACT_METHOD_EXAMPLE,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ClientInvalidState("Contract name is not set".to_string())
         )]
         #[case::contract_does_not_exist(
-        INVALID_CONTRACT,
-        CONTRACT_METHOD_EXAMPLE,
-        VALIDATOR_LIST_BYTES,
-        VdrError::ContractInvalidName("123".to_string())
+            INVALID_CONTRACT,
+            CONTRACT_METHOD_EXAMPLE,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ContractInvalidName("123".to_string())
         )]
         #[case::contract_method_not_set(
-        CONTRACT_NAME_EXAMPLE,
-        None,
-        VALIDATOR_LIST_BYTES,
-        VdrError::ClientInvalidState("Contract method is not set".to_string())
+            CONTRACT_NAME_EXAMPLE,
+            None,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ClientInvalidState("Contract method is not set".to_string())
         )]
         #[case::contract_method_does_not_exist(
-        CONTRACT_NAME_EXAMPLE,
-        INVALID_METHOD,
-        VALIDATOR_LIST_BYTES,
-        VdrError::ContractInvalidName("123".to_string())
+            CONTRACT_NAME_EXAMPLE,
+            INVALID_METHOD,
+            VALIDATOR_LIST_BYTES,
+            VdrError::ContractInvalidName("123".to_string())
         )]
         async fn transaction_parser_tests(
             #[case] contract: Option<&str>,

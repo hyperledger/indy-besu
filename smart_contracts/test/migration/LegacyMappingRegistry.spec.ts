@@ -1,10 +1,9 @@
 import { expect } from 'chai'
-import { EthereumExtDidRegistry, LegacyMappingRegistry } from '../../contracts-ts'
+import { LegacyMappingRegistry } from '../../contracts-ts'
 import {
   createDid,
   deployLegacyMappingRegistry,
-  signDidMappingEndorsementData,
-  signResourceMappingEndorsementData,
+  TestableIndyDidRegistry,
   TestableLegacyMappingRegistry,
   testActorAddress,
   testActorPrivateKey,
@@ -13,7 +12,7 @@ import { DidErrors, MigrationErrors } from '../utils/errors'
 import { TestAccounts } from '../utils/test-entities'
 
 describe('LegacyMappingRegistry', function () {
-  let didRegistry: EthereumExtDidRegistry
+  let indyDidRegistry: TestableIndyDidRegistry
   let legacyMappingRegistry: TestableLegacyMappingRegistry
   let testAccounts: TestAccounts
   let issuer: string
@@ -29,19 +28,20 @@ describe('LegacyMappingRegistry', function () {
 
   beforeEach(async function () {
     const {
-      didRegistry: didRegistryInit,
+      indyDidRegistry: indyDidRegistryInit,
       legacyMappingRegistry: legacyMappingRegistryInit,
       testAccounts: testAccountsInit,
     } = await deployLegacyMappingRegistry()
 
     issuer = testAccountsInit.trustee.account.address
+    indyDidRegistryInit.connect(testAccountsInit.trustee.account)
     legacyMappingRegistryInit.connect(testAccountsInit.trustee.account)
 
-    const issuerId = `did:ethr:${issuer}`
-    await createDid(didRegistryInit, testAccountsInit.trustee.account.address, issuerId)
+    const issuerId = `did:indybesu:${issuer}`
+    await createDid(indyDidRegistryInit, testAccountsInit.trustee.account.address, issuerId)
 
     legacyMappingRegistry = legacyMappingRegistryInit
-    didRegistry = didRegistryInit
+    indyDidRegistry = indyDidRegistryInit
     testAccounts = testAccountsInit
   })
 
@@ -83,7 +83,7 @@ describe('LegacyMappingRegistry', function () {
 
   describe('Endorse/Resolve DID mapping', function () {
     it('Should endorse DID mapping', async function () {
-      const sig = await signDidMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signDidMappingEndorsementData(
         legacyMappingRegistry,
         testActorAddress,
         testActorPrivateKey,
@@ -105,7 +105,7 @@ describe('LegacyMappingRegistry', function () {
 
     it('Should fail if endorsing duplicate DID mapping', async function () {
       // private key does not match to address
-      const sig = await signDidMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signDidMappingEndorsementData(
         legacyMappingRegistry,
         testActorAddress,
         testActorPrivateKey,
@@ -129,7 +129,7 @@ describe('LegacyMappingRegistry', function () {
 
     it('Should fail if endorsing with not owned DID', async function () {
       // private key does not match to address
-      const sig = await signDidMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signDidMappingEndorsementData(
         legacyMappingRegistry,
         testAccounts.trustee2.account.address,
         testActorPrivateKey,
@@ -150,7 +150,7 @@ describe('LegacyMappingRegistry', function () {
     })
 
     it('Should fail if endorsing invalid signature', async function () {
-      const sig = await signDidMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signDidMappingEndorsementData(
         legacyMappingRegistry,
         testActorAddress,
         testActorPrivateKey,
@@ -205,7 +205,7 @@ describe('LegacyMappingRegistry', function () {
 
   describe('Endorse/Resolve Resource mapping', function () {
     beforeEach(async function () {
-      const sig = await signDidMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signDidMappingEndorsementData(
         legacyMappingRegistry,
         testActorAddress,
         testActorPrivateKey,
@@ -223,7 +223,7 @@ describe('LegacyMappingRegistry', function () {
     })
 
     it('Should endorse Resource mapping', async function () {
-      const sig = await signResourceMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signResourceMappingEndorsementData(
         legacyMappingRegistry,
         testActorAddress,
         testActorPrivateKey,
@@ -245,7 +245,7 @@ describe('LegacyMappingRegistry', function () {
 
     it('Should fail if endorsing duplicate mapping', async function () {
       // private key does not match to address
-      const sig = await signResourceMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signResourceMappingEndorsementData(
         legacyMappingRegistry,
         testActorAddress,
         testActorPrivateKey,
@@ -269,7 +269,7 @@ describe('LegacyMappingRegistry', function () {
 
     it('Should fail if endorsing with not owned DID', async function () {
       // private key does not match to address
-      const sig = await signResourceMappingEndorsementData(
+      const sig = await legacyMappingRegistry.signResourceMappingEndorsementData(
         legacyMappingRegistry,
         testAccounts.trustee2.account.address,
         testActorPrivateKey,

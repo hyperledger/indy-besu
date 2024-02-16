@@ -26,10 +26,10 @@ impl SignatureData {
 #[derive(Debug)]
 pub(crate) struct SignatureV(pub u64);
 
-impl TryFrom<SignatureV> for ContractParam {
+impl TryFrom<&SignatureV> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: SignatureV) -> Result<Self, Self::Error> {
+    fn try_from(value: &SignatureV) -> Result<Self, Self::Error> {
         Ok(ContractParam::Uint((value.0 + 27).into()))
     }
 }
@@ -37,21 +37,21 @@ impl TryFrom<SignatureV> for ContractParam {
 #[derive(Debug)]
 pub(crate) struct SignatureR(pub Vec<u8>);
 
-impl TryFrom<SignatureR> for ContractParam {
+impl TryFrom<&SignatureR> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: SignatureR) -> Result<Self, Self::Error> {
-        Ok(ContractParam::FixedBytes(value.0))
+    fn try_from(value: &SignatureR) -> Result<Self, Self::Error> {
+        Ok(ContractParam::FixedBytes(value.0.to_vec()))
     }
 }
 
 #[derive(Debug)]
 pub(crate) struct SignatureS(pub Vec<u8>);
 
-impl TryFrom<SignatureS> for ContractParam {
+impl TryFrom<&SignatureS> for ContractParam {
     type Error = VdrError;
 
-    fn try_from(value: SignatureS) -> Result<Self, Self::Error> {
-        Ok(ContractParam::FixedBytes(value.0))
+    fn try_from(value: &SignatureS) -> Result<Self, Self::Error> {
+        Ok(ContractParam::FixedBytes(value.0.to_vec()))
     }
 }

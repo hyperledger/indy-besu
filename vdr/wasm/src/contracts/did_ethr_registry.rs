@@ -1,6 +1,6 @@
 use indy_besu_vdr::{
-    did_ethr_registry, Address, Block, DelegateType, DidDocAttribute, DidResolutionOptions,
-    EventLog, SignatureData, Validity, DID,
+    did_ethr_registry, Address, Block, DelegateType, DidDocAttribute, EventLog, SignatureData,
+    Validity, DID,
 };
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -473,21 +473,6 @@ impl EthrDidRegistry {
         let log: EventLog = serde_wasm_bindgen::from_value(log)?;
         let event = did_ethr_registry::parse_did_event_response(&client.0, &log).as_js()?;
         let result: JsValue = serde_wasm_bindgen::to_value(&event)?;
-        Ok(result)
-    }
-
-    #[wasm_bindgen(js_name = resolveDid)]
-    pub async fn resolve_did(
-        client: &LedgerClientWrapper,
-        did: &str,
-        options: JsValue,
-    ) -> Result<JsValue> {
-        let did = DID::from(did);
-        let options: Option<DidResolutionOptions> = serde_wasm_bindgen::from_value(options).ok();
-        let did_with_meta = did_ethr_registry::resolve_did(&client.0, &did, options.as_ref())
-            .await
-            .as_js()?;
-        let result: JsValue = serde_wasm_bindgen::to_value(&did_with_meta)?;
         Ok(result)
     }
 }

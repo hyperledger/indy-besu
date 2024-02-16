@@ -42,6 +42,13 @@ package "Smart Contracts" {
 
        package "DID" {
 
+            component [IndyBesu Did Registry]
+            note bottom of [IndyBesu Did Registry]
+              Manage `indybesu` DID method records
+              - did doc stored in the contract storage
+              - one-to-one relationship with account
+            end note
+
             component [Ethereum Did Registry]
             note bottom of [Ethereum Did Registry]
               Manage `ethr` DID method records
@@ -51,6 +58,12 @@ package "Smart Contracts" {
               - uses events approach
               - extended to control versioning
             end note
+
+            component [Universal Did Resolver]
+            note bottom of [Universal Did Resolver]
+              Resolve Issuer DID from various DID registries
+              - used by CL contracts to verify did existence and owner
+            end note
         }
 
         package "CL" {
@@ -58,23 +71,21 @@ package "Smart Contracts" {
             component [Schema Registry]
             note bottom of [Schema Registry]
               Store CL schemas
-              - uses events approach
-              - uses KECCAK256 hash of id for indexing
             end note
 
             component [Credential Definition Registry]
             note top of [Credential Definition Registry]
               Store CL Credential Definitions
-              - uses events approach
-              - uses KECCAK256 hash of id for indexing
             end note
         }
     }
 
     [Identity] --> [Role Control]
     [Identity] --> [Upgrade Control]
-    [Schema Registry] --> [Ethereum Did Registry]
-    [Credential Definition Registry] --> [Ethereum Did Registry]
+    [Universal Did Resolver] --> [IndyBesu Did Registry]
+    [Universal Did Resolver] --> [Ethereum Did Registry]
+    [Schema Registry] --> [Universal Did Resolver]
+    [Credential Definition Registry] --> [Universal Did Resolver]
 }
 
 @enduml

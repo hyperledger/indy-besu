@@ -2,16 +2,9 @@ use log_derive::{logfn, logfn_inputs};
 
 use crate::{
     client::LedgerClient,
-    contracts::{
-        did::{
-            did_ethr_resolver,
-            types::{
-                did_doc_attribute::{DelegateType, DidDocAttribute, Validity},
-                did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},
-            },
-            DidResolutionOptions,
-        },
-        DidDocumentWithMeta,
+    contracts::did::types::{
+        did_doc_attribute::{DelegateType, DidDocAttribute, Validity},
+        did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},
     },
     error::VdrResult,
     types::{
@@ -101,7 +94,7 @@ pub async fn build_did_change_owner_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodStringParam::from(METHOD_CHANGE_OWNER))?
+        .add_param(&MethodStringParam::from(METHOD_CHANGE_OWNER))?
         .add_param(new_owner)?
         .build(client)
         .await
@@ -134,9 +127,9 @@ pub async fn build_did_change_owner_signed_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CHANGE_OWNER_SIGNED)
         .add_param(&identity)?
-        .add_param(signature.v())?
-        .add_param(signature.r())?
-        .add_param(signature.s())?
+        .add_param(&signature.v())?
+        .add_param(&signature.r())?
+        .add_param(&signature.s())?
         .add_param(new_owner)?
         .set_type(TransactionType::Write)
         .set_from(sender)
@@ -208,10 +201,10 @@ pub async fn build_did_add_delegate_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodStringParam::from(METHOD_ADD_DELEGATE))?
+        .add_param(&MethodStringParam::from(METHOD_ADD_DELEGATE))?
         .add_param(delegate_type)?
         .add_param(delegate)?
-        .add_param(MethodUintBytesParam::from(validity.0))?
+        .add_param(&MethodUintBytesParam::from(validity.0))?
         .build(client)
         .await
 }
@@ -248,9 +241,9 @@ pub async fn build_did_add_delegate_signed_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_ADD_DELEGATE_SIGNED)
         .add_param(&identity)?
-        .add_param(signature.v())?
-        .add_param(signature.r())?
-        .add_param(signature.s())?
+        .add_param(&signature.v())?
+        .add_param(&signature.r())?
+        .add_param(&signature.s())?
         .add_param(delegate_type)?
         .add_param(delegate)?
         .add_param(validity)?
@@ -319,7 +312,7 @@ pub async fn build_did_revoke_delegate_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodStringParam::from(METHOD_REVOKE_DELEGATE))?
+        .add_param(&MethodStringParam::from(METHOD_REVOKE_DELEGATE))?
         .add_param(delegate_type)?
         .add_param(delegate)?
         .build(client)
@@ -356,9 +349,9 @@ pub async fn build_did_revoke_delegate_signed_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_REVOKE_DELEGATE_SIGNED)
         .add_param(&identity)?
-        .add_param(signature.v())?
-        .add_param(signature.r())?
-        .add_param(signature.s())?
+        .add_param(&signature.v())?
+        .add_param(&signature.r())?
+        .add_param(&signature.s())?
         .add_param(delegate_type)?
         .add_param(delegate)?
         .set_type(TransactionType::Write)
@@ -429,10 +422,10 @@ pub async fn build_did_set_attribute_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodStringParam::from(METHOD_SET_ATTRIBUTE))?
+        .add_param(&MethodStringParam::from(METHOD_SET_ATTRIBUTE))?
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
-        .add_param(MethodUintBytesParam::from(validity.0))?
+        .add_param(&MethodUintBytesParam::from(validity.0))?
         .build(client)
         .await
 }
@@ -469,9 +462,9 @@ pub async fn build_did_set_attribute_signed_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_SET_ATTRIBUTE_SIGNED)
         .add_param(&identity)?
-        .add_param(signature.v())?
-        .add_param(signature.r())?
-        .add_param(signature.s())?
+        .add_param(&signature.v())?
+        .add_param(&signature.r())?
+        .add_param(&signature.s())?
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
         .add_param(validity)?
@@ -538,7 +531,7 @@ pub async fn build_did_revoke_attribute_endorsing_data(
         .set_identity(&identity)
         .add_param(&nonce)?
         .add_param(&identity)?
-        .add_param(MethodStringParam::from(METHOD_REVOKE_ATTRIBUTE))?
+        .add_param(&MethodStringParam::from(METHOD_REVOKE_ATTRIBUTE))?
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
         .build(client)
@@ -575,9 +568,9 @@ pub async fn build_did_revoke_attribute_signed_transaction(
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_REVOKE_ATTRIBUTE_SIGNED)
         .add_param(&identity)?
-        .add_param(signature.v())?
-        .add_param(signature.r())?
-        .add_param(signature.s())?
+        .add_param(&signature.v())?
+        .add_param(&signature.r())?
+        .add_param(&signature.s())?
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
         .set_type(TransactionType::Write)
@@ -852,32 +845,13 @@ pub async fn resolve_identity_nonce(client: &LedgerClient, identity: &Address) -
     parse_did_nonce_result(client, &response)
 }
 
-/// Single step function to resolve a DidDocument with metadata for the given DID
-///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `did` DID to get a DID Document and metadata
-/// - `options` Resolution options
-///
-/// # Returns
-///   Parsed DID event object
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn resolve_did(
-    client: &LedgerClient,
-    did: &DID,
-    options: Option<&DidResolutionOptions>,
-) -> VdrResult<DidDocumentWithMeta> {
-    did_ethr_resolver::resolve_did(client, did, options).await
-}
-
 #[cfg(test)]
 pub mod test {
     use super::*;
     use crate::{
         client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, ETHR_DID_REGISTRY_ADDRESS, IDENTITY_ACC,
-            TRUSTEE_ACC,
+            mock_client, CHAIN_ID, DEFAULT_NONCE, ETHR_DID_REGISTRY_ADDRESS, TEST_ACCOUNT,
+            TRUSTEE_ACCOUNT,
         },
         contracts::{
             did::types::{
@@ -889,12 +863,11 @@ pub mod test {
             },
             ServiceEndpoint,
         },
-        utils::init_env_logger,
     };
     use std::sync::RwLock;
 
     fn did() -> DID {
-        DID::from(format!("did:ethr:{}", IDENTITY_ACC.as_ref()).as_str())
+        DID::from(format!("did:ethr:{}", TEST_ACCOUNT.as_ref()).as_str())
     }
 
     pub fn service() -> DidDocAttribute {
@@ -944,23 +917,26 @@ pub mod test {
 
         #[async_std::test]
         async fn build_did_change_owner_transaction_test() {
-            init_env_logger();
             let client = mock_client();
-            let transaction =
-                build_did_change_owner_transaction(&client, &IDENTITY_ACC, &did(), &TRUSTEE_ACC)
-                    .await
-                    .unwrap();
+            let transaction = build_did_change_owner_transaction(
+                &client,
+                &TEST_ACCOUNT,
+                &did(),
+                &TRUSTEE_ACCOUNT,
+            )
+            .await
+            .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(IDENTITY_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: ETHR_DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
-                    240, 13, 75, 93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 5, 148, 0, 220, 208,
-                    81, 88, 255, 216, 202, 9, 41, 55, 152, 157, 210, 123, 59, 220, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141, 198, 198, 129, 187, 93, 106, 209,
-                    33, 161, 7, 243, 0, 233, 178, 181,
+                    240, 13, 75, 93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
+                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141, 198, 198, 129, 187, 93,
+                    106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
                 ],
                 signature: RwLock::new(None),
                 hash: None,
@@ -974,32 +950,31 @@ pub mod test {
 
         #[async_std::test]
         async fn build_did_add_delegate_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction = build_did_add_delegate_transaction(
                 &client,
-                &IDENTITY_ACC,
+                &TEST_ACCOUNT,
                 &did(),
                 &DelegateType::VeriKey,
-                &TRUSTEE_ACC,
+                &TRUSTEE_ACCOUNT,
                 &validity(),
             )
             .await
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(IDENTITY_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: ETHR_DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
-                    167, 6, 141, 102, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 5, 148, 0, 220, 208,
-                    81, 88, 255, 216, 202, 9, 41, 55, 152, 157, 210, 123, 59, 220, 118, 101, 114,
-                    105, 75, 101, 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
-                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0, 0,
+                    167, 6, 141, 102, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
+                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 118, 101,
+                    114, 105, 75, 101, 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
+                    141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 3, 232,
+                    0, 0, 3, 232,
                 ],
                 signature: RwLock::new(None),
                 hash: None,
@@ -1013,28 +988,27 @@ pub mod test {
 
         #[async_std::test]
         async fn build_did_revoke_delegate_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction = build_did_revoke_delegate_transaction(
                 &client,
-                &IDENTITY_ACC,
+                &TEST_ACCOUNT,
                 &did(),
                 &DelegateType::VeriKey,
-                &TRUSTEE_ACC,
+                &TRUSTEE_ACCOUNT,
             )
             .await
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(IDENTITY_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: ETHR_DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
-                    128, 178, 159, 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 5, 148, 0, 220,
-                    208, 81, 88, 255, 216, 202, 9, 41, 55, 152, 157, 210, 123, 59, 220, 118, 101,
-                    114, 105, 75, 101, 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
+                    128, 178, 159, 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
+                    141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 118,
+                    101, 114, 105, 75, 101, 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
                     141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
                 ],
                 signature: RwLock::new(None),
@@ -1049,11 +1023,10 @@ pub mod test {
 
         #[async_std::test]
         async fn build_did_set_service_attribute_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction = build_did_set_attribute_transaction(
                 &client,
-                &IDENTITY_ACC,
+                &TEST_ACCOUNT,
                 &did(),
                 &service(),
                 &validity(),
@@ -1062,20 +1035,20 @@ pub mod test {
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(IDENTITY_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: ETHR_DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
-                    122, 212, 176, 164, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 5, 148, 0, 220,
-                    208, 81, 88, 255, 216, 202, 9, 41, 55, 152, 157, 210, 123, 59, 220, 100, 105,
-                    100, 47, 115, 118, 99, 47, 83, 101, 114, 118, 105, 99, 101, 0, 0, 0, 0, 0, 0,
+                    122, 212, 176, 164, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
+                    141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 100,
+                    105, 100, 47, 115, 118, 99, 47, 83, 101, 114, 118, 105, 99, 101, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 232, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 232, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 18, 104, 116, 116, 112, 58, 47, 47, 101, 120, 97, 109, 112, 108, 101, 46,
-                    99, 111, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 18, 104, 116, 116, 112, 58, 47, 47, 101, 120, 97, 109, 112, 108, 101,
+                    46, 99, 111, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
                 hash: None,
@@ -1085,11 +1058,10 @@ pub mod test {
 
         #[async_std::test]
         async fn build_did_set_key_attribute_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction = build_did_set_attribute_transaction(
                 &client,
-                &IDENTITY_ACC,
+                &TEST_ACCOUNT,
                 &did(),
                 &public_key(),
                 &validity(),
@@ -1098,21 +1070,21 @@ pub mod test {
             .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(IDENTITY_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: ETHR_DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
-                    122, 212, 176, 164, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 5, 148, 0, 220,
-                    208, 81, 88, 255, 216, 202, 9, 41, 55, 152, 157, 210, 123, 59, 220, 100, 105,
-                    100, 47, 112, 117, 98, 47, 88, 50, 53, 53, 49, 57, 47, 101, 110, 99, 47, 98,
-                    97, 115, 101, 53, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 232,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 32, 216, 211, 241, 73, 138, 202, 20, 247, 254, 92, 152, 102, 20,
-                    103, 236, 224, 41, 108, 66, 163, 228, 133, 29, 248, 18, 225, 230, 17, 163, 84,
-                    230, 43,
+                    122, 212, 176, 164, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
+                    141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 100,
+                    105, 100, 47, 112, 117, 98, 47, 88, 50, 53, 53, 49, 57, 47, 101, 110, 99, 47,
+                    98, 97, 115, 101, 53, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+                    232, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 32, 216, 211, 241, 73, 138, 202, 20, 247, 254, 92, 152, 102,
+                    20, 103, 236, 224, 41, 108, 66, 163, 228, 133, 29, 248, 18, 225, 230, 17, 163,
+                    84, 230, 43,
                 ],
                 signature: RwLock::new(None),
                 hash: None,
@@ -1126,27 +1098,26 @@ pub mod test {
 
         #[async_std::test]
         async fn build_did_revoke_attribute_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction =
-                build_did_revoke_attribute_transaction(&client, &IDENTITY_ACC, &did(), &service())
+                build_did_revoke_attribute_transaction(&client, &TEST_ACCOUNT, &did(), &service())
                     .await
                     .unwrap();
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(IDENTITY_ACC.clone()),
+                from: Some(TEST_ACCOUNT.clone()),
                 to: ETHR_DID_REGISTRY_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
                 data: vec![
-                    0, 192, 35, 218, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 5, 148, 0, 220, 208,
-                    81, 88, 255, 216, 202, 9, 41, 55, 152, 157, 210, 123, 59, 220, 100, 105, 100,
-                    47, 115, 118, 99, 47, 83, 101, 114, 118, 105, 99, 101, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 192, 35, 218, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
+                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 100, 105,
+                    100, 47, 115, 118, 99, 47, 83, 101, 114, 118, 105, 99, 101, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 104, 116, 116,
-                    112, 58, 47, 47, 101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 104, 116,
+                    116, 112, 58, 47, 47, 101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
                 hash: None,

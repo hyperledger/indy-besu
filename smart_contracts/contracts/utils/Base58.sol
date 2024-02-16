@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import { InvalidBase58 } from "./Errors.sol";
+
 /*
  * This contract is taken from https://github.com/storyicon/base58-solidity.git with following modilfications:
  *   * deleted encode functionality
@@ -14,7 +16,7 @@ pragma solidity ^0.8.7;
  * Note that it is not yet optimized for gas, so it is recommended to use it only in the view/pure function.
  */
 library Base58 {
-    bytes constant ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    bytes private constant _ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
     /**
      * @notice decode is used to decode the given string in base58 standard.
@@ -36,8 +38,10 @@ library Base58 {
             uint32[] memory outi = new uint32[]((b58sz + 3) / 4);
             for (uint256 i = 0; i < data_.length; i++) {
                 bytes1 r = data_[i];
-                (c, f) = indexOf(ALPHABET, r);
-                require(f, "invalid base58 digit");
+                (c, f) = indexOf(_ALPHABET, r);
+                if (!f) {
+                    revert InvalidBase58(data_);
+                }
                 for (int256 k = int256(outi.length) - 1; k >= 0; k--) {
                     t = uint64(outi[uint256(k)]) * 58 + c;
                     c = t >> 32;

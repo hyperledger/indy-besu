@@ -2,12 +2,15 @@ use log::warn;
 use log_derive::{logfn, logfn_inputs};
 
 use crate::{
-    contracts::did::{
-        types::did_doc::{
-            Service, ServiceEndpoint, StringOrVector, VerificationMethod,
-            VerificationMethodOrReference, BASE_CONTEXT,
+    contracts::{
+        did::{
+            types::did_doc::{
+                Service, ServiceEndpoint, StringOrVector, VerificationMethod,
+                VerificationMethodOrReference, BASE_CONTEXT,
+            },
+            KEYS_CONTEXT, SECPK_CONTEXT,
         },
-        KEYS_CONTEXT, SECPK_CONTEXT,
+        types::did::ParsedDid,
     },
     error::{VdrError, VdrResult},
     Address, DidDocument, VerificationKeyType, DID,
@@ -44,14 +47,16 @@ impl DidDocumentBuilder {
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
     pub fn base_for_did(did: &DID, chain_id: u64) -> VdrResult<DidDocumentBuilder> {
-        let identity = Address::try_from(did)?;
+        let parsed_did = ParsedDid::try_from(did)?;
+        let did = parsed_did.as_short_did();
+        let identity = Address::try_from(&did)?;
         let kid = "controller";
         let id = format!("{}#controller", did.as_ref());
 
         let mut did_doc_builder = DidDocumentBuilder::new();
         did_doc_builder.add_context(SECPK_CONTEXT);
         did_doc_builder.add_context(KEYS_CONTEXT);
-        did_doc_builder.set_id(did);
+        did_doc_builder.set_id(&did);
         did_doc_builder.add_verification_method(
             kid,
             &id,
@@ -386,8 +391,12 @@ impl DidDocumentBuilder {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::contracts::types::did_doc::test::{
-        default_ethr_did_document, SERVICE_ENDPOINT, SERVICE_TYPE, TEST_DID_ETHR,
+    use crate::{
+        client::client::test::TEST_ACCOUNT,
+        contracts::types::did_doc::test::{
+            default_ethr_did_document, SERVICE_ENDPOINT, SERVICE_TYPE, TEST_ETHR_DID,
+            TEST_ETHR_DID_WITHOUT_NETWORK,
+        },
     };
 
     const KEY_1_INDEX: &str = "KEY_1";
@@ -397,15 +406,18 @@ pub mod test {
 
     #[test]
     fn build_base_ethr_did_document_test() {
-        let did_document = DidDocumentBuilder::base_for_did(&DID::from(TEST_DID_ETHR), 1)
+        let did_document = DidDocumentBuilder::base_for_did(&DID::from(TEST_ETHR_DID), 1)
             .unwrap()
             .build();
-        assert_eq!(default_ethr_did_document(None), did_document);
+        assert_eq!(
+            default_ethr_did_document(TEST_ACCOUNT.as_ref(), None),
+            did_document
+        );
     }
 
     #[test]
     fn build_did_document_test() {
-        let mut builder = DidDocumentBuilder::base_for_did(&DID::from(TEST_DID_ETHR), 1).unwrap();
+        let mut builder = DidDocumentBuilder::base_for_did(&DID::from(TEST_ETHR_DID), 1).unwrap();
         builder.add_delegate_key(
             KEY_1_INDEX,
             &VerificationKeyType::EcdsaSecp256k1RecoveryMethod2020,
@@ -453,23 +465,23 @@ pub mod test {
         assert_eq!(1, did_document.service.len());
 
         assert_eq!(
-            format!("{}#controller", TEST_DID_ETHR),
+            format!("{}#controller", TEST_ETHR_DID_WITHOUT_NETWORK),
             did_document.verification_method[0].id
         );
         assert_eq!(
-            format!("{}#delegate-1", TEST_DID_ETHR),
+            format!("{}#delegate-1", TEST_ETHR_DID_WITHOUT_NETWORK),
             did_document.verification_method[1].id
         );
         assert_eq!(
-            format!("{}#delegate-2", TEST_DID_ETHR),
+            format!("{}#delegate-2", TEST_ETHR_DID_WITHOUT_NETWORK),
             did_document.verification_method[2].id
         );
         assert_eq!(
-            format!("{}#delegate-3", TEST_DID_ETHR),
+            format!("{}#delegate-3", TEST_ETHR_DID_WITHOUT_NETWORK),
             did_document.verification_method[3].id
         );
         assert_eq!(
-            format!("{}#service-1", TEST_DID_ETHR),
+            format!("{}#service-1", TEST_ETHR_DID_WITHOUT_NETWORK),
             did_document.service[0].id
         );
     }

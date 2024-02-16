@@ -1,4 +1,8 @@
-use crate::{error::VdrError, Block};
+use crate::{
+    error::VdrError,
+    types::{ContractOutput, ContractParam},
+    Block,
+};
 
 use crate::contracts::did::types::did::DID;
 use log::warn;
@@ -42,8 +46,10 @@ pub struct DidDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub controller: Option<StringOrVector>,
     pub verification_method: Vec<VerificationMethod>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(default)]
     pub authentication: Vec<VerificationMethodOrReference>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(default)]
     pub assertion_method: Vec<VerificationMethodOrReference>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -62,9 +68,18 @@ pub struct DidDocument {
     pub also_known_as: Option<Vec<String>>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DidRecord {
+    pub document: DidDocument,
+    pub metadata: DidMetadata,
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deactivated: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -214,6 +229,66 @@ impl Default for StringOrVector {
     }
 }
 
+impl TryFrom<&DidDocument> for ContractParam {
+    type Error = VdrError;
+
+    fn try_from(value: &DidDocument) -> Result<Self, Self::Error> {
+        serde_json::to_vec(value)
+            .map(ContractParam::Bytes)
+            .map_err(|_| VdrError::ContractInvalidInputData)
+    }
+}
+
+impl TryFrom<&ContractOutput> for DidDocument {
+    type Error = VdrError;
+
+    fn try_from(value: &ContractOutput) -> Result<Self, Self::Error> {
+        serde_json::from_slice(&value.get_bytes(0)?).map_err(|err| {
+            VdrError::ContractInvalidResponseData(format!(
+                "Unable to parse DID Document from the response. Err: {:?}",
+                err
+            ))
+        })
+    }
+}
+
+impl TryFrom<ContractOutput> for DidMetadata {
+    type Error = VdrError;
+
+    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
+        let _owner = value.get_address(0)?;
+        let _sender = value.get_address(1)?;
+        let created = value.get_u128(2)? as u64;
+        let updated = value.get_u128(3)? as u64;
+        let version_id = value.get_u128(4)? as u64;
+        let deactivated = value.get_bool(5)?;
+        let did_metadata = DidMetadata {
+            deactivated: Some(deactivated),
+            created: Some(created),
+            version_id: Some(version_id),
+            updated: Some(updated),
+            next_version_id: None,
+            next_update: None,
+        };
+        Ok(did_metadata)
+    }
+}
+
+impl TryFrom<ContractOutput> for DidRecord {
+    type Error = VdrError;
+
+    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
+        let output_tuple = value.get_tuple(0)?;
+        let did_document = DidDocument::try_from(&output_tuple)?;
+        let metadata = output_tuple.get_tuple(1)?;
+        let did_doc_with_metadata = DidRecord {
+            document: did_document,
+            metadata: DidMetadata::try_from(metadata)?,
+        };
+        Ok(did_doc_with_metadata)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum DidResolutionError {
     /*
@@ -248,12 +323,17 @@ pub enum DidResolutionError {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use serde_json::json;
+    use crate::{contracts::ETHR_DID_METHOD, did_indy_registry::INDYBESU_DID_METHOD};
 
-    pub const TEST_DID_ETHR: &str = "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a";
-    pub const ISSUER_ID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
+    pub const _TEST_INDYBESU_DID: &str =
+        "did:indybesu:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
+    pub const TEST_ETHR_DID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
+    pub const TEST_ETHR_DID_WITHOUT_NETWORK: &str =
+        "did:ethr:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const SERVICE_ENDPOINT: &str = "http://example.com";
     pub const SERVICE_TYPE: &str = "Service";
+    pub const MULTIBASE_KEY: &'static str = "zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf";
+    pub const KEY_1: &'static str = "KEY-1";
 
     pub fn _service(id: &str) -> Service {
         Service {
@@ -263,34 +343,96 @@ pub mod test {
         }
     }
 
-    pub fn default_ethr_did_document(chain_id: Option<u64>) -> DidDocument {
+    pub fn verification_method(id: &str) -> VerificationMethod {
+        VerificationMethod {
+            id: id.to_string(),
+            type_: VerificationKeyType::Ed25519VerificationKey2018,
+            controller: id.to_string(),
+            blockchain_account_id: None,
+            public_key_multibase: Some(MULTIBASE_KEY.to_string()),
+            public_key_hex: None,
+            public_key_base58: None,
+            public_key_base64: None,
+        }
+    }
+
+    pub fn verification_relationship(id: &str) -> VerificationMethodOrReference {
+        VerificationMethodOrReference::String(id.to_string())
+    }
+
+    pub fn did_doc(identity: &str) -> DidDocument {
+        let id = DID::build(INDYBESU_DID_METHOD, None, identity);
+        let kid = format!("{}#{}", id.as_ref(), KEY_1);
+        DidDocument {
+            context: StringOrVector::Vector(vec![BASE_CONTEXT.to_string()]),
+            id: id.clone(),
+            controller: None,
+            verification_method: vec![verification_method(&kid)],
+            authentication: vec![verification_relationship(&kid)],
+            assertion_method: vec![],
+            capability_invocation: vec![],
+            capability_delegation: vec![],
+            key_agreement: vec![],
+            service: vec![],
+            also_known_as: None,
+        }
+    }
+
+    pub fn default_ethr_did_document(identity: &str, chain_id: Option<u64>) -> DidDocument {
+        let id = DID::build(ETHR_DID_METHOD, None, identity);
         let chain_id = chain_id.unwrap_or(1);
-        let blockchain_account_id = format!(
-            "eip155:{}:0xb9c5714089478a327f09197987f16f9e5d936e8a",
-            chain_id
-        );
-        serde_json::from_value(json!({
-            "@context": [
-                "https://www.w3.org/ns/did/v1",
-                "https://w3id.org/security/suites/secp256k1recovery-2020/v2",
-                "https://w3id.org/security/v3-unstable"
-            ],
-            "id": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a",
-            "verificationMethod": [
-            {
-                "id": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#controller",
-                "type": "EcdsaSecp256k1RecoveryMethod2020",
-                "controller": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a",
-                "blockchainAccountId": blockchain_account_id
-            }
-            ],
-            "authentication": [
-                "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#controller"
-            ],
-            "assertionMethod": [
-                "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#controller"
-            ]
-        }))
-        .unwrap()
+        let blockchain_account_id = format!("eip155:{}:{}", chain_id, identity);
+        let kid = format!("{}#controller", id.as_ref());
+        DidDocument {
+            context: StringOrVector::Vector(vec![
+                BASE_CONTEXT.to_string(),
+                SECPK_CONTEXT.to_string(),
+                KEYS_CONTEXT.to_string(),
+            ]),
+            id: id.clone(),
+            controller: None,
+            verification_method: vec![VerificationMethod {
+                id: kid.clone(),
+                type_: VerificationKeyType::EcdsaSecp256k1RecoveryMethod2020,
+                controller: id.to_string(),
+                blockchain_account_id: Some(blockchain_account_id),
+                public_key_multibase: None,
+                public_key_hex: None,
+                public_key_base58: None,
+                public_key_base64: None,
+            }],
+            authentication: vec![verification_relationship(&kid)],
+            assertion_method: vec![verification_relationship(&kid)],
+            capability_invocation: vec![],
+            capability_delegation: vec![],
+            key_agreement: vec![],
+            service: vec![],
+            also_known_as: None,
+        }
+    }
+
+    fn did_doc_param() -> ContractParam {
+        ContractParam::Bytes(serde_json::to_vec(&did_doc(TEST_ETHR_DID)).unwrap())
+    }
+
+    mod convert_into_contract_param {
+        use super::*;
+
+        #[test]
+        fn convert_did_doc_into_contract_param_test() {
+            let param: ContractParam = (&did_doc(TEST_ETHR_DID)).try_into().unwrap();
+            assert_eq!(did_doc_param(), param);
+        }
+    }
+
+    mod convert_into_object {
+        use super::*;
+
+        #[test]
+        fn convert_contract_output_into_did_doc() {
+            let data = ContractOutput::new(vec![did_doc_param()]);
+            let converted = DidDocument::try_from(&data).unwrap();
+            assert_eq!(did_doc(TEST_ETHR_DID), converted);
+        }
     }
 }

@@ -106,11 +106,8 @@ pub fn parse_get_validators_result(
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, TRUSTEE_ACC, VALIDATOR_CONTROL_ADDRESS,
-        },
-        utils::init_env_logger,
+    use crate::client::client::test::{
+        mock_client, CHAIN_ID, DEFAULT_NONCE, TRUSTEE_ACCOUNT, VALIDATOR_CONTROL_ADDRESS,
     };
     use once_cell::sync::Lazy;
     use std::sync::RwLock;
@@ -139,10 +136,9 @@ pub mod test {
 
         #[async_std::test]
         async fn build_add_validator_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction =
-                build_add_validator_transaction(&client, &TRUSTEE_ACC, &VALIDATOR_ADDRESS)
+                build_add_validator_transaction(&client, &TRUSTEE_ACCOUNT, &VALIDATOR_ADDRESS)
                     .await
                     .unwrap();
             let expected_data = [
@@ -152,7 +148,7 @@ pub mod test {
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TRUSTEE_ACCOUNT.clone()),
                 to: VALIDATOR_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
@@ -170,10 +166,9 @@ pub mod test {
 
         #[async_std::test]
         async fn build_remove_validator_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction =
-                build_remove_validator_transaction(&client, &TRUSTEE_ACC, &VALIDATOR_ADDRESS)
+                build_remove_validator_transaction(&client, &TRUSTEE_ACCOUNT, &VALIDATOR_ADDRESS)
                     .await
                     .unwrap();
             let expected_data = [
@@ -183,7 +178,7 @@ pub mod test {
 
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
-                from: Some(TRUSTEE_ACC.clone()),
+                from: Some(TRUSTEE_ACCOUNT.clone()),
                 to: VALIDATOR_CONTROL_ADDRESS.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CHAIN_ID,
@@ -201,7 +196,6 @@ pub mod test {
 
         #[async_std::test]
         async fn build_get_validators_transaction_test() {
-            init_env_logger();
             let client = mock_client();
             let transaction = build_get_validators_transaction(&client).await.unwrap();
             let encoded_method = [183, 171, 77, 181];

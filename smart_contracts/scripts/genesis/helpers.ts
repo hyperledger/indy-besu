@@ -74,7 +74,6 @@ export function buildSection(
   return {
     [address]: {
       comment,
-      balance: '0',
       code: `0x${bytecode}`,
       storage,
     },

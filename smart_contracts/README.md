@@ -34,8 +34,10 @@ The following folders should be generated as the result:
     * [AccountControl TS contract wrapper class](./contracts-ts/AccountControl.ts)
 * [RoleControl](./contracts/auth/RoleControlInterface.sol) - contract to manage (assign/revoke) account roles.
     * [RoleControl TS contract wrapper class](./contracts-ts/RoleControl.ts)
+* [IndyDidRegistry](./contracts/did/IndyDidRegistry.sol) - `indybesu` DID Registry
+    * [IndyDidRegistry TS contract wrapper class](./contracts-ts/IndyDidRegistry.ts)
 * [EthereumExtDidRegistry](./contracts/did/EthereumExtDidRegistry.sol) - [Ethereum DID Registry](https://github.com/uport-project/ethr-did-registry/tree/master) extended with permission checks
-    * [DidRegistry TS contract wrapper class](./contracts-ts/EthereumExtDidRegistry.ts)
+    * [DidRegistry TS contract wrapper class](./contracts-ts/EthereumDIDRegistry.ts)
 * [SchemaRegistry](./contracts/cl/SchemaRegistryInterface.sol) - contract to manage Schemas
     * [SchemaRegistry TS contract wrapper class](./contracts-ts/SchemaRegistry.ts)
 * [CredentialDefinitionRegistry](./contracts/cl/CredentialDefinitionRegistryInterface.sol) - contract to manage CL Credential Definitions
@@ -44,6 +46,8 @@ The following folders should be generated as the result:
     * [ValidatorControl TS contract wrapper class](./contracts-ts/ValidatorControl.ts)
 * [UpgradeControl](./contracts/upgrade/UpgradeControlInterface.sol) - contract to control deployed smart contracts and their versions (proposing and approving new versions).
     * [Upgrading TS contract wrapper class](./contracts-ts/UpgradeControl.ts)
+* [LegacyMappingRegistry](./contracts/migration/LegacyMappingRegistryInterface.sol) - contract to store mapping for legacy identifiers.
+    * [LegacyMappingRegistry TS contract wrapper class](./contracts-ts/LegacyMappingRegistry.ts)
 
 ### Demos
 
@@ -53,9 +57,13 @@ You can find sample scripts demonstrating the usage of deployed contracts in the
     ```
     > yarn demo/account
     ```
-* [Demo flow](./demos/flow.ts) - create/resolve DID/Schema/Credential Definition.
+* [Demo flow](./demos/flow.ts) - create/resolve DID/Schema/Credential Definition using `did:indy2` method.
     ```
     > yarn demo/flow
+    ```
+* [Demo flow](./demos/flow-with-did-ethr.ts) - create/resolve DID/Schema/Credential Definition using `did:ethr` method.
+    ```
+    > yarn demo/flow-with-did-ethr
     ```
 * [Roles management](./demos/role-control.ts) - get/assign/revoke role to/from account.
     ```
@@ -85,12 +93,12 @@ You can find sample scripts demonstrating the usage of deployed contracts in the
    yarn solc-compile
    ```
 
-   * `artifacts` and `compiled-contracts` folders with compiled contracts will be generated as the result of the execution.
+    * `artifacts` and `compiled-contracts` folders with compiled contracts will be generated as the result of the execution.
 
 3. Execute script generating the contracts content for the network genesis file:
    > yarn genesis/generate
 
-   * `ContractsGenesis.json` file will be generated as the result
+    * `ContractsGenesis.json` file will be generated as the result
 
 4. Put the whole block into the `alloc` section of the network genesis file.
 

@@ -4,16 +4,20 @@ pragma solidity ^0.8.20;
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 import { DidMappingAlreadyExist, ResourceMappingAlreadyExist, InvalidEd25519Key, InvalidResourceId } from "./LegacyMappingErrors.sol";
 import { NotIdentityOwner } from "../did/DidErrors.sol";
-import { EthereumExtDidRegistry } from "../did/EthereumExtDidRegistry.sol";
+import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { LegacyMappingRegistryInterface } from "./LegacyMappingRegistryInterface.sol";
-import { DidValidator } from "../did/DidValidator.sol";
 
 import { Base58 } from "../utils/Base58.sol";
 import { toSlice } from "@dk1a/solidity-stringutils/src/StrSlice.sol";
 
 using { toSlice } for string;
 
-contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgradeable, DidValidator {
+contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgradeable {
+    /**
+     * @dev Reference to the contract that resolves DIDs
+     */
+    UniversalDidResolverInterface internal _didResolver;
+
     /*
      * Mapping storing indy/sov DID identifiers to the corresponding account address
      */
@@ -24,9 +28,17 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
      */
     mapping(string legacyId => string newId) public resourceMapping;
 
-    function initialize(address upgradeControlAddress, address ethereumExtDidRegistry) public reinitializer(1) {
+    /**
+     * Checks that actor matches to the identity
+     */
+    modifier _identityOwner(address identity, address actor) {
+        if (identity != actor) revert NotIdentityOwner(actor, identity);
+        _;
+    }
+
+    function initialize(address upgradeControlAddress, address didResolverAddress) public reinitializer(1) {
         _initializeUpgradeControl(upgradeControlAddress);
-        _didRegistry = EthereumExtDidRegistry(ethereumExtDidRegistry);
+        _didResolver = UniversalDidResolverInterface(didResolverAddress);
     }
 
     /// @inheritdoc LegacyMappingRegistryInterface
@@ -61,13 +73,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
                 ed25518Signature
             )
         );
-        _createDidMapping(
-            identity,
-            _checkSignature(identity, hash, sigV, sigR, sigS),
-            identifier,
-            ed25519Key,
-            ed25518Signature
-        );
+        _createDidMapping(identity, ecrecover(hash, sigV, sigR, sigS), identifier, ed25519Key, ed25518Signature);
     }
 
     /// @inheritdoc LegacyMappingRegistryInterface
@@ -104,7 +110,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         );
         _createResourceMapping(
             identity,
-            _checkSignature(identity, hash, sigV, sigR, sigS),
+            ecrecover(hash, sigV, sigR, sigS),
             legacyIssuerIdentifier,
             legacyIdentifier,
             newIdentifier
@@ -117,7 +123,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         string calldata identifier,
         bytes32 ed25519Key,
         bytes calldata ed25518Signature
-    ) internal identityOwner(identity, actor) {
+    ) internal _identityOwner(identity, actor) {
         // Checks the uniqueness of the DID mapping
         if (didMapping[identifier] != address(0x00)) revert DidMappingAlreadyExist(identifier);
 
@@ -136,7 +142,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         string calldata legacyIssuerIdentifier,
         string calldata legacyIdentifier,
         string calldata newIdentifier
-    ) internal identityOwner(identity, actor) {
+    ) internal _identityOwner(identity, actor) {
         // Checks the uniqueness of the Resource mapping
         if (bytes(resourceMapping[legacyIdentifier]).length != 0) revert ResourceMappingAlreadyExist(legacyIdentifier);
 

@@ -56,7 +56,7 @@ export const environment = {
     name: 'testnet',
   },
   did: {
-    method: 'indy2',
+    method: 'indybesu',
   },
 }
 

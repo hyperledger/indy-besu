@@ -1,17 +1,17 @@
-use crate::ffi::{
-    client::LedgerClient,
-    error::{VdrError, VdrResult},
-    event_query::{EventLog, EventQuery},
-    transaction::{Transaction, TransactionEndorsingData},
-    types::SignatureData,
+use crate::{
+    ffi::{
+        client::LedgerClient,
+        error::{VdrError, VdrResult},
+        transaction::{Transaction, TransactionEndorsingData},
+        types::SignatureData,
+    },
+    EventLog, EventQuery,
 };
 use indy_besu_vdr::{
     did_ethr_registry, Address, Block, DelegateType, DidAttributeChanged as DidAttributeChanged_,
     DidDelegateChanged as DidDelegateChanged_, DidDocAttribute, DidEvents as DidEvents_,
-    DidOwnerChanged as DidOwnerChanged_, DidResolutionOptions as DidResolutionOptions_, Validity,
-    DID,
+    DidOwnerChanged as DidOwnerChanged_, Validity, DID,
 };
-use serde_json::json;
 
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn build_did_change_owner_transaction(
@@ -398,6 +398,12 @@ pub fn parse_did_changed_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrRes
 }
 
 #[uniffi::export]
+pub fn parse_did_nonce_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<u64> {
+    let block = did_ethr_registry::parse_did_nonce_result(&client.client, &bytes)?;
+    Ok(block.value())
+}
+
+#[uniffi::export]
 pub fn parse_did_owner_result(client: &LedgerClient, bytes: Vec<u8>) -> VdrResult<String> {
     let address = did_ethr_registry::parse_did_owner_result(&client.client, &bytes)?;
     Ok(address.to_string())
@@ -438,21 +444,6 @@ pub fn parse_did_event_response(client: &LedgerClient, log: EventLog) -> VdrResu
     did_ethr_registry::parse_did_event_response(&client.client, &log.into())
         .map(DidEvents::from)
         .map_err(VdrError::from)
-}
-
-#[uniffi::export(async_runtime = "tokio")]
-pub async fn resolve_did(
-    client: &LedgerClient,
-    did: &str,
-    options: Option<DidResolutionOptions>,
-) -> VdrResult<String> {
-    let options = match options {
-        Some(options) => Some(DidResolutionOptions_::try_from(options)?),
-        None => None,
-    };
-    let did_with_meta =
-        did_ethr_registry::resolve_did(&client.client, &DID::from(did), options.as_ref()).await?;
-    Ok(json!(did_with_meta).to_string())
 }
 
 #[derive(uniffi::Record)]
@@ -534,22 +525,5 @@ impl From<DidEvents_> for DidEvents {
                 event: event.into(),
             },
         }
-    }
-}
-
-#[derive(uniffi::Record)]
-pub struct DidResolutionOptions {
-    pub accept: Option<String>,
-    pub block_tag: Option<u64>,
-}
-
-impl TryFrom<DidResolutionOptions> for DidResolutionOptions_ {
-    type Error = VdrError;
-
-    fn try_from(value: DidResolutionOptions) -> Result<Self, Self::Error> {
-        Ok(DidResolutionOptions_ {
-            accept: value.accept,
-            block_tag: value.block_tag.map(|block_tag| Block::from(block_tag)),
-        })
     }
 }
