@@ -633,7 +633,7 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_constructor_eventquery_new() != 57276:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_indy_besu_vdr_uniffi_checksum_constructor_ledgerclient_new() != 17350:
+    if lib.uniffi_indy_besu_vdr_uniffi_checksum_constructor_ledgerclient_new() != 954:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_indy_besu_vdr_uniffi_checksum_constructor_transaction_new() != 38765:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
@@ -673,6 +673,7 @@ _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_free_ledgerclient.argtypes = (
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_free_ledgerclient.restype = None
 _UniffiLib.uniffi_indy_besu_vdr_uniffi_fn_constructor_ledgerclient_new.argtypes = (
     ctypes.c_uint64,
+    _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
@@ -1949,12 +1950,14 @@ class LedgerClientProtocol(typing.Protocol):
 class LedgerClient:
 
     _pointer: ctypes.c_void_p
-    def __init__(self, chain_id: "int",node_address: "str",contract_configs: "typing.List[ContractConfig]",quorum_config: "typing.Optional[QuorumConfig]"):
+    def __init__(self, chain_id: "int",node_address: "str",contract_configs: "typing.List[ContractConfig]",network: "typing.Optional[str]",quorum_config: "typing.Optional[QuorumConfig]"):
         _UniffiConverterUInt64.check_lower(chain_id)
         
         _UniffiConverterString.check_lower(node_address)
         
         _UniffiConverterSequenceTypeContractConfig.check_lower(contract_configs)
+        
+        _UniffiConverterOptionalString.check_lower(network)
         
         _UniffiConverterOptionalTypeQuorumConfig.check_lower(quorum_config)
         
@@ -1962,6 +1965,7 @@ class LedgerClient:
         _UniffiConverterUInt64.lower(chain_id),
         _UniffiConverterString.lower(node_address),
         _UniffiConverterSequenceTypeContractConfig.lower(contract_configs),
+        _UniffiConverterOptionalString.lower(network),
         _UniffiConverterOptionalTypeQuorumConfig.lower(quorum_config))
 
     def __del__(self):

@@ -52,7 +52,7 @@ pub async fn build_create_did_mapping_transaction(
         .set_method(METHOD_CREATE_DID_MAPPING)
         .add_param(&identity)?
         .add_param(legacy_identifier)?
-        .add_param(did)?
+        .add_param(&did.without_network()?)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
         .set_type(TransactionType::Write)
@@ -88,7 +88,7 @@ pub async fn build_create_did_mapping_endorsing_data(
         .add_param(&identity)?
         .add_param(&MethodStringParam::from(METHOD_CREATE_DID_MAPPING))?
         .add_param(legacy_identifier)?
-        .add_param(did)?
+        .add_param(&did.without_network()?)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
         .build(client)
@@ -130,7 +130,7 @@ pub async fn build_create_did_mapping_signed_transaction(
         .add_param(&signature.r())?
         .add_param(&signature.s())?
         .add_param(legacy_identifier)?
-        .add_param(did)?
+        .add_param(&did.without_network()?)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
         .set_type(TransactionType::Write)
@@ -389,13 +389,13 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 86, 115, 75, 86, 55, 103, 114,
                     82, 49, 66, 85, 69, 50, 57, 109, 71, 50, 70, 109, 50, 107, 88, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 100, 105, 100, 58, 101, 116, 104, 114, 58,
-                    116, 101, 115, 116, 110, 101, 116, 58, 48, 120, 102, 48, 101, 50, 100, 98, 54,
-                    99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53, 100, 54, 97, 100, 49, 50, 49,
-                    97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50, 98, 53, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 8, 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 51, 100, 105, 100, 58, 101, 116, 104, 114, 58,
+                    48, 120, 102, 48, 101, 50, 100, 98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49,
+                    98, 98, 53, 100, 54, 97, 100, 49, 50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101,
+                    57, 98, 50, 98, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0,
+                    1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
                 hash: None,

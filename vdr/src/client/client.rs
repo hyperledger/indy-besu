@@ -23,6 +23,7 @@ pub struct LedgerClient {
     chain_id: u64,
     client: Box<dyn Client>,
     contracts: HashMap<String, Box<dyn Contract>>,
+    network: Option<String>,
     quorum_handler: Option<QuorumHandler>,
 }
 
@@ -32,6 +33,7 @@ impl LedgerClient {
     /// # Params
     ///  - `chain_id` - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
     ///  - `rpc_node` - string - RPC node endpoint
+    ///  - `network` - string - Name of the network
     ///  - `contract_configs` - [ContractSpec] specifications for contracts  deployed on the network
     ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum check is not needed
     ///
@@ -43,6 +45,7 @@ impl LedgerClient {
         chain_id: u64,
         rpc_node: &str,
         contract_configs: &[ContractConfig],
+        network: Option<&str>,
         quorum_config: Option<&QuorumConfig>,
     ) -> VdrResult<LedgerClient> {
         let client = Box::new(Web3Client::new(rpc_node)?);
@@ -58,6 +61,7 @@ impl LedgerClient {
             chain_id,
             client,
             contracts,
+            network: network.map(String::from),
             quorum_handler,
         };
         Ok(ledger_client)
@@ -161,6 +165,9 @@ impl LedgerClient {
     pub(crate) fn chain_id(&self) -> u64 {
         self.chain_id
     }
+    pub(crate) fn network(&self) -> Option<&String> {
+        self.network.as_ref()
+    }
 
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
@@ -257,6 +264,7 @@ pub mod test {
     ];
     pub const DEFAULT_NONCE: u64 = 0;
     pub const INVALID_ADDRESS: &str = "123";
+    pub const TEST_NETWORK: &str = "test";
 
     pub static CONFIG: Lazy<TestConfig> = Lazy::new(|| read_config());
 
@@ -338,7 +346,14 @@ pub mod test {
     }
 
     pub fn client() -> LedgerClient {
-        LedgerClient::new(CONFIG.chain_id, &CONFIG.node_address, &contracts(), None).unwrap()
+        LedgerClient::new(
+            CONFIG.chain_id,
+            &CONFIG.node_address,
+            &contracts(),
+            Some(TEST_NETWORK),
+            None,
+        )
+        .unwrap()
     }
 
     pub fn mock_client() -> LedgerClient {
@@ -347,6 +362,7 @@ pub mod test {
             CONFIG.chain_id,
             &CONFIG.node_address,
             &contracts(),
+            Some(TEST_NETWORK),
             Some(&QuorumConfig::default()),
         )
         .unwrap();
@@ -363,6 +379,7 @@ pub mod test {
             CONFIG.chain_id,
             &CONFIG.node_address,
             &contracts(),
+            Some(TEST_NETWORK),
             Some(&QuorumConfig::default()),
         )
         .unwrap();
@@ -386,9 +403,15 @@ pub mod test {
 
         #[test]
         fn create_client_invalid_node_address() {
-            let client_err = LedgerClient::new(CONFIG.chain_id, "..", &contracts(), None)
-                .err()
-                .unwrap();
+            let client_err = LedgerClient::new(
+                CONFIG.chain_id,
+                "..",
+                &contracts(),
+                Some(TEST_NETWORK),
+                None,
+            )
+            .err()
+            .unwrap();
 
             assert!(matches!(
                 client_err,  | VdrError::ClientNodeUnreachable { .. }
@@ -432,6 +455,7 @@ pub mod test {
                 CONFIG.chain_id,
                 &CONFIG.node_address,
                 &contract_config,
+                Some(TEST_NETWORK),
                 None,
             )
             .err()
@@ -553,6 +577,7 @@ pub mod test {
                 CONFIG.chain_id,
                 wrong_node_address,
                 &contracts(),
+                None,
                 Some(&QuorumConfig::default()),
             )
             .unwrap();

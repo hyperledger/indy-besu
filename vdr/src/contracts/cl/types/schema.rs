@@ -26,11 +26,25 @@ pub struct Schema {
 }
 
 impl Schema {
+    pub fn new(
+        issuer_id: DID,
+        name: String,
+        version: String,
+        attr_names: HashSet<String>,
+    ) -> Schema {
+        Schema {
+            issuer_id,
+            name,
+            version,
+            attr_names,
+        }
+    }
+
     pub fn id(&self) -> SchemaId {
         SchemaId::build(&self.issuer_id, &self.name, &self.version)
     }
 
-    pub fn validate(&self) -> VdrResult<()> {
+    pub(crate) fn validate(&self) -> VdrResult<()> {
         if self.name.is_empty() {
             return Err(VdrError::InvalidSchema("Name is not provided".to_string()));
         }
@@ -48,6 +62,15 @@ impl Schema {
         }
 
         Ok(())
+    }
+
+    pub fn from_string(value: &str) -> VdrResult<Schema> {
+        serde_json::from_str(value).map_err(|err| {
+            VdrError::InvalidSchema(format!(
+                "Unable to parse Schema from JSON. Err: {:?}",
+                err.to_string()
+            ))
+        })
     }
 }
 

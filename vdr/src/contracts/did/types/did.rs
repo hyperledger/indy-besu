@@ -1,4 +1,4 @@
-use crate::{types::ContractOutput, ContractParam, VdrError};
+use crate::{types::ContractOutput, ContractParam, VdrError, VdrResult};
 use serde_derive::{Deserialize, Serialize};
 
 pub const DID_PREFIX: &str = "did";
@@ -13,6 +13,10 @@ impl DID {
         } else {
             DID(format!("{}:{}:{}", DID_PREFIX, method, id))
         }
+    }
+
+    pub fn without_network(&self) -> VdrResult<DID> {
+        Ok(ParsedDid::try_from(self)?.as_short_did())
     }
 }
 
