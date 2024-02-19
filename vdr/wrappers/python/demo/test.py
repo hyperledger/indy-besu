@@ -2,6 +2,7 @@ import asyncio
 import json
 import secrets
 import string
+import os
 
 from eth_keys import keys
 from indy_besu_vdr import *
@@ -19,7 +20,7 @@ identity = {
     "address": '0xce70ce892768d46caf120b600dec29ed20198982',
     "secret": '7eda33eb6a38a8e231ea5c3de90df24b8982e4de94ef0e3f870d8ca386a63132'
 }
-
+project_root = f"{os.getcwd()}/../../.."
 
 def sign(secret: str, data: bytes):
     signature = keys.PrivateKey(bytearray.fromhex(secret)).sign_msg_hash(data)
@@ -28,27 +29,28 @@ def sign(secret: str, data: bytes):
     return SignatureData(rec_id, sig)
 
 
+def read_config():
+    with open(f"{project_root}/network/config.json") as f:
+        return json.loads(f.read())
+
+
 async def demo():
-    cwd = os.getcwd()
-    project_root = f"{cwd}/../../.."
-
-    with open(f"{project_root}/config.json") as f:
-        configs = json.loads(f.read())
-
-        did_registry_contract = configs["contracts"]["did_registry"]
-        did_contract_address = did_registry_contract["address"]
-        did_contract_spec_path = "{}/{}".format(project_root, did_registry_contract["spec_path"])
-
-        schema_registry_contract = configs["contracts"]["schema_registry"]
-        schema_contract_address = schema_registry_contract["address"]
-        schema_contract_spec_path = "{}/{}".format(project_root, schema_registry_contract["spec_path"])
-
     print("1. Init client")
+    config = read_config()
+
+    did_registry_contract = config["contracts"]["ethereumDidRegistry"]
+    did_contract_address = did_registry_contract["address"]
+    did_contract_spec_path = "{}/{}".format(project_root, did_registry_contract["specPath"])
+
+    schema_registry_contract = config["contracts"]["schemaRegistry"]
+    schema_contract_address = schema_registry_contract["address"]
+    schema_contract_spec_path = "{}/{}".format(project_root, schema_registry_contract["specPath"])
+
     contract_configs = [
         ContractConfig(did_contract_address, did_contract_spec_path, None),
         ContractConfig(schema_contract_address, schema_contract_spec_path, None),
     ]
-    client = LedgerClient(chain_id, node_address, contract_configs, None)
+    client = LedgerClient(config["chainId"], config["nodeAddress"], contract_configs, None)
     status = await client.ping()
     print(' Status: ' + str(status))
 

@@ -5,10 +5,7 @@ import { readFileSync } from "fs";
 import { resolve } from 'path'
 import { LedgerClient, EthrDidRegistry, DidResolver, SchemaRegistry } from "indy-besu-vdr";
 
-const chainId = 1337
-const nodeAddress = 'http://127.0.0.1:8545'
-
-
+const projectRootPath = resolve('../../../..')
 const trustee = {
     address: '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5',
     secret: Uint8Array.from([ 139, 187, 177, 179, 69, 175, 86, 181, 96, 165, 178, 11, 212, 176, 237, 28, 216, 204, 153, 88, 161, 98, 98, 188, 117, 17, 132, 83, 203, 84, 109, 247 ])
@@ -26,32 +23,28 @@ function sign(message: Uint8Array, key: Uint8Array) {
     }
 }
 
-function readContractsConfigs(): {address: string, spec: string}[] {
-    const projectRootPath = resolve('../../../..')
-    const configPath = `${projectRootPath}/config.json`
-
-    const data = readFileSync(configPath, 'utf8')
-    const parsed_data = JSON.parse(data)
-
-    const ethDidRegistry = parsed_data.contracts.ethereum_did_registry
-    const schemaRegistry = parsed_data.contracts.schema_registry
-
-    return [
-        {
-            address: ethDidRegistry.address as string,
-            spec: `${projectRootPath}/${ethDidRegistry.spec_path}`
-        },
-        {
-            address: schemaRegistry.address as string,
-            spec: `${projectRootPath}/${schemaRegistry.spec_path}`
-        }
-    ]
+function readJson(path: string) {
+    const data = readFileSync(path, 'utf8')
+    return JSON.parse(data)
 }
 
 async function demo() {
     console.log('1. Init client')
-    const contractConfigs = readContractsConfigs()
-    const client = new LedgerClient(chainId, nodeAddress, contractConfigs, null)
+    const configPath = `${projectRootPath}/network/config.json`
+    const config = readJson(configPath)
+    const contractConfigs = [
+        {
+            address: config.contracts.ethereumDidRegistry.address as string,
+            spec: readJson(`${projectRootPath}/${config.contracts.ethereumDidRegistry.specPath}`)
+        },
+        {
+            address: config.contracts.schemaRegistry.address as string,
+            spec: readJson(`${projectRootPath}/${config.contracts.schemaRegistry.specPath}`)
+        }
+    ]
+
+
+    const client = new LedgerClient(config.chainId, config.nodeAddress, contractConfigs, null)
     const status = await client.ping()
     console.log('Status: ' + JSON.stringify(status, null, 2))
 

@@ -1,5 +1,4 @@
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { readBesuConfig } from '../../utils'
 import {
   RoleControl,
   IndyDidRegistry,
@@ -26,19 +25,20 @@ export class Actor {
   }
 
   public async init() {
-    const addresses = this.readContractsAddresses()
+    const besuConfig = readBesuConfig()
+    const contracts = besuConfig.contracts
 
-    this.roleControl = await new RoleControl(this.account).getInstance(addresses['role_control'])
-    this.validatorControl = await new ValidatorControl(this.account).getInstance(addresses['validator_control'])
-    this.didRegistry = await new IndyDidRegistry(this.account).getInstance(addresses['indy_did_registry'])
+    this.roleControl = await new RoleControl(this.account).getInstance(contracts.roleControl.address)
+    this.validatorControl = await new ValidatorControl(this.account).getInstance(contracts.validatorControl.address)
+    this.didRegistry = await new IndyDidRegistry(this.account).getInstance(contracts.indyDidRegistry.address)
     this.ethereumDIDRegistry = await new EthereumExtDidRegistry(this.account).getInstance(
-      addresses['ethereum_did_registry'],
+      contracts.ethereumDidRegistry.address,
     )
-    this.schemaRegistry = await new SchemaRegistry(this.account).getInstance(addresses['schema_registry'])
+    this.schemaRegistry = await new SchemaRegistry(this.account).getInstance(contracts.schemaRegistry.address)
     this.credentialDefinitionRegistry = await new CredentialDefinitionRegistry(this.account).getInstance(
-      addresses['cred_def_registry'],
+      contracts.credDefRegistry.address,
     )
-    this.upgradeControl = await new UpgradeControl(this.account).getInstance(addresses['upgrade_control'])
+    this.upgradeControl = await new UpgradeControl(this.account).getInstance(contracts.upgradeControl.address)
     return this
   }
 
@@ -56,20 +56,5 @@ export class Actor {
 
   public get didDocument() {
     return this.account.didDocument
-  }
-
-  private readContractsAddresses(): { [key: string]: string } {
-    const configPath = resolve('..', 'config.json')
-
-    const data = readFileSync(configPath, 'utf8')
-    const contracts = JSON.parse(data).contracts
-
-    const result = {}
-
-    for (const contractName of Object.keys(contracts)) {
-      result[contractName] = contracts[contractName].address
-    }
-
-    return result
   }
 }

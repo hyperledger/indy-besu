@@ -196,9 +196,7 @@ pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<S
 pub mod test {
     use super::*;
     use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, SCHEMA_REGISTRY_ADDRESS, TEST_ACCOUNT,
-        },
+        client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT},
         contracts::{
             cl::types::schema::test::{schema, SCHEMA_ATTRIBUTES, SCHEMA_NAME, SCHEMA_VERSION},
             did::types::{did::DID, did_doc::test::TEST_ETHR_DID},
@@ -221,9 +219,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: SCHEMA_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.schema_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     131, 211, 251, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 34, 27,
@@ -289,9 +287,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: SCHEMA_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.schema_registry.address.clone(),
                 nonce: None,
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     174, 190, 203, 28, 34, 27, 23, 130, 143, 227, 3, 94, 147, 14, 185, 63, 10, 50,
                     145, 115, 71, 104, 106, 145, 232, 190, 123, 84, 240, 64, 217, 94, 167, 52, 119,

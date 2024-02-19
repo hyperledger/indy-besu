@@ -1,5 +1,4 @@
 import { writeJson } from '../../utils'
-import { outFile, readContractsConfig } from './config'
 import {
   accountControl,
   credentialDefinitionRegistry,
@@ -12,23 +11,24 @@ import {
   upgradeControl,
   validatorControl,
 } from './contracts'
+import { prepareConfig } from './helpers'
 
 function main() {
-  readContractsConfig()
+  const config = prepareConfig()
 
   const contracts = {
-    ...accountControl(),
-    ...roleControl(),
-    ...validatorControl(),
-    ...upgradeControl(),
-    ...indyDidRegistry(),
-    ...ethereumDidRegistry(),
-    ...universalDidResolver(),
-    ...schemaRegistry(),
-    ...credentialDefinitionRegistry(),
-    ...legacyMappingRegistry(),
+    ...accountControl(config.accountControl),
+    ...roleControl(config.roleControl),
+    ...validatorControl(config.validatorControl),
+    ...upgradeControl(config.upgradeControl),
+    ...indyDidRegistry(config.indyDidRegistry),
+    ...ethereumDidRegistry(config.ethereumDidRegistry),
+    ...universalDidResolver(config.universalDidResolver),
+    ...schemaRegistry(config.schemaRegistry),
+    ...credentialDefinitionRegistry(config.credentialDefinitionRegistry),
+    ...legacyMappingRegistry(config.legacyMapping),
   }
-  writeJson(contracts, outFile)
+  writeJson(contracts, 'ContractsGenesis.json')
 }
 
 if (require.main === module) {

@@ -1,5 +1,4 @@
 import { concat, getBytes, keccak256, Signature, toUtf8Bytes, toUtf8String } from 'ethers'
-import { signEndorsementData } from '../test/utils/contract-helpers'
 import { CredentialDefinitionMetadataStruct } from '../typechain-types/contracts/cl/CredentialDefinitionRegistry'
 import { Contract } from '../utils/contract'
 

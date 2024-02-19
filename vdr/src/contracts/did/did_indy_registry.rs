@@ -339,9 +339,7 @@ pub fn parse_resolve_did_result(client: &LedgerClient, bytes: &[u8]) -> VdrResul
 pub mod test {
     use super::*;
     use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, INDY_REGISTRY_ADDRESS, TEST_ACCOUNT,
-        },
+        client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT},
         contracts::did::types::{
             did::DID,
             did_doc::test::{did_doc, TEST_ETHR_DID},
@@ -364,9 +362,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: INDY_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.indy_did_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     245, 149, 121, 68, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0, 0,
@@ -424,9 +422,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: INDY_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.indy_did_registry.address.clone(),
                 nonce: None,
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     24, 48, 235, 91, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,

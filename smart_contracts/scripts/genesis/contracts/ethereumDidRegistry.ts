@@ -1,5 +1,4 @@
 import { padLeft } from 'web3-utils'
-import { config } from '../config'
 import { ContractConfig } from '../contractConfig'
 import { buildProxySection, slots } from '../helpers'
 
@@ -9,10 +8,11 @@ export interface EthereumDidRegistryConfig extends ContractConfig {
   }
 }
 
-export function ethereumDidRegistry() {
-  const { name, address, description, data } = config.ethereumDidRegistry
+export function ethereumDidRegistry(config: EthereumDidRegistryConfig) {
+  const { name, address, description } = config
   const storage: any = {}
 
-  storage[slots['0']] = padLeft(data.upgradeControlAddress, 64)
+  storage[slots['0']] = padLeft(config.data.upgradeControlAddress, 64)
+
   return buildProxySection(name, address, description, storage)
 }

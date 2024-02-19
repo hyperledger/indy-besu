@@ -1,6 +1,5 @@
 import { BN } from 'bn.js'
 import { padLeft, sha3 } from 'web3-utils'
-import { config } from '../config'
 import { ContractConfig } from '../contractConfig'
 import { buildProxySection, slots } from '../helpers'
 
@@ -12,8 +11,8 @@ export interface ValidatorsConfig extends ContractConfig {
   }
 }
 
-export function validatorControl() {
-  const { name, address, description, data } = config.validatorControl
+export function validatorControl(config: ValidatorsConfig) {
+  const { name, address, description, data } = config
   const storage: any = {}
 
   // address of upgrade control contact stored in slot 0

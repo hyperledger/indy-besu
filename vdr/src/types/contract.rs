@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 /// Contract configuration
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ContractConfig {
     /// Address of deployed contract
     pub address: String,

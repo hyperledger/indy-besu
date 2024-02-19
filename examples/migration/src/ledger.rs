@@ -208,78 +208,70 @@ struct BesuConfig {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BesuContracts {
-    did_registry: BesuContractConfig,
+    ethereum_did_registry: BesuContractConfig,
+    indy_did_registry: BesuContractConfig,
+    cred_def_registry: BesuContractConfig,
     schema_registry: BesuContractConfig,
-    credential_definition_registry: BesuContractConfig,
     role_control: BesuContractConfig,
+    validator_control: BesuContractConfig,
+    account_control: BesuContractConfig,
+    upgrade_control: BesuContractConfig,
     legacy_mapping_registry: BesuContractConfig,
+    universal_did_resolver: BesuContractConfig,
 }
 
 #[derive(Serialize, Deserialize)]
-struct BesuContractConfig {
+#[serde(rename_all = "camelCase")]
+pub struct BesuContractConfig {
     address: String,
-    path: String,
+    spec_path: String,
+}
+
+fn build_contract_path(contract_path: &str) -> String {
+    let mut cur_dir = env::current_dir().unwrap();
+    cur_dir.push("../../"); // project root directory
+    cur_dir.push(contract_path);
+    fs::canonicalize(&cur_dir)
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string()
 }
 
 impl BesuLedger {
 
-    pub const CHAIN_ID: u64 = 1337;
-    pub const NODE_ADDRESS: &'static str = "http://127.0.0.1:8545";
-
-    fn build_contract_path(contract_path: &str) -> String {
-        let mut cur_dir = env::current_dir().unwrap();
-        cur_dir.push("../../"); // project root directory
-        cur_dir.push(contract_path);
-        fs::canonicalize(&cur_dir)
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string()
-    }
-
-    fn contracts() -> Vec<ContractConfig> {
-        let mut conf_json_path = env::current_dir().unwrap();
-        conf_json_path.push("../../config.json");
-
-        let json_content = fs::read_to_string(conf_json_path).expect("config file reading failed");
-        let conf: Value = serde_json::from_str(&json_content).expect("config file parsing failed");
-
-        let contracts_conf = conf
-            .get("contracts").expect("'contracts' must be in the config file")
-            .as_object().expect("'contracts' is expected to be an object");
-
-
-        let result: Vec<_> = contracts_conf
-            .iter()
-            .filter(|(contract_name,_)| {
-                let cn = contract_name.as_str();
-                let contracts = [
-                    "did_registry", "cred_def_registry", "schema_registry",
-                    "role_control", "legacy_mapping_registry"
-                ];
-                contracts.contains(cn)
-            })
-            .map(|(_,contract_conf)| {
-                let addr = contract_conf
-                    .get("address").expect("'address' not found in the contract config")
-                    .as_str().expect("'address' must be a string");
-
-                let spec = contract_conf
-                    .get("spec_path").expect("'spec_path' not found in the contract config")
-                    .as_str().expect("'spec_path' must be a string");
-
-                ContractConfig {
-                    address: String::from(addr),
-                    spec_path: Some(build_contract_path(spec)),
-                    spec: None,
-                }
-            }).collect();
-
-        return result;
+    fn contracts(contracts: &BesuContracts) -> Vec<ContractConfig> {
+        vec![
+            ContractConfig {
+                address: contracts.ethereum_did_registry.address.to_string(),
+                spec_path: Some(build_contract_path(contracts.ethereum_did_registry.spec_path.as_str())),
+                spec: None,
+            },
+            ContractConfig {
+                address: contracts.schema_registry.address.to_string(),
+                spec_path: Some(build_contract_path(contracts.schema_registry.spec_path.as_str())),
+                spec: None,
+            },
+            ContractConfig {
+                address: contracts.cred_def_registry.address.to_string(),
+                spec_path: Some(build_contract_path(contracts.cred_def_registry.spec_path.as_str())),
+                spec: None,
+            },
+            ContractConfig {
+                address: contracts.role_control.address.to_string(),
+                spec_path: Some(build_contract_path(contracts.role_control.spec_path.as_str())),
+                spec: None,
+            },
+            ContractConfig {
+                address: contracts.legacy_mapping_registry.address.to_string(),
+                spec_path: Some(build_contract_path(contracts.legacy_mapping_registry.spec_path.as_str())),
+                spec: None,
+            },
+        ]
     }
 
     pub async fn new() -> BesuLedger {
-        let file = fs::File::open("besu-config.json").expect("Unable to open besu config file");
+        let file = fs::File::open("../../network/config.json").expect("Unable to open besu config file");
         let config: BesuConfig =
             serde_json::from_reader(file).expect("Unable to parse besu config file");
 
