@@ -8,6 +8,12 @@ pragma solidity ^0.8.20;
 error DidMappingAlreadyExist(string identifier);
 
 /**
+ * @notice Error that occurs when DID mapping does not exist.
+ * @param identifier Legacy DID identifier.
+ */
+error DidMappingDoesNotExist(string identifier);
+
+/**
  * @notice Error that occurs when trying to add a duplicating mapping for a legacy resource  identifier.
  * @param identifier Legacy Schema/CredDef identifier.
  */

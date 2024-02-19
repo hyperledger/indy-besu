@@ -2,14 +2,15 @@
 pragma solidity ^0.8.20;
 
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
-import { DidMappingAlreadyExist, ResourceMappingAlreadyExist, InvalidEd25519Key, InvalidResourceId } from "./LegacyMappingErrors.sol";
-import { NotIdentityOwner } from "../did/DidErrors.sol";
+import { DidMappingAlreadyExist, ResourceMappingAlreadyExist, InvalidEd25519Key, InvalidResourceId, DidMappingDoesNotExist } from "./LegacyMappingErrors.sol";
+import { NotIdentityOwner, IncorrectDid } from "../did/DidErrors.sol";
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { LegacyMappingRegistryInterface } from "./LegacyMappingRegistryInterface.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
+import { DidUtils } from "../did/DidUtils.sol";
 
 import { Base58 } from "../utils/Base58.sol";
-import { toSlice } from "@dk1a/solidity-stringutils/src/StrSlice.sol";
+import { toSlice, isEmpty } from "@dk1a/solidity-stringutils/src/StrSlice.sol";
 
 using { toSlice } for string;
 
@@ -21,11 +22,10 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
 
     RoleControlInterface internal _roleControl;
 
-    // FIXME: Now, since we have `indybesu` and `ethr` DID methods having account as identifier we need to change value of `didMapping`
     /*
      * Mapping storing indy/sov DID identifiers to the corresponding account address
      */
-    mapping(string legacyDid => address account) public didMapping;
+    mapping(string legacyDid => string did) public didMapping;
 
     /*
      * Mapping storing indy/sov formatted identifiers of schema/credential-definition to the corresponding new form
@@ -61,11 +61,12 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
     /// @inheritdoc LegacyMappingRegistryInterface
     function createDidMapping(
         address identity,
-        string calldata identifier,
+        string calldata legacyIdentifier,
+        string calldata newDid,
         bytes32 ed25519Key,
         bytes calldata ed25519Signature
     ) public virtual {
-        _createDidMapping(identity, msg.sender, identifier, ed25519Key, ed25519Signature);
+        _createDidMapping(identity, msg.sender, legacyIdentifier, newDid, ed25519Key, ed25519Signature);
     }
 
     /// @inheritdoc LegacyMappingRegistryInterface
@@ -74,7 +75,8 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         uint8 sigV,
         bytes32 sigR,
         bytes32 sigS,
-        string calldata identifier,
+        string calldata legacyIdentifier,
+        string calldata newDid,
         bytes32 ed25519Key,
         bytes calldata ed25518Signature
     ) public virtual {
@@ -85,12 +87,20 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
                 address(this),
                 identity,
                 "createDidMapping",
-                identifier,
+                legacyIdentifier,
+                newDid,
                 ed25519Key,
                 ed25518Signature
             )
         );
-        _createDidMapping(identity, ecrecover(hash, sigV, sigR, sigS), identifier, ed25519Key, ed25518Signature);
+        _createDidMapping(
+            identity,
+            ecrecover(hash, sigV, sigR, sigS),
+            legacyIdentifier,
+            newDid,
+            ed25519Key,
+            ed25518Signature
+        );
     }
 
     /// @inheritdoc LegacyMappingRegistryInterface
@@ -137,20 +147,24 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
     function _createDidMapping(
         address identity,
         address actor,
-        string calldata identifier,
+        string calldata legacyIdentifier,
+        string calldata newDid,
         bytes32 ed25519Key,
         bytes calldata ed25518Signature
     ) internal _identityOwner(identity, actor) _senderIsTrusteeOrEndorserOrSteward {
         // Checks the uniqueness of the DID mapping
-        if (didMapping[identifier] != address(0x00)) revert DidMappingAlreadyExist(identifier);
+        if (!isEmpty(didMapping[legacyIdentifier].toSlice())) revert DidMappingAlreadyExist(legacyIdentifier);
 
         // Checks that Ed25519 key matches to the legacy DID identifier
-        if (bytes16(Base58.decodeFromString(identifier)) != bytes16(ed25519Key))
-            revert InvalidEd25519Key(ed25519Key, identifier);
+        if (bytes16(Base58.decodeFromString(legacyIdentifier)) != bytes16(ed25519Key))
+            revert InvalidEd25519Key(ed25519Key, legacyIdentifier);
+
+        if (identity != DidUtils.convertEthereumIdentifierToAddress(DidUtils.parseDid(newDid).identifier))
+            revert IncorrectDid(newDid);
 
         // TODO: check ed25519 signature validity
-        didMapping[identifier] = identity;
-        emit DidMappingCreated(identifier, identity);
+        didMapping[legacyIdentifier] = newDid;
+        emit DidMappingCreated(legacyIdentifier, newDid);
     }
 
     function _createResourceMapping(
@@ -163,9 +177,14 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         // Checks the uniqueness of the Resource mapping
         if (bytes(resourceMapping[legacyIdentifier]).length != 0) revert ResourceMappingAlreadyExist(legacyIdentifier);
 
+        // Check that DID mapping was created
+        if (isEmpty(didMapping[legacyIssuerIdentifier].toSlice())) revert DidMappingDoesNotExist(legacyIdentifier);
+
         // Checks that owner of legacy DID controlled by identity account
-        if (identity != didMapping[legacyIssuerIdentifier])
-            revert NotIdentityOwner(identity, didMapping[legacyIssuerIdentifier]);
+        address owner = DidUtils.convertEthereumIdentifierToAddress(
+            DidUtils.parseDid(didMapping[legacyIssuerIdentifier]).identifier
+        );
+        if (identity != owner) revert NotIdentityOwner(identity, owner);
 
         // Checks that legacy issuer identifier is included into resource identifier
         if (!legacyIdentifier.toSlice().contains(legacyIssuerIdentifier.toSlice()))

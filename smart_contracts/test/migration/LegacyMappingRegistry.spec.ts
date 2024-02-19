@@ -16,8 +16,10 @@ describe('LegacyMappingRegistry', function () {
   let legacyMappingRegistry: TestableLegacyMappingRegistry
   let testAccounts: TestAccounts
   let issuer: string
+  let issuerDid: string
 
   const legacyDid = '2vZAi1riCVGnQMfQAjbThG'
+  const testActorDid = `did:ethr:${testActorAddress}`
   const legacyVerkey = Uint8Array.from([
     15, 147, 97, 223, 64, 179, 188, 70, 162, 110, 219, 163, 185, 25, 180, 23, 224, 175, 15, 188, 235, 170, 233, 240,
     145, 111, 204, 153, 108, 117, 188, 145,
@@ -37,8 +39,8 @@ describe('LegacyMappingRegistry', function () {
     indyDidRegistryInit.connect(testAccountsInit.trustee.account)
     legacyMappingRegistryInit.connect(testAccountsInit.trustee.account)
 
-    const issuerId = `did:indybesu:${issuer}`
-    await createDid(indyDidRegistryInit, testAccountsInit.trustee.account.address, issuerId)
+    issuerDid = `did:indybesu:${issuer}`
+    await createDid(indyDidRegistryInit, testAccountsInit.trustee.account.address, issuerDid)
 
     legacyMappingRegistry = legacyMappingRegistryInit
     indyDidRegistry = indyDidRegistryInit
@@ -47,17 +49,17 @@ describe('LegacyMappingRegistry', function () {
 
   describe('Add/Resolve DID mapping', function () {
     it('Should create DID mapping', async function () {
-      await legacyMappingRegistry.createDidMapping(issuer, legacyDid, legacyVerkey, legacySignature)
+      await legacyMappingRegistry.createDidMapping(issuer, legacyDid, issuerDid, legacyVerkey, legacySignature)
 
       const address = await legacyMappingRegistry.didMapping(legacyDid)
-      expect(address).to.be.equal(issuer)
+      expect(address).to.be.equal(issuerDid)
     })
 
     it('Should fail if DID mapping is being created already exists', async function () {
-      await legacyMappingRegistry.createDidMapping(issuer, legacyDid, legacyVerkey, legacySignature)
+      await legacyMappingRegistry.createDidMapping(issuer, legacyDid, issuerDid, legacyVerkey, legacySignature)
 
       await expect(
-        legacyMappingRegistry.createDidMapping(issuer, legacyDid, legacyVerkey, legacySignature),
+        legacyMappingRegistry.createDidMapping(issuer, legacyDid, issuerDid, legacyVerkey, legacySignature),
       ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, MigrationErrors.DidMappingAlreadyExist)
     })
 
@@ -68,7 +70,7 @@ describe('LegacyMappingRegistry', function () {
       ])
 
       await expect(
-        legacyMappingRegistry.createDidMapping(issuer, legacyDid, ed25519Key, legacySignature),
+        legacyMappingRegistry.createDidMapping(issuer, legacyDid, issuerDid, ed25519Key, legacySignature),
       ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, MigrationErrors.InvalidEd25519Key)
     })
 
@@ -76,7 +78,7 @@ describe('LegacyMappingRegistry', function () {
       legacyMappingRegistry.connect(testAccounts.trustee2.account)
 
       await expect(
-        legacyMappingRegistry.createDidMapping(issuer, legacyDid, legacyVerkey, legacySignature),
+        legacyMappingRegistry.createDidMapping(issuer, legacyDid, issuerDid, legacyVerkey, legacySignature),
       ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
   })
@@ -88,12 +90,14 @@ describe('LegacyMappingRegistry', function () {
         testActorAddress,
         testActorPrivateKey,
         legacyDid,
+        testActorDid,
         legacyVerkey,
         legacySignature,
       )
       await legacyMappingRegistry.createDidMappingSigned(
         testActorAddress,
         legacyDid,
+        testActorDid,
         legacyVerkey,
         legacySignature,
         sig,
@@ -110,6 +114,7 @@ describe('LegacyMappingRegistry', function () {
         testActorAddress,
         testActorPrivateKey,
         legacyDid,
+        testActorDid,
         legacyVerkey,
         legacySignature,
       )
@@ -117,13 +122,21 @@ describe('LegacyMappingRegistry', function () {
       await legacyMappingRegistry.createDidMappingSigned(
         testActorAddress,
         legacyDid,
+        testActorDid,
         legacyVerkey,
         legacySignature,
         sig,
       )
 
       await expect(
-        legacyMappingRegistry.createDidMappingSigned(testActorAddress, legacyDid, legacyVerkey, legacySignature, sig),
+        legacyMappingRegistry.createDidMappingSigned(
+          testActorAddress,
+          legacyDid,
+          testActorDid,
+          legacyVerkey,
+          legacySignature,
+          sig,
+        ),
       ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, MigrationErrors.DidMappingAlreadyExist)
     })
 
@@ -134,6 +147,7 @@ describe('LegacyMappingRegistry', function () {
         testAccounts.trustee2.account.address,
         testActorPrivateKey,
         legacyDid,
+        testActorDid,
         legacyVerkey,
         legacySignature,
       )
@@ -142,6 +156,7 @@ describe('LegacyMappingRegistry', function () {
         legacyMappingRegistry.createDidMappingSigned(
           testAccounts.trustee2.account.address,
           legacyDid,
+          testActorDid,
           legacyVerkey,
           legacySignature,
           sig,
@@ -155,19 +170,27 @@ describe('LegacyMappingRegistry', function () {
         testActorAddress,
         testActorPrivateKey,
         '356FbajrLCJxbQbn8GSb3B',
+        testActorDid,
         legacyVerkey,
         legacySignature,
       )
 
       await expect(
-        legacyMappingRegistry.createDidMappingSigned(testActorAddress, legacyDid, legacyVerkey, legacySignature, sig),
+        legacyMappingRegistry.createDidMappingSigned(
+          testActorAddress,
+          legacyDid,
+          issuerDid,
+          legacyVerkey,
+          legacySignature,
+          sig,
+        ),
       ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, DidErrors.NotIdentityOwner)
     })
   })
 
   describe('Add/Resolve Resource mapping', function () {
     beforeEach(async function () {
-      await legacyMappingRegistry.createDidMapping(issuer, legacyDid, legacyVerkey, legacySignature)
+      await legacyMappingRegistry.createDidMapping(issuer, legacyDid, issuerDid, legacyVerkey, legacySignature)
     })
 
     it('Should create Resource mapping', async function () {
@@ -188,7 +211,7 @@ describe('LegacyMappingRegistry', function () {
     it('Should fail if mapping is being created with not existing DID mapping', async function () {
       await expect(
         legacyMappingRegistry.createResourceMapping(issuer, '356FbajrLCJxbQbn8GSb3B', legacySchemaId, schemaId),
-      ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, DidErrors.NotIdentityOwner)
+      ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, MigrationErrors.DidMappingDoesNotExist)
     })
 
     it('Should fail if mapping is being created with not owned DID mapping', async function () {
@@ -210,12 +233,14 @@ describe('LegacyMappingRegistry', function () {
         testActorAddress,
         testActorPrivateKey,
         legacyDid,
+        testActorDid,
         legacyVerkey,
         legacySignature,
       )
       await legacyMappingRegistry.createDidMappingSigned(
         testActorAddress,
         legacyDid,
+        testActorDid,
         legacyVerkey,
         legacySignature,
         sig,

@@ -7,7 +7,6 @@ use crate::{
         ed25519_signature::Ed25519Signature,
         resource_identifier::ResourceIdentifier,
     },
-    did_ethr_registry::ETHR_DID_METHOD,
     error::VdrResult,
     types::{
         Address, MethodStringParam, Transaction, TransactionBuilder,
@@ -53,6 +52,7 @@ pub async fn build_create_did_mapping_transaction(
         .set_method(METHOD_CREATE_DID_MAPPING)
         .add_param(&identity)?
         .add_param(legacy_identifier)?
+        .add_param(did)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
         .set_type(TransactionType::Write)
@@ -88,6 +88,7 @@ pub async fn build_create_did_mapping_endorsing_data(
         .add_param(&identity)?
         .add_param(&MethodStringParam::from(METHOD_CREATE_DID_MAPPING))?
         .add_param(legacy_identifier)?
+        .add_param(did)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
         .build(client)
@@ -129,6 +130,7 @@ pub async fn build_create_did_mapping_signed_transaction(
         .add_param(&signature.r())?
         .add_param(&signature.s())?
         .add_param(legacy_identifier)?
+        .add_param(did)?
         .add_param(legacy_verkey)?
         .add_param(ed25519_signature)?
         .set_type(TransactionType::Write)
@@ -176,8 +178,7 @@ pub fn parse_did_mapping_result(client: &LedgerClient, bytes: &[u8]) -> VdrResul
     TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_DID_MAPPING)
-        .parse::<Address>(client, bytes)
-        .map(|address| DID::build(ETHR_DID_METHOD, None, address.as_ref()))
+        .parse::<DID>(client, bytes)
 }
 
 /// Build transaction to execute LegacyMappingRegistry.createResourceMapping contract method to
@@ -377,18 +378,24 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CONFIG.chain_id,
                 data: vec![
-                    99, 222, 119, 162, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
+                    154, 50, 101, 217, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 128, 233, 198, 118, 109, 146, 166, 42, 37, 34, 23, 211, 11, 40, 37, 124,
-                    32, 134, 8, 18, 195, 139, 30, 194, 70, 230, 160, 73, 245, 42, 208, 96, 25, 0,
+                    0, 0, 160, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 224, 233, 198, 118, 109, 146, 166, 42, 37, 34, 23, 211,
+                    11, 40, 37, 124, 32, 134, 8, 18, 195, 139, 30, 194, 70, 230, 160, 73, 245, 42,
+                    208, 96, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 1, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 86, 115, 75, 86, 55, 103, 114,
+                    82, 49, 66, 85, 69, 50, 57, 109, 71, 50, 70, 109, 50, 107, 88, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 86, 115, 75, 86, 55, 103, 114, 82, 49, 66,
-                    85, 69, 50, 57, 109, 71, 50, 70, 109, 50, 107, 88, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 100, 105, 100, 58, 101, 116, 104, 114, 58,
+                    116, 101, 115, 116, 110, 101, 116, 58, 48, 120, 102, 48, 101, 50, 100, 98, 54,
+                    99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53, 100, 54, 97, 100, 49, 50, 49,
+                    97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50, 98, 53, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 8, 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 8, 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
                 hash: None,

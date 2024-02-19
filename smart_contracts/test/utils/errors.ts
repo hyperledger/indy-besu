@@ -49,4 +49,5 @@ export namespace MigrationErrors {
   export const DidMappingAlreadyExist = 'DidMappingAlreadyExist'
   export const ResourceMappingAlreadyExist = 'ResourceMappingAlreadyExist'
   export const InvalidEd25519Key = 'InvalidEd25519Key'
+  export const DidMappingDoesNotExist = 'DidMappingDoesNotExist'
 }
