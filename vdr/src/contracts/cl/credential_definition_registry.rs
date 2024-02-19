@@ -4,7 +4,7 @@ use crate::{
     client::LedgerClient,
     contracts::cl::types::{
         credential_definition::{CredentialDefinition, CredentialDefinitionRecord},
-        credential_definition_id::CredentialDefinitionId,
+        credential_definition_id::{CredentialDefinitionId, ParsedCredentialDefinitionId},
     },
     error::VdrResult,
     types::{
@@ -38,14 +38,13 @@ pub async fn build_create_credential_definition_transaction(
 ) -> VdrResult<Transaction> {
     credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
-    let id = credential_definition.id();
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_CREDENTIAL_DEFINITION)
         .add_param(&identity)?
-        .add_param(&id)?
-        .add_param(&credential_definition.issuer_id)?
-        .add_param(&credential_definition.schema_id)?
+        .add_param(&credential_definition.id().without_network()?)?
+        .add_param(&credential_definition.issuer_id.without_network()?)?
+        .add_param(&credential_definition.schema_id.without_network()?)?
         .add_param(credential_definition)?
         .set_type(TransactionType::Write)
         .set_from(from)
@@ -69,7 +68,6 @@ pub async fn build_create_credential_definition_endorsing_data(
 ) -> VdrResult<TransactionEndorsingData> {
     credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
-    let id = credential_definition.id();
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
@@ -77,9 +75,9 @@ pub async fn build_create_credential_definition_endorsing_data(
         .add_param(&MethodStringParam::from(
             METHOD_CREATE_CREDENTIAL_DEFINITION,
         ))?
-        .add_param(&id)?
-        .add_param(&credential_definition.issuer_id)?
-        .add_param(&credential_definition.schema_id)?
+        .add_param(&credential_definition.id().without_network()?)?
+        .add_param(&credential_definition.issuer_id.without_network()?)?
+        .add_param(&credential_definition.schema_id.without_network()?)?
         .add_param(credential_definition)?
         .build(client)
         .await
@@ -106,7 +104,6 @@ pub async fn build_create_credential_definition_signed_transaction(
 ) -> VdrResult<Transaction> {
     credential_definition.validate()?;
     let identity = Address::try_from(&credential_definition.issuer_id)?;
-    let id = credential_definition.id();
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_CREDENTIAL_DEFINITION_SIGNED)
@@ -114,9 +111,9 @@ pub async fn build_create_credential_definition_signed_transaction(
         .add_param(&signature.v())?
         .add_param(&signature.r())?
         .add_param(&signature.s())?
-        .add_param(&id)?
-        .add_param(&credential_definition.issuer_id)?
-        .add_param(&credential_definition.schema_id)?
+        .add_param(&credential_definition.id().without_network()?)?
+        .add_param(&credential_definition.issuer_id.without_network()?)?
+        .add_param(&credential_definition.schema_id.without_network()?)?
         .add_param(credential_definition)?
         .set_type(TransactionType::Write)
         .set_from(from)
@@ -142,7 +139,7 @@ pub async fn build_resolve_credential_definition_transaction(
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
-        .add_param(id)?
+        .add_param(&id.without_network()?)?
         .set_type(TransactionType::Read)
         .build(client)
         .await
@@ -181,6 +178,14 @@ pub async fn resolve_credential_definition(
     client: &LedgerClient,
     id: &CredentialDefinitionId,
 ) -> VdrResult<CredentialDefinition> {
+    let parsed_id = ParsedCredentialDefinitionId::try_from(id)?;
+    match (parsed_id.network.as_ref(), client.network()) {
+        (Some(schema_network), Some(client_network)) if schema_network != client_network => {
+            return Err(VdrError::InvalidCredentialDefinition(format!("Network of request credential definition id {} does not match to the client network {}", schema_network, client_network)));
+        }
+        _ => {}
+    };
+
     let transaction = build_resolve_credential_definition_transaction(client, id).await?;
     let response = client.submit_transaction(&transaction).await?;
 
@@ -235,6 +240,7 @@ pub mod test {
                 &SchemaId::from(SCHEMA_ID),
                 Some(CREDENTIAL_DEFINITION_TAG),
             );
+            println!("cred_def {:?}", cred_def);
             let transaction =
                 build_create_credential_definition_transaction(&client, &TEST_ACCOUNT, &cred_def)
                     .await
@@ -247,37 +253,36 @@ pub mod test {
                 chain_id: CONFIG.chain_id,
                 data: vec![
                     182, 196, 9, 117, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
-                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 190, 177,
-                    72, 242, 21, 171, 224, 191, 86, 212, 4, 12, 89, 70, 109, 83, 153, 187, 19, 51,
-                    18, 37, 31, 233, 114, 33, 60, 132, 133, 72, 249, 229, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 34,
-                    27, 23, 130, 143, 227, 3, 94, 147, 14, 185, 63, 10, 50, 145, 115, 71, 104, 106,
-                    145, 232, 190, 123, 84, 240, 64, 217, 94, 167, 52, 119, 152, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 2, 105,
+                    77, 198, 175, 52, 100, 14, 236, 5, 92, 96, 213, 30, 127, 142, 109, 135, 11,
+                    231, 119, 100, 109, 44, 92, 49, 82, 133, 141, 241, 182, 157, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160,
+                    157, 102, 193, 205, 103, 90, 204, 163, 183, 21, 33, 209, 148, 81, 176, 246, 13,
+                    62, 210, 245, 196, 121, 156, 18, 158, 90, 17, 4, 158, 115, 117, 188, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 59, 100, 105, 100, 58, 101, 116, 104, 114, 58, 116, 101, 115,
-                    116, 110, 101, 116, 58, 48, 120, 102, 48, 101, 50, 100, 98, 54, 99, 56, 100,
-                    99, 54, 99, 54, 56, 49, 98, 98, 53, 100, 54, 97, 100, 49, 50, 49, 97, 49, 48,
-                    55, 102, 51, 48, 48, 101, 57, 98, 50, 98, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 42,
-                    123, 34, 105, 115, 115, 117, 101, 114, 73, 100, 34, 58, 34, 100, 105, 100, 58,
-                    101, 116, 104, 114, 58, 116, 101, 115, 116, 110, 101, 116, 58, 48, 120, 102,
-                    48, 101, 50, 100, 98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53, 100,
-                    54, 97, 100, 49, 50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50, 98,
-                    53, 34, 44, 34, 115, 99, 104, 101, 109, 97, 73, 100, 34, 58, 34, 100, 105, 100,
-                    58, 101, 116, 104, 114, 58, 116, 101, 115, 116, 110, 101, 116, 58, 48, 120,
+                    0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 51, 100, 105, 100, 58, 101, 116, 104, 114, 58, 48, 120,
                     102, 48, 101, 50, 100, 98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53,
                     100, 54, 97, 100, 49, 50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50,
-                    98, 53, 47, 97, 110, 111, 110, 99, 114, 101, 100, 115, 47, 118, 48, 47, 83, 67,
-                    72, 69, 77, 65, 47, 70, 49, 68, 67, 108, 97, 70, 69, 122, 105, 51, 116, 47, 49,
-                    46, 48, 46, 48, 34, 44, 34, 99, 114, 101, 100, 68, 101, 102, 84, 121, 112, 101,
-                    34, 58, 34, 67, 76, 34, 44, 34, 116, 97, 103, 34, 58, 34, 100, 101, 102, 97,
-                    117, 108, 116, 34, 44, 34, 118, 97, 108, 117, 101, 34, 58, 123, 34, 110, 34,
-                    58, 34, 55, 55, 57, 46, 46, 46, 51, 57, 55, 34, 44, 34, 114, 99, 116, 120, 116,
-                    34, 58, 34, 55, 55, 52, 46, 46, 46, 57, 55, 55, 34, 44, 34, 115, 34, 58, 34,
-                    55, 53, 48, 46, 46, 56, 57, 51, 34, 44, 34, 122, 34, 58, 34, 54, 51, 50, 46,
-                    46, 46, 48, 48, 53, 34, 125, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0,
+                    98, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 42, 123, 34, 105,
+                    115, 115, 117, 101, 114, 73, 100, 34, 58, 34, 100, 105, 100, 58, 101, 116, 104,
+                    114, 58, 116, 101, 115, 116, 110, 101, 116, 58, 48, 120, 102, 48, 101, 50, 100,
+                    98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53, 100, 54, 97, 100, 49,
+                    50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50, 98, 53, 34, 44, 34,
+                    115, 99, 104, 101, 109, 97, 73, 100, 34, 58, 34, 100, 105, 100, 58, 101, 116,
+                    104, 114, 58, 116, 101, 115, 116, 110, 101, 116, 58, 48, 120, 102, 48, 101, 50,
+                    100, 98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53, 100, 54, 97, 100,
+                    49, 50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50, 98, 53, 47, 97,
+                    110, 111, 110, 99, 114, 101, 100, 115, 47, 118, 48, 47, 83, 67, 72, 69, 77, 65,
+                    47, 70, 49, 68, 67, 108, 97, 70, 69, 122, 105, 51, 116, 47, 49, 46, 48, 46, 48,
+                    34, 44, 34, 99, 114, 101, 100, 68, 101, 102, 84, 121, 112, 101, 34, 58, 34, 67,
+                    76, 34, 44, 34, 116, 97, 103, 34, 58, 34, 100, 101, 102, 97, 117, 108, 116, 34,
+                    44, 34, 118, 97, 108, 117, 101, 34, 58, 123, 34, 110, 34, 58, 34, 55, 55, 57,
+                    46, 46, 46, 51, 57, 55, 34, 44, 34, 114, 99, 116, 120, 116, 34, 58, 34, 55, 55,
+                    52, 46, 46, 46, 57, 55, 55, 34, 44, 34, 115, 34, 58, 34, 55, 53, 48, 46, 46,
+                    56, 57, 51, 34, 44, 34, 122, 34, 58, 34, 54, 51, 50, 46, 46, 46, 48, 48, 53,
+                    34, 125, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
                 hash: None,
@@ -335,9 +340,9 @@ pub mod test {
                 nonce: None,
                 chain_id: CONFIG.chain_id,
                 data: vec![
-                    159, 136, 157, 181, 190, 177, 72, 242, 21, 171, 224, 191, 86, 212, 4, 12, 89,
-                    70, 109, 83, 153, 187, 19, 51, 18, 37, 31, 233, 114, 33, 60, 132, 133, 72, 249,
-                    229,
+                    159, 136, 157, 181, 2, 105, 77, 198, 175, 52, 100, 14, 236, 5, 92, 96, 213, 30,
+                    127, 142, 109, 135, 11, 231, 119, 100, 109, 44, 92, 49, 82, 133, 141, 241, 182,
+                    157,
                 ],
                 signature: RwLock::new(None),
                 hash: None,

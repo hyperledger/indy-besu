@@ -21,6 +21,7 @@ impl LedgerClientWrapper {
         chain_id: u32,
         node_address: String,
         contract_configs: JsValue,
+        network: Option<String>,
         quorum_config: JsValue,
     ) -> Result<LedgerClientWrapper> {
         console_error_panic_hook::set_once();
@@ -32,6 +33,7 @@ impl LedgerClientWrapper {
             chain_id as u64,
             &node_address,
             &contract_configs,
+            network.as_deref(),
             quorum_config.as_ref(),
         )
         .as_js()?;

@@ -29,11 +29,27 @@ pub struct CredentialDefinition {
 }
 
 impl CredentialDefinition {
-    pub fn id(&self) -> CredentialDefinitionId {
-        CredentialDefinitionId::build(&self.issuer_id, &self.schema_id, &self.tag)
+    pub fn new(
+        issuer_id: DID,
+        schema_id: SchemaId,
+        cred_def_type: SignatureType,
+        tag: String,
+        value: serde_json::Value,
+    ) -> CredentialDefinition {
+        CredentialDefinition {
+            issuer_id,
+            schema_id,
+            cred_def_type,
+            tag,
+            value,
+        }
     }
 
-    pub fn validate(&self) -> VdrResult<()> {
+    pub fn id(&self) -> CredentialDefinitionId {
+        CredentialDefinitionId::build(&self.issuer_id, &self.schema_id.unique_id(), &self.tag)
+    }
+
+    pub(crate) fn validate(&self) -> VdrResult<()> {
         if self.tag.is_empty() {
             return Err(VdrError::InvalidCredentialDefinition(
                 "Tag is not provided".to_string(),
@@ -47,6 +63,15 @@ impl CredentialDefinition {
         }
 
         Ok(())
+    }
+
+    pub fn from_string(value: &str) -> VdrResult<CredentialDefinition> {
+        serde_json::from_str(value).map_err(|err| {
+            VdrError::InvalidCredentialDefinition(format!(
+                "Unable to parse Credential Definition from JSON. Err: {:?}",
+                err.to_string()
+            ))
+        })
     }
 }
 

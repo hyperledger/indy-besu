@@ -21,6 +21,7 @@ impl LedgerClient {
         chain_id: u64,
         node_address: String,
         contract_configs: Vec<ContractConfig>,
+        network: Option<String>,
         quorum_config: Option<QuorumConfig>,
     ) -> VdrResult<LedgerClient> {
         let contract_configs: Vec<ContractConfig_> = contract_configs
@@ -32,6 +33,7 @@ impl LedgerClient {
             chain_id,
             &node_address,
             &contract_configs,
+            network.as_deref(),
             quorum_config.as_ref(),
         )?;
         Ok(LedgerClient { client })

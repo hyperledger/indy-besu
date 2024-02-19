@@ -14,6 +14,7 @@ const identity = {
     address: '0xce70ce892768d46caf120b600dec29ed20198982',
     secret: Uint8Array.from([126, 218, 51, 235, 106, 56, 168, 226, 49, 234, 92, 61, 233, 13, 242, 75, 137, 130, 228, 222, 148, 239, 14, 63, 135, 13, 140, 163, 134, 166, 49, 50])
 }
+const network = 'test'
 
 function sign(message: Uint8Array, key: Uint8Array) {
     let signature = secp256k1.ecdsaSign(message, key)
@@ -44,7 +45,7 @@ async function demo() {
     ]
 
 
-    const client = new LedgerClient(config.chainId, config.nodeAddress, contractConfigs, null)
+    const client = new LedgerClient(config.chainId, config.nodeAddress, contractConfigs, network, null)
     const status = await client.ping()
     console.log('Status: ' + JSON.stringify(status, null, 2))
 

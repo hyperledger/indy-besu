@@ -4,7 +4,7 @@ use crate::{
     client::LedgerClient,
     contracts::cl::types::{
         schema::{Schema, SchemaRecord},
-        schema_id::SchemaId,
+        schema_id::{ParsedSchemaId, SchemaId},
     },
     error::VdrResult,
     types::{
@@ -37,13 +37,12 @@ pub async fn build_create_schema_transaction(
 ) -> VdrResult<Transaction> {
     schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
-    let id = schema.id();
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_SCHEMA)
         .add_param(&identity)?
-        .add_param(&id)?
-        .add_param(&schema.issuer_id)?
+        .add_param(&schema.id().without_network()?)?
+        .add_param(&schema.issuer_id.without_network()?)?
         .add_param(schema)?
         .set_type(TransactionType::Write)
         .set_from(from)
@@ -67,14 +66,13 @@ pub async fn build_create_schema_endorsing_data(
 ) -> VdrResult<TransactionEndorsingData> {
     schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
-    let id = schema.id();
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
         .add_param(&identity)?
         .add_param(&MethodStringParam::from(METHOD_CREATE_SCHEMA))?
-        .add_param(&id)?
-        .add_param(&schema.issuer_id)?
+        .add_param(&schema.id().without_network()?)?
+        .add_param(&schema.issuer_id.without_network()?)?
         .add_param(schema)?
         .build(client)
         .await
@@ -101,7 +99,6 @@ pub async fn build_create_schema_signed_transaction(
 ) -> VdrResult<Transaction> {
     schema.validate()?;
     let identity = Address::try_from(&schema.issuer_id)?;
-    let id = schema.id();
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_SCHEMA_SIGNED)
@@ -109,8 +106,8 @@ pub async fn build_create_schema_signed_transaction(
         .add_param(&signature.v())?
         .add_param(&signature.r())?
         .add_param(&signature.s())?
-        .add_param(&id)?
-        .add_param(&schema.issuer_id)?
+        .add_param(&schema.id().without_network()?)?
+        .add_param(&schema.issuer_id.without_network()?)?
         .add_param(schema)?
         .set_type(TransactionType::Write)
         .set_from(sender)
@@ -135,7 +132,7 @@ pub async fn build_resolve_schema_transaction(
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_SCHEMA)
-        .add_param(id)?
+        .add_param(&id.without_network()?)?
         .set_type(TransactionType::Read)
         .build(client)
         .await
@@ -169,6 +166,17 @@ pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrRe
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<Schema> {
+    let parsed_id = ParsedSchemaId::try_from(id)?;
+    match (parsed_id.network.as_ref(), client.network()) {
+        (Some(schema_network), Some(client_network)) if schema_network != client_network => {
+            return Err(VdrError::InvalidSchema(format!(
+                "Network of request schema id {} does not match to the client network {}",
+                schema_network, client_network
+            )));
+        }
+        _ => {}
+    };
+
     let transaction = build_resolve_schema_transaction(client, id).await?;
     let response = client.submit_transaction(&transaction).await?;
     if response.is_empty() {
@@ -224,26 +232,26 @@ pub mod test {
                 chain_id: CONFIG.chain_id,
                 data: vec![
                     131, 211, 251, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
-                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 34, 27,
-                    23, 130, 143, 227, 3, 94, 147, 14, 185, 63, 10, 50, 145, 115, 71, 104, 106,
-                    145, 232, 190, 123, 84, 240, 64, 217, 94, 167, 52, 119, 152, 0, 0, 0, 0, 0, 0,
+                    198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 157, 102,
+                    193, 205, 103, 90, 204, 163, 183, 21, 33, 209, 148, 81, 176, 246, 13, 62, 210,
+                    245, 196, 121, 156, 18, 158, 90, 17, 4, 158, 115, 117, 188, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 224, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 100, 105, 100, 58, 101, 116, 104, 114, 58,
-                    116, 101, 115, 116, 110, 101, 116, 58, 48, 120, 102, 48, 101, 50, 100, 98, 54,
-                    99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53, 100, 54, 97, 100, 49, 50, 49,
-                    97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50, 98, 53, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 141, 123, 34, 105, 115, 115, 117, 101, 114, 73, 100, 34, 58, 34, 100,
-                    105, 100, 58, 101, 116, 104, 114, 58, 116, 101, 115, 116, 110, 101, 116, 58,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 51, 100, 105, 100, 58, 101, 116, 104, 114, 58,
                     48, 120, 102, 48, 101, 50, 100, 98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49,
                     98, 98, 53, 100, 54, 97, 100, 49, 50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101,
-                    57, 98, 50, 98, 53, 34, 44, 34, 110, 97, 109, 101, 34, 58, 34, 70, 49, 68, 67,
-                    108, 97, 70, 69, 122, 105, 51, 116, 34, 44, 34, 118, 101, 114, 115, 105, 111,
-                    110, 34, 58, 34, 49, 46, 48, 46, 48, 34, 44, 34, 97, 116, 116, 114, 78, 97,
-                    109, 101, 115, 34, 58, 91, 34, 70, 105, 114, 115, 116, 32, 78, 97, 109, 101,
-                    34, 93, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    57, 98, 50, 98, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 141,
+                    123, 34, 105, 115, 115, 117, 101, 114, 73, 100, 34, 58, 34, 100, 105, 100, 58,
+                    101, 116, 104, 114, 58, 116, 101, 115, 116, 110, 101, 116, 58, 48, 120, 102,
+                    48, 101, 50, 100, 98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53, 100,
+                    54, 97, 100, 49, 50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50, 98,
+                    53, 34, 44, 34, 110, 97, 109, 101, 34, 58, 34, 70, 49, 68, 67, 108, 97, 70, 69,
+                    122, 105, 51, 116, 34, 44, 34, 118, 101, 114, 115, 105, 111, 110, 34, 58, 34,
+                    49, 46, 48, 46, 48, 34, 44, 34, 97, 116, 116, 114, 78, 97, 109, 101, 115, 34,
+                    58, 91, 34, 70, 105, 114, 115, 116, 32, 78, 97, 109, 101, 34, 93, 125, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: RwLock::new(None),
                 hash: None,
@@ -252,9 +260,9 @@ pub mod test {
         }
 
         #[rstest]
-        #[case::name_not_provided("", SCHEMA_VERSION, &SCHEMA_ATTRIBUTES)]
-        #[case::version_not_provided(SCHEMA_NAME, "", &SCHEMA_ATTRIBUTES)]
-        #[case::attributes_not_provided(SCHEMA_NAME, SCHEMA_VERSION, &HashSet::new())]
+        #[case::name_not_provided("", SCHEMA_VERSION, & SCHEMA_ATTRIBUTES)]
+        #[case::version_not_provided(SCHEMA_NAME, "", & SCHEMA_ATTRIBUTES)]
+        #[case::attributes_not_provided(SCHEMA_NAME, SCHEMA_VERSION, & HashSet::new())]
         async fn build_create_schema_transaction_errors(
             #[case] name: &str,
             #[case] version: &str,
@@ -291,9 +299,9 @@ pub mod test {
                 nonce: None,
                 chain_id: CONFIG.chain_id,
                 data: vec![
-                    174, 190, 203, 28, 34, 27, 23, 130, 143, 227, 3, 94, 147, 14, 185, 63, 10, 50,
-                    145, 115, 71, 104, 106, 145, 232, 190, 123, 84, 240, 64, 217, 94, 167, 52, 119,
-                    152,
+                    174, 190, 203, 28, 157, 102, 193, 205, 103, 90, 204, 163, 183, 21, 33, 209,
+                    148, 81, 176, 246, 13, 62, 210, 245, 196, 121, 156, 18, 158, 90, 17, 4, 158,
+                    115, 117, 188,
                 ],
                 signature: RwLock::new(None),
                 hash: None,

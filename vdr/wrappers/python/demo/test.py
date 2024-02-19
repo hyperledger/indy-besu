@@ -7,10 +7,6 @@ import os
 from eth_keys import keys
 from indy_besu_vdr import *
 
-# chain id of the running network
-chain_id = 1337
-# address of an RPC node connected to the network
-node_address = 'http://127.0.0.1:8545'
 # Account address to use for sending transactions
 trustee = {
     "address": '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5',
@@ -20,6 +16,7 @@ identity = {
     "address": '0xce70ce892768d46caf120b600dec29ed20198982',
     "secret": '7eda33eb6a38a8e231ea5c3de90df24b8982e4de94ef0e3f870d8ca386a63132'
 }
+network = 'test'
 project_root = f"{os.getcwd()}/../../.."
 
 def sign(secret: str, data: bytes):
@@ -50,7 +47,7 @@ async def demo():
         ContractConfig(did_contract_address, did_contract_spec_path, None),
         ContractConfig(schema_contract_address, schema_contract_spec_path, None),
     ]
-    client = LedgerClient(config["chainId"], config["nodeAddress"], contract_configs, None)
+    client = LedgerClient(config["chainId"], config["nodeAddress"], contract_configs, network, None)
     status = await client.ping()
     print(' Status: ' + str(status))
 

@@ -1,5 +1,6 @@
-use crate::{contracts::did::types::did::DID, types::ContractParam, VdrError};
+use crate::{contracts::did::types::did::DID, types::ContractParam, VdrError, VdrResult};
 
+use crate::contracts::types::did::ParsedDid;
 use serde_derive::{Deserialize, Serialize};
 use sha3::Digest;
 
@@ -28,8 +29,12 @@ impl SchemaId {
         self.0.replace(Self::ID_PATH, "").replace('/', ":")
     }
 
-    pub fn hash(&self) -> Vec<u8> {
+    pub(crate) fn hash(&self) -> Vec<u8> {
         sha3::Keccak256::digest(self.0.as_bytes()).to_vec()
+    }
+
+    pub fn without_network(&self) -> VdrResult<SchemaId> {
+        ParsedSchemaId::try_from(self)?.as_short_id()
     }
 }
 
@@ -56,5 +61,44 @@ impl AsRef<str> for SchemaId {
 impl ToString for SchemaId {
     fn to_string(&self) -> String {
         self.0.to_string()
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub(crate) struct ParsedSchemaId {
+    pub(crate) issuer_id: DID,
+    pub(crate) name: String,
+    pub(crate) version: String,
+    pub(crate) network: Option<String>,
+}
+
+impl ParsedSchemaId {
+    pub(crate) fn as_short_id(&self) -> VdrResult<SchemaId> {
+        Ok(SchemaId::build(
+            &self.issuer_id.without_network()?,
+            &self.name,
+            &self.version,
+        ))
+    }
+}
+
+impl TryFrom<&SchemaId> for ParsedSchemaId {
+    type Error = VdrError;
+
+    fn try_from(schema_id: &SchemaId) -> Result<Self, Self::Error> {
+        let parts = schema_id.as_ref().split('/').collect::<Vec<&str>>();
+        if parts.len() != 6 {
+            return Err(VdrError::CommonInvalidData(
+                "Invalid schema id provided".to_string(),
+            ));
+        }
+        let issuer_id = DID::from(parts[0]);
+        let parsed_issuer_id = ParsedDid::try_from(&issuer_id)?;
+        Ok(ParsedSchemaId {
+            issuer_id: DID::from(parts[0]),
+            name: parts[3].to_string(),
+            version: parts[4].to_string(),
+            network: parsed_issuer_id.network,
+        })
     }
 }
