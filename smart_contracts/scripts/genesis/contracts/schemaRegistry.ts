@@ -1,5 +1,4 @@
 import { padLeft } from 'web3-utils'
-import { config } from '../config'
 import { ContractConfig } from '../contractConfig'
 import { buildProxySection, slots } from '../helpers'
 
@@ -10,8 +9,8 @@ export interface SchemasConfig extends ContractConfig {
   }
 }
 
-export function schemaRegistry() {
-  const { name, address, description, data } = config.schemaRegistry
+export function schemaRegistry(config: SchemasConfig) {
+  const { name, address, description, data } = config
   const storage: any = {}
 
   // address of upgrade control contact stored in slot 0

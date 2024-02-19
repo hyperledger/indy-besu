@@ -217,21 +217,38 @@ pub mod test {
         client::MockClient, types::transaction::test::read_transaction, utils::init_env_logger,
     };
     use once_cell::sync::Lazy;
+    use serde::{Deserialize, Serialize};
     use std::{env, fs};
 
-    pub const CHAIN_ID: u64 = 1337;
-    pub const CONTRACTS_SPEC_BASE_PATH: &str = "../smart_contracts/artifacts/contracts/";
-    pub const INDY_DID_REGISTRY_PATH: &str = "did/IndyDidRegistry.sol/IndyDidRegistry.json";
-    pub const SCHEMA_REGISTRY_SPEC_PATH: &str = "cl/SchemaRegistry.sol/SchemaRegistry.json";
-    pub const CRED_DEF_REGISTRY_SPEC_PATH: &str =
-        "cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json";
-    pub const VALIDATOR_CONTROL_PATH: &str = "network/ValidatorControl.sol/ValidatorControl.json";
-    pub const ROLE_CONTROL_PATH: &str = "auth/RoleControl.sol/RoleControl.json";
-    pub const ETHR_DID_REGISTRY_PATH: &str =
-        "did/EthereumExtDidRegistry.sol/EthereumExtDidRegistry.json";
-    pub const LEGACY_MAPPING_REGISTRY_PATH: &str =
-        "migration/LegacyMappingRegistry.sol/LegacyMappingRegistry.json";
-    pub const RPC_NODE_ADDRESS: &str = "http://127.0.0.1:8545";
+    #[derive(Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct TestConfig {
+        pub chain_id: u64,
+        pub node_address: String,
+        pub contracts: TestContractsConfigs,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct TestContractsConfigs {
+        pub indy_did_registry: TestContractConfig,
+        pub ethereum_did_registry: TestContractConfig,
+        pub cred_def_registry: TestContractConfig,
+        pub schema_registry: TestContractConfig,
+        pub role_control: TestContractConfig,
+        pub validator_control: TestContractConfig,
+        pub account_control: TestContractConfig,
+        pub upgrade_control: TestContractConfig,
+        pub legacy_mapping_registry: TestContractConfig,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct TestContractConfig {
+        pub address: Address,
+        pub spec_path: String,
+    }
+
     pub const CLIENT_NODE_ADDRESSES: [&str; 4] = [
         "http://127.0.0.1:21001",
         "http://127.0.0.1:21002",
@@ -241,26 +258,7 @@ pub mod test {
     pub const DEFAULT_NONCE: u64 = 0;
     pub const INVALID_ADDRESS: &str = "123";
 
-    pub static INDY_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000003333"));
-
-    pub static SCHEMA_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000005555"));
-
-    pub static CRED_DEF_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000004444"));
-
-    pub static VALIDATOR_CONTROL_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000007777"));
-
-    pub static ROLE_CONTROL_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000006666"));
-
-    pub static ETHR_DID_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000018888"));
-
-    pub static LEGACY_MAPPING_REGISTRY_ADDRESS: Lazy<Address> =
-        Lazy::new(|| Address::from("0x0000000000000000000000000000000000017777"));
+    pub static CONFIG: Lazy<TestConfig> = Lazy::new(|| read_config());
 
     pub static TRUSTEE_ACCOUNT: Lazy<Address> =
         Lazy::new(|| Address::from("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5"));
@@ -270,7 +268,7 @@ pub mod test {
 
     fn build_contract_path(contract_path: &str) -> String {
         let mut cur_dir = env::current_dir().unwrap();
-        cur_dir.push(CONTRACTS_SPEC_BASE_PATH);
+        cur_dir.push(".."); // project root directory
         cur_dir.push(contract_path);
         fs::canonicalize(&cur_dir)
             .unwrap()
@@ -279,55 +277,75 @@ pub mod test {
             .to_string()
     }
 
+    fn read_config() -> TestConfig {
+        let file =
+            fs::File::open("../network/config.json").expect("Unable to open besu config file");
+        serde_json::from_reader(file).expect("Unable to parse besu config file")
+    }
+
     fn contracts() -> Vec<ContractConfig> {
         vec![
             ContractConfig {
-                address: SCHEMA_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(SCHEMA_REGISTRY_SPEC_PATH)),
+                address: CONFIG.contracts.ethereum_did_registry.address.to_string(),
+                spec_path: Some(build_contract_path(
+                    CONFIG.contracts.ethereum_did_registry.spec_path.as_str(),
+                )),
                 spec: None,
             },
             ContractConfig {
-                address: CRED_DEF_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(CRED_DEF_REGISTRY_SPEC_PATH)),
+                address: CONFIG.contracts.indy_did_registry.address.to_string(),
+                spec_path: Some(build_contract_path(
+                    CONFIG.contracts.indy_did_registry.spec_path.as_str(),
+                )),
                 spec: None,
             },
             ContractConfig {
-                address: VALIDATOR_CONTROL_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
+                address: CONFIG.contracts.schema_registry.address.to_string(),
+                spec_path: Some(build_contract_path(
+                    CONFIG.contracts.schema_registry.spec_path.as_str(),
+                )),
                 spec: None,
             },
             ContractConfig {
-                address: ROLE_CONTROL_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(ROLE_CONTROL_PATH)),
+                address: CONFIG.contracts.cred_def_registry.address.to_string(),
+                spec_path: Some(build_contract_path(
+                    CONFIG.contracts.cred_def_registry.spec_path.as_str(),
+                )),
                 spec: None,
             },
             ContractConfig {
-                address: ETHR_DID_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(ETHR_DID_REGISTRY_PATH)),
+                address: CONFIG.contracts.role_control.address.to_string(),
+                spec_path: Some(build_contract_path(
+                    CONFIG.contracts.role_control.spec_path.as_str(),
+                )),
                 spec: None,
             },
             ContractConfig {
-                address: INDY_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(INDY_DID_REGISTRY_PATH)),
+                address: CONFIG.contracts.legacy_mapping_registry.address.to_string(),
+                spec_path: Some(build_contract_path(
+                    CONFIG.contracts.legacy_mapping_registry.spec_path.as_str(),
+                )),
                 spec: None,
             },
             ContractConfig {
-                address: LEGACY_MAPPING_REGISTRY_ADDRESS.to_string(),
-                spec_path: Some(build_contract_path(LEGACY_MAPPING_REGISTRY_PATH)),
+                address: CONFIG.contracts.validator_control.address.to_string(),
+                spec_path: Some(build_contract_path(
+                    CONFIG.contracts.validator_control.spec_path.as_str(),
+                )),
                 spec: None,
             },
         ]
     }
 
     pub fn client() -> LedgerClient {
-        LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contracts(), None).unwrap()
+        LedgerClient::new(CONFIG.chain_id, &CONFIG.node_address, &contracts(), None).unwrap()
     }
 
     pub fn mock_client() -> LedgerClient {
         init_env_logger();
         let mut ledger_client = LedgerClient::new(
-            CHAIN_ID,
-            RPC_NODE_ADDRESS,
+            CONFIG.chain_id,
+            &CONFIG.node_address,
             &contracts(),
             Some(&QuorumConfig::default()),
         )
@@ -342,8 +360,8 @@ pub mod test {
 
     pub fn mock_custom_client(client: Box<dyn Client>) -> LedgerClient {
         let mut ledger_client = LedgerClient::new(
-            CHAIN_ID,
-            RPC_NODE_ADDRESS,
+            CONFIG.chain_id,
+            &CONFIG.node_address,
             &contracts(),
             Some(&QuorumConfig::default()),
         )
@@ -368,7 +386,7 @@ pub mod test {
 
         #[test]
         fn create_client_invalid_node_address() {
-            let client_err = LedgerClient::new(CHAIN_ID, "..", &contracts(), None)
+            let client_err = LedgerClient::new(CONFIG.chain_id, "..", &contracts(), None)
                 .err()
                 .unwrap();
 
@@ -378,39 +396,46 @@ pub mod test {
         }
 
         #[rstest]
-        #[case::invalid_contract_data(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
-            spec_path: None,
-            spec: Some(ContractSpec {
+        #[case::invalid_contract_data(vec ! [ContractConfig {
+                address: CONFIG.contracts.validator_control.address.to_string(),
+                spec_path: None,
+                spec: Some(ContractSpec {
                 name: VALIDATOR_CONTROL_NAME.to_string(),
                 abi: Value::String("".to_string()),
             }),
         }], VdrError::ContractInvalidInputData)]
-        #[case::both_contract_path_and_spec_provided(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
-            spec_path: Some(build_contract_path(VALIDATOR_CONTROL_PATH)),
-            spec: Some(ContractSpec {
+        #[case::both_contract_path_and_spec_provided(vec ! [ContractConfig {
+                address: CONFIG.contracts.validator_control.address.to_string(),
+                spec_path: Some(build_contract_path(CONFIG.contracts.validator_control.spec_path.as_str())),
+                spec: Some(ContractSpec {
                 name: VALIDATOR_CONTROL_NAME.to_string(),
                 abi: Value::Array(vec ! []),
             }),
         }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]
-        #[case::non_existent_spec_path(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
-            spec_path: Some(build_contract_path("")),
-            spec: None,
-        }], VdrError::ContractInvalidSpec("Unable to read contract spec file. Err: \"Is a directory (os error 21)\"".to_string()))]
-        #[case::empty_contract_spec(vec![ContractConfig {
-            address: VALIDATOR_CONTROL_ADDRESS.to_string(),
-            spec_path: None,
-            spec: None,
-        }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string()))]
+        #[case::non_existent_spec_path(vec ! [ContractConfig {
+                address: CONFIG.contracts.validator_control.address.to_string(),
+                spec_path: Some(build_contract_path("")),
+                spec: None,
+            }], VdrError::ContractInvalidSpec("Unable to read contract spec file. Err: \"Is a directory (os error 21)\"".to_string())
+        )]
+        #[case::empty_contract_spec(vec ! [ContractConfig {
+                address: CONFIG.contracts.validator_control.address.to_string(),
+                spec_path: None,
+                spec: None,
+            }], VdrError::ContractInvalidSpec("Either `spec_path` or `spec` must be provided".to_string())
+        )]
         fn test_create_client_errors(
             #[case] contract_config: Vec<ContractConfig>,
             #[case] expected_error: VdrError,
         ) {
-            let client_err = LedgerClient::new(CHAIN_ID, RPC_NODE_ADDRESS, &contract_config, None)
-                .err()
-                .unwrap();
+            let client_err = LedgerClient::new(
+                CONFIG.chain_id,
+                &CONFIG.node_address,
+                &contract_config,
+                None,
+            )
+            .err()
+            .unwrap();
 
             assert_eq!(client_err, expected_error);
         }
@@ -525,7 +550,7 @@ pub mod test {
         async fn client_ping_wrong_node_test() {
             let wrong_node_address = "http://127.0.0.1:1111";
             let client = LedgerClient::new(
-                CHAIN_ID,
+                CONFIG.chain_id,
                 wrong_node_address,
                 &contracts(),
                 Some(&QuorumConfig::default()),

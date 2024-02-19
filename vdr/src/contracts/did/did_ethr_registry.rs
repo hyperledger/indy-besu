@@ -849,10 +849,7 @@ pub async fn resolve_identity_nonce(client: &LedgerClient, identity: &Address) -
 pub mod test {
     use super::*;
     use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, ETHR_DID_REGISTRY_ADDRESS, TEST_ACCOUNT,
-            TRUSTEE_ACCOUNT,
-        },
+        client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT, TRUSTEE_ACCOUNT},
         contracts::{
             did::types::{
                 did::DID,
@@ -929,9 +926,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.ethereum_did_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     240, 13, 75, 93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0, 0,
@@ -964,9 +961,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.ethereum_did_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     167, 6, 141, 102, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 118, 101,
@@ -1001,9 +998,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.ethereum_did_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     128, 178, 159, 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
                     141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 118,
@@ -1036,9 +1033,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.ethereum_did_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     122, 212, 176, 164, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
                     141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 100,
@@ -1071,9 +1068,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.ethereum_did_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     122, 212, 176, 164, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
                     141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 100,
@@ -1106,9 +1103,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: ETHR_DID_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.ethereum_did_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     0, 192, 35, 218, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 100, 105,

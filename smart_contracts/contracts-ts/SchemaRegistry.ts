@@ -8,8 +8,6 @@ export type SchemaRecord = {
 }
 
 export class SchemaRegistry extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000005555'
-
   constructor(sender?: any) {
     super(SchemaRegistry.name, sender)
   }

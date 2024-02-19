@@ -157,7 +157,7 @@ pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<R
 pub mod test {
     use super::*;
     use crate::client::client::test::{
-        mock_client, CHAIN_ID, DEFAULT_NONCE, ROLE_CONTROL_ADDRESS, TEST_ACCOUNT, TRUSTEE_ACCOUNT,
+        mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT, TRUSTEE_ACCOUNT,
     };
     use std::sync::RwLock;
 
@@ -188,9 +188,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACCOUNT.clone()),
-                to: ROLE_CONTROL_ADDRESS.clone(),
+                to: CONFIG.contracts.role_control.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: expected_data,
                 signature: RwLock::new(None),
                 hash: None,
@@ -224,9 +224,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TRUSTEE_ACCOUNT.clone()),
-                to: ROLE_CONTROL_ADDRESS.clone(),
+                to: CONFIG.contracts.role_control.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: expected_data,
                 signature: RwLock::new(None),
                 hash: None,
@@ -254,9 +254,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: ROLE_CONTROL_ADDRESS.clone(),
+                to: CONFIG.contracts.role_control.address.clone(),
                 nonce: None,
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: expected_data,
                 signature: RwLock::new(None),
                 hash: None,
@@ -300,9 +300,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: ROLE_CONTROL_ADDRESS.clone(),
+                to: CONFIG.contracts.role_control.address.clone(),
                 nonce: None,
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: expected_data,
                 signature: RwLock::new(None),
                 hash: None,

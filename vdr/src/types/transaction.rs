@@ -520,8 +520,7 @@ pub mod test {
     use super::*;
     use crate::{
         client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, INVALID_ADDRESS, TRUSTEE_ACCOUNT,
-            VALIDATOR_CONTROL_ADDRESS,
+            mock_client, CONFIG, DEFAULT_NONCE, INVALID_ADDRESS, TRUSTEE_ACCOUNT,
         },
         contracts::network::test::{
             ADD_VALIDATOR_METHOD, VALIDATOR_ADDRESS, VALIDATOR_CONTROL_NAME, VALIDATOR_LIST_BYTES,
@@ -538,9 +537,9 @@ pub mod test {
         Transaction {
             type_: TransactionType::Write,
             from: Some(TRUSTEE_ACCOUNT.clone()),
-            to: VALIDATOR_CONTROL_ADDRESS.clone(),
+            to: CONFIG.contracts.validator_control.address.clone(),
             nonce: Some(DEFAULT_NONCE.clone()),
-            chain_id: CHAIN_ID,
+            chain_id: CONFIG.chain_id,
             data: vec![],
             signature: RwLock::new(None),
             hash: None,
@@ -551,9 +550,9 @@ pub mod test {
         Transaction {
             type_: TransactionType::Read,
             from: None,
-            to: VALIDATOR_CONTROL_ADDRESS.clone(),
+            to: CONFIG.contracts.validator_control.address.clone(),
             nonce: None,
-            chain_id: CHAIN_ID,
+            chain_id: CONFIG.chain_id,
             data: vec![],
             signature: RwLock::new(None),
             hash: None,

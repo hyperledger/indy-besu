@@ -12,8 +12,6 @@ export interface Transaction {
 }
 
 export class AccountControl extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000008888'
-
   constructor(sender?: any) {
     super(AccountControl.name, sender)
   }

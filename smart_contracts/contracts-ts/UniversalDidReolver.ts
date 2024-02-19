@@ -3,8 +3,6 @@ import { DidMetadataStruct } from '../typechain-types/contracts/did/IndyDidRegis
 import { Contract } from '../utils'
 
 export class UniversalDidResolver extends Contract {
-  public static readonly defaultAddress = '0x000000000000000000000000000000000019999'
-
   constructor(sender?: any) {
     super(UniversalDidResolver.name, sender)
   }

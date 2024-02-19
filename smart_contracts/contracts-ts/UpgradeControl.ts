@@ -1,8 +1,6 @@
 import { Contract } from '../utils/contract'
 
 export class UpgradeControl extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000009999'
-
   constructor(sender?: any) {
     super(UpgradeControl.name, sender)
   }

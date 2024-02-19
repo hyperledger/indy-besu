@@ -1,3 +1,4 @@
+import { readBesuConfig } from '../../utils'
 import {
   RoleControl,
   IndyDidRegistry,
@@ -24,17 +25,20 @@ export class Actor {
   }
 
   public async init() {
-    this.roleControl = await new RoleControl(this.account).getInstance(RoleControl.defaultAddress)
-    this.validatorControl = await new ValidatorControl(this.account).getInstance(ValidatorControl.defaultAddress)
-    this.didRegistry = await new IndyDidRegistry(this.account).getInstance(IndyDidRegistry.defaultAddress)
+    const besuConfig = readBesuConfig()
+    const contracts = besuConfig.contracts
+
+    this.roleControl = await new RoleControl(this.account).getInstance(contracts.roleControl.address)
+    this.validatorControl = await new ValidatorControl(this.account).getInstance(contracts.validatorControl.address)
+    this.didRegistry = await new IndyDidRegistry(this.account).getInstance(contracts.indyDidRegistry.address)
     this.ethereumDIDRegistry = await new EthereumExtDidRegistry(this.account).getInstance(
-      EthereumExtDidRegistry.defaultAddress,
+      contracts.ethereumDidRegistry.address,
     )
-    this.schemaRegistry = await new SchemaRegistry(this.account).getInstance(SchemaRegistry.defaultAddress)
+    this.schemaRegistry = await new SchemaRegistry(this.account).getInstance(contracts.schemaRegistry.address)
     this.credentialDefinitionRegistry = await new CredentialDefinitionRegistry(this.account).getInstance(
-      CredentialDefinitionRegistry.defaultAddress,
+      contracts.credDefRegistry.address,
     )
-    this.upgradeControl = await new UpgradeControl(this.account).getInstance(UpgradeControl.defaultAddress)
+    this.upgradeControl = await new UpgradeControl(this.account).getInstance(contracts.upgradeControl.address)
     return this
   }
 

@@ -163,7 +163,6 @@ pub fn parse_resolve_credential_definition_result(
     client: &LedgerClient,
     bytes: &[u8],
 ) -> VdrResult<CredentialDefinitionRecord> {
-    // TODO: validate credential definition
     TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_CREDENTIAL_DEFINITION)
@@ -209,10 +208,7 @@ pub async fn resolve_credential_definition(
 pub mod test {
     use super::*;
     use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, CRED_DEF_REGISTRY_ADDRESS, DEFAULT_NONCE, TEST_ACCOUNT,
-            TRUSTEE_ACCOUNT,
-        },
+        client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT, TRUSTEE_ACCOUNT},
         contracts::{
             cl::types::{
                 credential_definition::test::{
@@ -246,9 +242,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: CRED_DEF_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.cred_def_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     182, 196, 9, 117, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 190, 177,
@@ -335,9 +331,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: CRED_DEF_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.cred_def_registry.address.clone(),
                 nonce: None,
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     159, 136, 157, 181, 190, 177, 72, 242, 21, 171, 224, 191, 86, 212, 4, 12, 89,
                     70, 109, 83, 153, 187, 19, 51, 18, 37, 31, 233, 114, 33, 60, 132, 133, 72, 249,

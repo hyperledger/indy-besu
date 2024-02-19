@@ -2,8 +2,6 @@ import { encodeBytes32String, toUtf8Bytes } from 'ethers'
 import { Contract } from '../utils/contract'
 
 export class EthereumExtDidRegistry extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000018888'
-
   constructor(sender?: any) {
     super(EthereumExtDidRegistry.name, sender)
   }

@@ -2,8 +2,6 @@ import { concat, Signature, toUtf8Bytes } from 'ethers'
 import { Contract } from '../utils/contract'
 
 export class LegacyMappingRegistry extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000017777'
-
   constructor(sender?: any) {
     super(LegacyMappingRegistry.name, sender)
   }

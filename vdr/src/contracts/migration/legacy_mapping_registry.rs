@@ -342,9 +342,7 @@ pub fn parse_resource_mapping_result(
 pub mod test {
     use super::*;
     use crate::{
-        client::client::test::{
-            mock_client, CHAIN_ID, DEFAULT_NONCE, LEGACY_MAPPING_REGISTRY_ADDRESS, TEST_ACCOUNT,
-        },
+        client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT},
         contracts::{did::types::did::DID, types::did_doc::test::TEST_ETHR_DID},
     };
 
@@ -375,9 +373,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: LEGACY_MAPPING_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.legacy_mapping_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     99, 222, 119, 162, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0, 0,
@@ -412,9 +410,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: LEGACY_MAPPING_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.legacy_mapping_registry.address.clone(),
                 nonce: None,
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     147, 168, 199, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -448,9 +446,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Write,
                 from: Some(TEST_ACCOUNT.clone()),
-                to: LEGACY_MAPPING_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.legacy_mapping_registry.address.clone(),
                 nonce: Some(DEFAULT_NONCE.clone()),
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     217, 36, 174, 219, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 0, 0, 0,
@@ -495,9 +493,9 @@ pub mod test {
             let expected_transaction = Transaction {
                 type_: TransactionType::Read,
                 from: None,
-                to: LEGACY_MAPPING_REGISTRY_ADDRESS.clone(),
+                to: CONFIG.contracts.legacy_mapping_registry.address.clone(),
                 nonce: None,
-                chain_id: CHAIN_ID,
+                chain_id: CONFIG.chain_id,
                 data: vec![
                     198, 18, 171, 88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

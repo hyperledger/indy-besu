@@ -8,8 +8,6 @@ export type DidRecord = {
 }
 
 export class IndyDidRegistry extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000003333'
-
   constructor(sender?: any) {
     super(IndyDidRegistry.name, sender)
   }

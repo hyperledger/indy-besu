@@ -1,5 +1,4 @@
 import { padLeft } from 'web3-utils'
-import { config } from '../config'
 import { ContractConfig } from '../contractConfig'
 import { buildProxySection, slots } from '../helpers'
 
@@ -9,8 +8,8 @@ export interface UpgradeControlConfig extends ContractConfig {
   }
 }
 
-export function upgradeControl() {
-  const { name, address, description, data } = config.upgradeControl
+export function upgradeControl(config: UpgradeControlConfig) {
+  const { name, address, description, data } = config
   const storage: any = {}
 
   // address of upgrade control contact stored in slot 0

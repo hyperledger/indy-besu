@@ -1,5 +1,4 @@
 import { padLeft } from 'web3-utils'
-import { config } from '../config'
 import { ContractConfig } from '../contractConfig'
 import { buildProxySection, slots } from '../helpers'
 
@@ -11,8 +10,8 @@ export interface CredentialDefinitionsConfig extends ContractConfig {
   }
 }
 
-export function credentialDefinitionRegistry() {
-  const { name, address, description, data } = config.credentialDefinitionRegistry
+export function credentialDefinitionRegistry(config: CredentialDefinitionsConfig) {
+  const { name, address, description, data } = config
   const storage: any = {}
 
   // address of upgrade control contact stored in slot 0

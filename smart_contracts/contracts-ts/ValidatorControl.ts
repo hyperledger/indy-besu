@@ -1,8 +1,6 @@
 import { Contract } from '../utils/contract'
 
 export class ValidatorControl extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000007777'
-
   constructor(sender?: any) {
     super(ValidatorControl.name, sender)
   }

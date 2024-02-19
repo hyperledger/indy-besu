@@ -1,5 +1,4 @@
 import { concat, getBytes, keccak256, Signature, toUtf8Bytes, toUtf8String } from 'ethers'
-import { signEndorsementData } from '../test/utils/contract-helpers'
 import { CredentialDefinitionMetadataStruct } from '../typechain-types/contracts/cl/CredentialDefinitionRegistry'
 import { Contract } from '../utils/contract'
 
@@ -9,8 +8,6 @@ export type CredentialDefinitionRecord = {
 }
 
 export class CredentialDefinitionRegistry extends Contract {
-  public static readonly defaultAddress = '0x0000000000000000000000000000000000004444'
-
   constructor(sender?: any) {
     super(CredentialDefinitionRegistry.name, sender)
   }

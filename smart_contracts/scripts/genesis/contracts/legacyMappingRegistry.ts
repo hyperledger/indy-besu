@@ -1,5 +1,4 @@
 import { padLeft } from 'web3-utils'
-import { config } from '../config'
 import { ContractConfig } from '../contractConfig'
 import { buildProxySection, slots } from '../helpers'
 
@@ -10,8 +9,8 @@ export interface LegacyMappingRegistryConfig extends ContractConfig {
   }
 }
 
-export function legacyMappingRegistry() {
-  const { name, address, description, data } = config.legacyMapping
+export function legacyMappingRegistry(config: LegacyMappingRegistryConfig) {
+  const { name, address, description, data } = config
   const storage: any = {}
 
   // address of upgrade control contact stored in slot 0
