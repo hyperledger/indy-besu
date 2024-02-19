@@ -178,16 +178,21 @@ Contract name: **transactionAllowed**
 
 ### Account role management
 
-| Contract    | Method     | Value      | Required Role | Action Description                       |
-|-------------|------------|------------|---------------|------------------------------------------|
-| RoleControl | hasRole    | -          | any           | Check if an account has a requested role |
-| RoleControl | getRole    | -          | any           | Get account role                         |
-| RoleControl | assignRole | Trustee    | Trustee       | Assign Trustee role to an account        |
-| RoleControl | assignRole | Endorser   | Trustee       | Assign Endorser role to an account       |
-| RoleControl | assignRole | Steward    | Trustee       | Assign Steward role to an account        |
-| RoleControl | revokeRole | Trustee    | Trustee       | Revoke Trustee role from an account      |
-| RoleControl | revokeRole | Endorser   | Trustee       | Assign Endorser role to an account       |
-| RoleControl | revokeRole | Steward    | Trustee       | Assign Steward role to an account        |
+| Contract    | Method                        | Value      | Required Role | Action Description                                                         |
+|-------------|-------------------------------|------------|---------------|----------------------------------------------------------------------------|
+| RoleControl | hasRole                       | -          | any           | Check if an account has a requested role                                   |
+| RoleControl | getRole                       | -          | any           | Get account role                                                           |
+| RoleControl | isTrustee                     | -          | any           | Ensure that account has a Trustee role assigned                            |
+| RoleControl | isEndorser                    | -          | any           | Ensure that account has a Endorser role assigned                           |
+| RoleControl | isSteward                     | -          | any           | Ensure that account has a Steward role assigned                            |
+| RoleControl | isTrusteeOrEndorser           | -          | any           | Ensure that account has either Trustee or Endorse role assigned            |
+| RoleControl | isTrusteeOrEndorserOrSteward  | -          | any           | Ensure that account has either Trustee or Endorse or Steward role assigned |
+| RoleControl | assignRole                    | Trustee    | Trustee       | Assign Trustee role to an account                                          |
+| RoleControl | assignRole                    | Endorser   | Trustee       | Assign Endorser role to an account                                         |
+| RoleControl | assignRole                    | Steward    | Trustee       | Assign Steward role to an account                                          |
+| RoleControl | revokeRole                    | Trustee    | Trustee       | Revoke Trustee role from an account                                        |
+| RoleControl | revokeRole                    | Endorser   | Trustee       | Assign Endorser role to an account                                         |
+| RoleControl | revokeRole                    | Steward    | Trustee       | Assign Steward role to an account                                          |
 
 ### Validator nodes management
 
@@ -197,23 +202,46 @@ Contract name: **transactionAllowed**
 | ValidatorControl | addValidator    | Steward       | Add new validator node                  |
 | ValidatorControl | removeValidator | Steward       | Remove validator node                   |
 
-### DID Document management
+### DID `indybesu` Registry management
 
-| Contract          | Method                         | Required Role               | Action Description              |
-|-------------------|--------------------------------|-----------------------------|---------------------------------|
-| IndyDidRegistry   | createDid                      | Trustee, Endorser, Steward  | Create a new DID Document       |
-| IndyDidRegistry   | updateDid                      | DID owner                   | Update DID an existing Document |
-| IndyDidRegistry   | deactivateDid                  | DID owner                   | Deactivate an existing DID      |
-| IndyDidRegistry   | resolveDid                     | any                         | Resolve DID Document for a DID  |
+| Contract          | Method              | Required Role              | Action Description                          |
+|-------------------|---------------------|----------------------------|---------------------------------------------|
+| IndyDidRegistry   | createDid           | Trustee, Endorser, Steward | Create a new DID Document                   |
+| IndyDidRegistry   | createDidSigned     | Trustee, Endorser, Steward | Endorse creation of a new DID Document      |
+| IndyDidRegistry   | updateDid           | DID owner, Trustee         | Update DID an existing Document             |
+| IndyDidRegistry   | updateDidSigned     | Trustee                    | Endorse update of an existing DID  Document |
+| IndyDidRegistry   | deactivateDid       | DID owner, Trustee         | Deactivate an existing DID                  |
+| IndyDidRegistry   | deactivateDidSigned | Trustee                    | Endorse deactivation of an existing DID     |
+| IndyDidRegistry   | resolveDid          | any                        | Resolve DID Document for a DID              |
+
+### DID `ethr` Registry management
+
+| Contract               | Method                | Required Role | Action Description                    |
+|------------------------|-----------------------|---------------|---------------------------------------|
+| EthereumExtDidRegistry | changeOwner           | DID owner     | Change DID owner                      |
+| EthereumExtDidRegistry | changeOwnerSigned     | DID owner     | Endorse changing of a DID owner       |
+| EthereumExtDidRegistry | addDelegate           | DID owner     | Add a delegate key                    |
+| EthereumExtDidRegistry | addDelegateSigned     | DID owner     | Endorse adding of a delegate key      |
+| EthereumExtDidRegistry | revokeDelegate        | DID owner     | Revoke a delegate key                 |
+| EthereumExtDidRegistry | revokeDelegateSigned  | DID owner     | Endorse revoking of a delegate key    |
+| EthereumExtDidRegistry | setAttribute          | DID owner     | Add a DID attribute                   |
+| EthereumExtDidRegistry | setAttributeSigned    | DID owner     | Endorse adding of a DID attribute     |
+| EthereumExtDidRegistry | revokeAttribute       | DID owner     | Revoke a DID attribute                |
+| EthereumExtDidRegistry | revokeAttributeSigned | DID owner     | Endorse revoking of a DID attribute   |
+| EthereumExtDidRegistry | identityOwner         | any           | Get DID owner                         |
+| EthereumExtDidRegistry | changed               | any           | Get block number of latest DID change |
+| EthereumExtDidRegistry | nonce                 | any           | Get nonce to signe for endorsing      |
 
 ### CL Registry management
 
-| Contract                     | Method                      | Required Role               | Action Description                       |
-|------------------------------|-----------------------------|-----------------------------|------------------------------------------|
-| SchemaRegistry               | createSchema                | Trustee, Endorser, Steward  | Create a new Schema                      |
-| SchemaRegistry               | resolveSchema               | any                         | Resolve Schema by id                     |
-| CredentialDefinitionRegistry | createCredentialDefinition  | Trustee, Endorser, Steward  | Create a new Credential Definition       |
-| CredentialDefinitionRegistry | resolveCredentialDefinition | any                         | Resolve Credential Definition by id      |
+| Contract                     | Method                           | Required Role               | Action Description                              |
+|------------------------------|----------------------------------|-----------------------------|-------------------------------------------------|
+| SchemaRegistry               | createSchema                     | Trustee, Endorser, Steward  | Create a new Schema                             |
+| SchemaRegistry               | createSchemaSigned               | Trustee, Endorser, Steward  | Endorse creation of a new Schema                |
+| SchemaRegistry               | resolveSchema                    | any                         | Resolve Schema by id                            |
+| CredentialDefinitionRegistry | createCredentialDefinition       | Trustee, Endorser, Steward  | Create a new Credential Definition              |
+| CredentialDefinitionRegistry | createCredentialDefinitionSigned | Trustee, Endorser, Steward  | Endorse creation of a new Credential Definition |
+| CredentialDefinitionRegistry | resolveCredentialDefinition      | any                         | Resolve Credential Definition by id             |
 
 ### Contract upgrade management
 
@@ -222,6 +250,17 @@ Contract name: **transactionAllowed**
 | UpgradeControl    | propose                   | Trustee           | Propose the upgrade of a specefic contract implementation                |
 | UpgradeControl    | approve                   | Trustee           | Approve the upgrade of a specefic contract implementation                |
 | UpgradeControl    | ensureSufficientApprovals | any               | Ensures that an implementation upgrade has received sufficient approvals |
+
+### Legacy identifiers mapping
+
+| Contract                 | Method                      | Required Role              | Action Description                                                                          |
+|--------------------------|-----------------------------|----------------------------|---------------------------------------------------------------------------------------------|
+| LegacyMappingRegistry    | createDidMapping            | Trustee, Endorser, Steward | Create a new mapping of legacy indy/sov DID identifier to account address                   |
+| LegacyMappingRegistry    | createDidMappingSigned      | Trustee, Endorser, Steward | Endorse creation a new mapping of legacy indy/sov DID identifier to account address         |
+| LegacyMappingRegistry    | createResourceMapping       | Trustee, Endorser, Steward | Create a new mapping of legacy schema/credential definition identifier to new one           |
+| LegacyMappingRegistry    | createResourceMappingSigned | Trustee, Endorser, Steward | Endorse creation a new mapping of legacy schema/credential definition identifier to new one |
+| LegacyMappingRegistry    | didMapping                  | any                        | Resolve mapping account address for legacy DID identifier                                   |
+| LegacyMappingRegistry    | resourceMapping             | any                        | Resolve resource mapping for legacy idetifier                                               |
 
 ### General transactions management
 

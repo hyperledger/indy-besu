@@ -15,7 +15,6 @@
   
         struct DidMetadata {
             address owner;
-            address sender;
             uint256 created;
             uint256 updated;
             uint256 versionId;
@@ -44,7 +43,6 @@
               "), 
               metadata: {
                   owner: 0x93917cadbace5dfce132b991732c6cda9bcc5b8a,
-                  sender: 0x93917cadbace5dfce132b991732c6cda9bcc5b8a,
                   created: 1234,
                   updated: 1234,
                   versionId: 1234,
@@ -66,7 +64,6 @@ DID Document must match to the [specification](https://www.w3.org/TR/did-core/).
 Each DID Document MUST have a metadata section when a representation is produced. It can have the following properties:
 
 * owner (address): An address of DID owner
-* sender (address): An address of DID Document sender
 * created (timestamp): Time of a block ordered a transaction for DID Doc creation
 * updated (timestamp): The updated field is null if an Update operation has never been performed on the DID document
   Time of a block ordered a transaction changed a DID Doc last time
@@ -88,6 +85,8 @@ Contract name: **IndyDidRegistry**
     * Restrictions:
         * DID must not exist
         * Valid DID must be provided
+        * Sender must be equal to identity
+        * Sender must have either TRUSTEE or ENDORSER or STEWARD role assigned 
     * Format:
         ```
         IndyDidRegistry.createDid(
@@ -115,7 +114,8 @@ Contract name: **IndyDidRegistry**
     * Restrictions:
         * DID must exist
         * DID must be active
-        * Sender must be authorized to perform update (owner or sender)
+        * Sender must be equal to identity
+        * Sender must be either identity owner or have a TRUSTEE role assigned
     * Format:
         ```
         IndyDidRegistry.updateDid(
@@ -138,11 +138,12 @@ Contract name: **IndyDidRegistry**
 * Method: `deactivateDid`
     * Description: Transaction to deactivate an existing DID
     * Parameters:
-        * `did` - Address of DID owner
+        * `identity` - Address of DID owner
     * Restrictions:
         * DID must exist
         * DID must be active
-        * Sender must be authorized to perform deactivation (owner or sender)
+        * Sender must be equal to identity
+        * Sender must be either identity owner or have a TRUSTEE role assigned
     * Format:
         ```
         IndyDidRegistry.deactivateDid( 

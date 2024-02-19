@@ -1,4 +1,4 @@
-use crate::{ContractParam, VdrError};
+use crate::{types::ContractOutput, ContractParam, VdrError};
 use serde_derive::{Deserialize, Serialize};
 
 pub const DID_PREFIX: &str = "did";
@@ -39,6 +39,14 @@ impl TryFrom<&DID> for ContractParam {
 
     fn try_from(value: &DID) -> Result<Self, Self::Error> {
         Ok(ContractParam::String(value.to_string()))
+    }
+}
+
+impl TryFrom<ContractOutput> for DID {
+    type Error = VdrError;
+
+    fn try_from(value: ContractOutput) -> Result<Self, Self::Error> {
+        Ok(DID::from(value.get_string(0)?.as_str()))
     }
 }
 

@@ -8,17 +8,19 @@ export class LegacyMappingRegistry extends Contract {
 
   public async createDidMapping(
     identity: string,
-    identifier: string,
+    legacyIdentifier: string,
+    newDid: string,
     ed25519Key: Uint8Array,
     ed25519Signature: Uint8Array,
   ) {
-    const tx = await this.instance.createDidMapping(identity, identifier, ed25519Key, ed25519Signature)
+    const tx = await this.instance.createDidMapping(identity, legacyIdentifier, newDid, ed25519Key, ed25519Signature)
     return tx.wait()
   }
 
   public async createDidMappingSigned(
     identity: string,
-    identifier: string,
+    legacyIdentifier: string,
+    newDid: string,
     ed25519Key: Uint8Array,
     ed25519Signature: Uint8Array,
     signature: Signature,
@@ -28,7 +30,8 @@ export class LegacyMappingRegistry extends Contract {
       signature.v,
       signature.r,
       signature.s,
-      identifier,
+      legacyIdentifier,
+      newDid,
       ed25519Key,
       ed25519Signature,
     )
@@ -82,12 +85,20 @@ export class LegacyMappingRegistry extends Contract {
     identity: string,
     privateKey: Uint8Array,
     identifier: string,
+    issuerDid: string,
     ed25519Key: Uint8Array,
     ed25519Signature: Uint8Array,
   ) {
     return this.signEndorsementData(
       privateKey,
-      concat([identity, toUtf8Bytes('createDidMapping'), toUtf8Bytes(identifier), ed25519Key, ed25519Signature]),
+      concat([
+        identity,
+        toUtf8Bytes('createDidMapping'),
+        toUtf8Bytes(identifier),
+        toUtf8Bytes(issuerDid),
+        ed25519Key,
+        ed25519Signature,
+      ]),
     )
   }
 

@@ -71,4 +71,29 @@ interface RoleControlInterface {
      * @return The count of accounts that have been assigned the specified role.
      */
     function getRoleCount(ROLES role) external view returns (uint32);
+
+    /**
+     * @dev Function to check that identity has TRUSTEE role.
+     */
+    function isTrustee(address identity) external view;
+
+    /**
+     * @dev Function to check that identity has ENDORSER role.
+     */
+    function isEndorser(address identity) external view;
+
+    /**
+     * @dev Function to check that identity has STEWARD role.
+     */
+    function isSteward(address identity) external view;
+
+    /**
+     * @dev Function to check that identity has either TRUSTEE or ENDORSER role.
+     */
+    function isTrusteeOrEndorser(address identity) external view;
+
+    /**
+     * @dev Function to check that identity has either TRUSTEE or ENDORSER or STEWARD role.
+     */
+    function isTrusteeOrEndorserOrSteward(address identity) external view;
 }

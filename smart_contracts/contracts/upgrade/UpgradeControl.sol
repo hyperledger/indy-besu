@@ -6,7 +6,6 @@ import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-import { Unauthorized } from "../auth/AuthErrors.sol";
 import { RoleControlInterface } from "../auth/RoleControlInterface.sol";
 
 import { UpgradeControlInterface } from "./UpgradeControlInterface.sol";
@@ -42,7 +41,7 @@ contract UpgradeControl is UpgradeControlInterface, UUPSUpgradeable, Initializab
      * @dev Modifier that checks that the sender account has a trustee role
      */
     modifier _onlyTrustee() {
-        if (!_roleControl.hasRole(RoleControlInterface.ROLES.TRUSTEE, msg.sender)) revert Unauthorized(msg.sender);
+        _roleControl.isTrustee(msg.sender);
         _;
     }
 

@@ -49,7 +49,7 @@ contract UniversalDidResolver is UniversalDidResolverInterface, ControlledUpgrad
 
         if (DidUtils.isEthereumMethod(parsedDid.method)) {
             address identityOwner = _ethereumDIDRegistry.identityOwner(identity);
-            return DidMetadata(identityOwner, address(0), 0, 0, 0, false);
+            return DidMetadata(identityOwner, 0, 0, 0, false);
         } else if (DidUtils.isIndyMethod(parsedDid.method)) {
             return _indyDidRegistry.resolveDid(identity).metadata;
         } else {

@@ -43,67 +43,67 @@ export class TestableUniversalDidResolver extends testableContractMixin(Universa
 
 export class TestableLegacyMappingRegistry extends testableContractMixin(LegacyMappingRegistry) {}
 
-function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
-  return class extends Base {
-    public get baseInstance() {
-      return this.instance
-    }
-  }
-}
-
 export async function deployRoleControl() {
-  const roleControl = await new RoleControl().deployProxy({ params: [ZERO_ADDRESS] })
+  const roleControl = await new TestableRoleControl().deployProxy({ params: [ZERO_ADDRESS] })
   const testAccounts = await getTestAccounts(roleControl)
 
   return { roleControl, testAccounts }
 }
 
 export async function deployIndyDidRegistry() {
-  const { testAccounts } = await deployRoleControl()
+  const { roleControl, testAccounts } = await deployRoleControl()
 
   const indyDidRegistry = await new TestableIndyDidRegistry().deployProxy({
-    params: [ZERO_ADDRESS],
+    params: [ZERO_ADDRESS, roleControl.address],
   })
 
-  return { indyDidRegistry, testAccounts }
+  return { roleControl, indyDidRegistry, testAccounts }
 }
 
 export async function deployUniversalDidResolver() {
-  const { indyDidRegistry, testAccounts } = await deployIndyDidRegistry()
+  const { roleControl, indyDidRegistry, testAccounts } = await deployIndyDidRegistry()
   const ethereumDIDRegistry = await new EthereumDIDRegistry().deploy()
 
   const universalDidResolver = await new TestableUniversalDidResolver().deployProxy({
     params: [ZERO_ADDRESS, indyDidRegistry.address, ethereumDIDRegistry.address],
   })
 
-  return { universalDidResolver, ethereumDIDRegistry, indyDidRegistry, testAccounts }
+  return { roleControl, universalDidResolver, ethereumDIDRegistry, indyDidRegistry, testAccounts }
 }
 
 export async function deploySchemaRegistry() {
-  const { universalDidResolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
+  const { roleControl, universalDidResolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
   const schemaRegistry = await new TestableSchemaRegistry().deployProxy({
-    params: [ZERO_ADDRESS, universalDidResolver.address],
+    params: [ZERO_ADDRESS, universalDidResolver.address, roleControl.address],
   })
 
-  return { universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts }
+  return { roleControl, universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts }
 }
 
 export async function deployCredentialDefinitionRegistry() {
-  const { universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts } = await deploySchemaRegistry()
+  const { roleControl, universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts } =
+    await deploySchemaRegistry()
   const credentialDefinitionRegistry = await new TestableCredentialDefinitionRegistry().deployProxy({
-    params: [ZERO_ADDRESS, universalDidResolver.address, schemaRegistry.address],
+    params: [ZERO_ADDRESS, universalDidResolver.address, schemaRegistry.address, roleControl.address],
   })
 
-  return { credentialDefinitionRegistry, universalDidResolver, indyDidRegistry, schemaRegistry, testAccounts }
+  return {
+    roleControl,
+    credentialDefinitionRegistry,
+    universalDidResolver,
+    indyDidRegistry,
+    schemaRegistry,
+    testAccounts,
+  }
 }
 
 export async function deployLegacyMappingRegistry() {
-  const { universalDidResolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
+  const { roleControl, universalDidResolver, indyDidRegistry, testAccounts } = await deployUniversalDidResolver()
   const legacyMappingRegistry = await new TestableLegacyMappingRegistry().deployProxy({
-    params: [ZERO_ADDRESS, universalDidResolver.address],
+    params: [ZERO_ADDRESS, universalDidResolver.address, roleControl.address],
   })
 
-  return { universalDidResolver, indyDidRegistry, legacyMappingRegistry, testAccounts }
+  return { roleControl, universalDidResolver, indyDidRegistry, legacyMappingRegistry, testAccounts }
 }
 
 export async function createDid(didRegistry: IndyDidRegistry, identity: string, did: string) {
@@ -135,4 +135,12 @@ export async function createSchemaSigned(schemaRegistry: SchemaRegistry, identit
   )
   await schemaRegistry.createSchemaSigned(identity, id, issuerId, schema, signature)
   return { id, schema }
+}
+
+function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {
+  return class extends Base {
+    public get baseInstance() {
+      return this.instance
+    }
+  }
 }

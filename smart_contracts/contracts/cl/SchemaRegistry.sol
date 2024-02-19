@@ -8,6 +8,7 @@ import { SchemaAlreadyExist, SchemaNotFound } from "./ClErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
 import { SchemaRecord } from "./SchemaTypes.sol";
 import { CLRegistry } from "./CLRegistry.sol";
+import { RoleControlInterface } from "../auth/RoleControl.sol";
 
 contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLRegistry {
     /**
@@ -31,9 +32,14 @@ contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLReg
         _;
     }
 
-    function initialize(address upgradeControlAddress, address didResolverAddress) public reinitializer(1) {
+    function initialize(
+        address upgradeControlAddress,
+        address didResolverAddress,
+        address roleControlContractAddress
+    ) public reinitializer(1) {
         _initializeUpgradeControl(upgradeControlAddress);
         _didResolver = UniversalDidResolverInterface(didResolverAddress);
+        _roleControl = RoleControlInterface(roleControlContractAddress);
     }
 
     /// @inheritdoc SchemaRegistryInterface
@@ -73,7 +79,7 @@ contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLReg
         bytes32 id,
         string calldata issuerId,
         bytes calldata schema
-    ) internal _uniqueSchemaId(id) _validIssuer(issuerId, identity, actor) {
+    ) internal _senderIsTrusteeOrEndorserOrSteward _uniqueSchemaId(id) _validIssuer(issuerId, identity, actor) {
         _schemas[id].schema = schema;
         _schemas[id].metadata.created = block.timestamp;
 

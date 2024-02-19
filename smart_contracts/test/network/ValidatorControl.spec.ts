@@ -1,8 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import chai from 'chai'
-import { RoleControl } from '../../contracts-ts'
 import { Account } from '../../utils'
-import { TestableValidatorControl } from '../utils/contract-helpers'
+import { TestableRoleControl, TestableValidatorControl } from '../utils/contract-helpers'
 import { AuthErrors, ValidatorControlErrors } from '../utils/errors'
 import { getTestAccounts, ZERO_ADDRESS } from '../utils/test-entities'
 
@@ -14,7 +13,7 @@ describe('ValidatorControl', function () {
   const initialValidators: Array<string> = [validator1, validator2]
 
   async function deployValidatorControlFixture() {
-    const roleControl = await new RoleControl().deployProxy({ params: [ZERO_ADDRESS] })
+    const roleControl = await new TestableRoleControl().deployProxy({ params: [ZERO_ADDRESS] })
     const testAccounts = await getTestAccounts(roleControl)
 
     const initialValidatorsData = [
@@ -60,10 +59,11 @@ describe('ValidatorControl', function () {
     })
 
     it('should fail when adding a new validator by an account without Steward role', async function () {
-      const { validatorControl, testAccounts } = await loadFixture(deployValidatorControlFixture)
+      const { validatorControl, roleControl, testAccounts } = await loadFixture(deployValidatorControlFixture)
 
-      await expect(validatorControl.connect(testAccounts.noRole.account).addValidator(newValidator.address))
-        .to.revertedWithCustomError(validatorControl.baseInstance, AuthErrors.Unauthorized)
+      validatorControl.connect(testAccounts.noRole.account)
+      await expect(validatorControl.addValidator(newValidator.address))
+        .to.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
         .withArgs(testAccounts.noRole.account.address)
     })
 

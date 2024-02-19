@@ -3,12 +3,15 @@ pragma solidity ^0.8.20;
 
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
-import { DidAlreadyExist, DidHasBeenDeactivated, DidNotFound, UnauthorizedSender, NotIdentityOwner } from "./DidErrors.sol";
+import { DidAlreadyExist, DidHasBeenDeactivated, DidNotFound, NotIdentityOwner } from "./DidErrors.sol";
 import { DidRecord } from "./DidTypes.sol";
 import { IndyDidRegistryInterface } from "./IndyDidRegistryInterface.sol";
+import { RoleControlInterface } from "../auth/RoleControl.sol";
 
 contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
     // TODO: add nonce for endorsing transactions
+
+    RoleControlInterface internal _roleControl;
 
     /**
      * @dev Mapping DID to its corresponding DidRecord (Document/Metadata).
@@ -40,13 +43,23 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
     }
 
     /**
-     * Checks that method was called either by did owner or sender
+     * Checks that method was called either by Trustee or Endorser or Steward
      */
-    modifier _senderIsAuthorized(address identity) {
-        // FIXME: once we add strict role and endorsement, the check here should be either owner or Trustee
-        if (msg.sender != identity && msg.sender != _dids[identity].metadata.sender)
-            revert UnauthorizedSender(msg.sender);
+    modifier _senderIsTrusteeOrEndorserOrSteward() {
+        _roleControl.isTrusteeOrEndorserOrSteward(msg.sender);
         _;
+    }
+
+    /**
+     * Checks that method was called either by Identity owner or Trustee or Endorser or Steward
+     */
+    modifier _senderIsIdentityOwnerOrTrustee(address identity) {
+        if (msg.sender == identity) {
+            _;
+        } else {
+            _roleControl.isTrustee(msg.sender);
+            _;
+        }
     }
 
     /**
@@ -57,8 +70,9 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
         _;
     }
 
-    function initialize(address upgradeControlAddress) public reinitializer(1) {
+    function initialize(address upgradeControlAddress, address roleControlContractAddress) public reinitializer(1) {
         _initializeUpgradeControl(upgradeControlAddress);
+        _roleControl = RoleControlInterface(roleControlContractAddress);
     }
 
     /// @inheritdoc IndyDidRegistryInterface
@@ -105,12 +119,11 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
 
     function _createDid(
         address identity,
-        address actor,
+        address actor, // actor is either message sender in case of `createDid` or signer in case of `createDidSigner`
         bytes calldata document
-    ) internal _didNotExist(identity) _identityOwner(identity, actor) {
+    ) internal _didNotExist(identity) _identityOwner(identity, actor) _senderIsTrusteeOrEndorserOrSteward {
         _dids[identity].document = document;
         _dids[identity].metadata.owner = identity;
-        _dids[identity].metadata.sender = msg.sender;
         _dids[identity].metadata.created = block.timestamp;
         _dids[identity].metadata.updated = block.timestamp;
         _dids[identity].metadata.versionId = block.number;
@@ -120,14 +133,14 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
 
     function _updateDid(
         address identity,
-        address actor,
+        address actor, // actor is either message sender in case of `updateDid` or signer in case of `updateDidSigner`
         bytes calldata document
     )
         internal
         _didExist(identity)
         _didIsActive(identity)
         _identityOwner(identity, actor)
-        _senderIsAuthorized(identity)
+        _senderIsIdentityOwnerOrTrustee(identity)
     {
         _dids[identity].document = document;
         _dids[identity].metadata.updated = block.timestamp;
@@ -138,13 +151,13 @@ contract IndyDidRegistry is IndyDidRegistryInterface, ControlledUpgradeable {
 
     function _deactivateDid(
         address identity,
-        address actor
+        address actor // actor is either message sender in case of `deactivateDid` or signer in case of `deactivateDidSigner`
     )
         internal
         _didExist(identity)
         _didIsActive(identity)
         _identityOwner(identity, actor)
-        _senderIsAuthorized(identity)
+        _senderIsIdentityOwnerOrTrustee(identity)
     {
         _dids[identity].metadata.deactivated = true;
         _dids[identity].metadata.versionId = block.number;

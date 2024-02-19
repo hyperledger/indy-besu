@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import chai from 'chai'
 import { RoleControl } from '../../contracts-ts'
-import { TestableUpgradeControl, UpgradablePrototype } from '../utils/contract-helpers'
+import { TestableRoleControl, TestableUpgradeControl, UpgradablePrototype } from '../utils/contract-helpers'
 import { AuthErrors, ProxyError, UpgradeControlErrors } from '../utils/errors'
 import { ProxyEvents, UpgradeControlEvents } from '../utils/events'
 import { getTestAccounts, ZERO_ADDRESS } from '../utils/test-entities'
@@ -10,7 +10,7 @@ const { expect } = chai
 
 describe('UpgradableControl', function () {
   async function deployUpgradableContractFixture() {
-    const roleControl = await new RoleControl().deployProxy({ params: [ZERO_ADDRESS] })
+    const roleControl = await new TestableRoleControl().deployProxy({ params: [ZERO_ADDRESS] })
 
     const testAccounts = await getTestAccounts(roleControl)
 
@@ -22,7 +22,7 @@ describe('UpgradableControl', function () {
 
     const upgradablePrototypeV2 = await new UpgradablePrototype('UpgradablePrototypeV2').deploy()
 
-    return { upgradeControl, upgradablePrototype, upgradablePrototypeV2, testAccounts }
+    return { upgradeControl, upgradablePrototype, upgradablePrototypeV2, testAccounts, roleControl }
   }
 
   describe('Propose and approve contract', function () {
@@ -88,26 +88,25 @@ describe('UpgradableControl', function () {
 
   describe('Propose negative cases', function () {
     it('Should fail when propose sends from a non-trustee account', async function () {
-      const { upgradeControl, upgradablePrototype, upgradablePrototypeV2, testAccounts } = await loadFixture(
-        deployUpgradableContractFixture,
-      )
+      const { upgradeControl, upgradablePrototype, upgradablePrototypeV2, testAccounts, roleControl } =
+        await loadFixture(deployUpgradableContractFixture)
 
       // Propose by endorser
       upgradeControl.connect(testAccounts.endorser.account)
       await expect(upgradeControl.propose(upgradablePrototype.address!, upgradablePrototypeV2.address!))
-        .to.revertedWithCustomError(upgradeControl.baseInstance, AuthErrors.Unauthorized)
+        .to.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
         .withArgs(testAccounts.endorser.account.address)
 
       // Propose by steward
       upgradeControl.connect(testAccounts.steward.account)
       await expect(upgradeControl.propose(upgradablePrototype.address!, upgradablePrototypeV2.address!))
-        .to.revertedWithCustomError(upgradeControl.baseInstance, AuthErrors.Unauthorized)
+        .to.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
         .withArgs(testAccounts.steward.account.address)
 
       // Propose by account without role
       upgradeControl.connect(testAccounts.noRole.account)
       await expect(upgradeControl.propose(upgradablePrototype.address!, upgradablePrototypeV2.address!))
-        .to.revertedWithCustomError(upgradeControl.baseInstance, AuthErrors.Unauthorized)
+        .to.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
         .withArgs(testAccounts.noRole.account.address)
     })
 
@@ -163,9 +162,8 @@ describe('UpgradableControl', function () {
     })
 
     it('Should fail when approval sends from a non-trustee account', async function () {
-      const { upgradeControl, upgradablePrototype, upgradablePrototypeV2, testAccounts } = await loadFixture(
-        deployUpgradableContractFixture,
-      )
+      const { upgradeControl, upgradablePrototype, upgradablePrototypeV2, testAccounts, roleControl } =
+        await loadFixture(deployUpgradableContractFixture)
 
       // Propose by trustee
       upgradeControl.connect(testAccounts.trustee.account)
@@ -176,19 +174,19 @@ describe('UpgradableControl', function () {
       // Approve by endorser
       upgradeControl.connect(testAccounts.endorser.account)
       await expect(upgradeControl.approve(upgradablePrototype.address!, upgradablePrototypeV2.address!))
-        .to.revertedWithCustomError(upgradeControl.baseInstance, AuthErrors.Unauthorized)
+        .to.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
         .withArgs(testAccounts.endorser.account.address)
 
       // Approve by steward
       upgradeControl.connect(testAccounts.steward.account)
       await expect(upgradeControl.approve(upgradablePrototype.address!, upgradablePrototypeV2.address!))
-        .to.revertedWithCustomError(upgradeControl.baseInstance, AuthErrors.Unauthorized)
+        .to.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
         .withArgs(testAccounts.steward.account.address)
 
       // Approve by account without role
       upgradeControl.connect(testAccounts.noRole.account)
       await expect(upgradeControl.approve(upgradablePrototype.address!, upgradablePrototypeV2.address!))
-        .to.revertedWithCustomError(upgradeControl.baseInstance, AuthErrors.Unauthorized)
+        .to.revertedWithCustomError(roleControl.baseInstance, AuthErrors.Unauthorized)
         .withArgs(testAccounts.noRole.account.address)
     })
 

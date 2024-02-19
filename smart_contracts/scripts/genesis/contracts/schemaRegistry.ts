@@ -6,6 +6,7 @@ export interface SchemasConfig extends ContractConfig {
   data: {
     universalDidResolverAddress: string
     upgradeControlAddress: string
+    roleControlContractAddress: string
   }
 }
 
@@ -17,5 +18,7 @@ export function schemaRegistry(config: SchemasConfig) {
   storage[slots['0']] = padLeft(data.upgradeControlAddress, 64)
   // address of DID resolver contact stored in slot 1
   storage[slots['1']] = padLeft(data.universalDidResolverAddress, 64)
+  // address of Role control contact stored in slot 2
+  storage[slots['2']] = padLeft(data.roleControlContractAddress, 64)
   return buildProxySection(name, address, description, storage)
 }

@@ -20,7 +20,6 @@ export namespace DidErrors {
   export const DidNotFound = 'DidNotFound'
   export const DidAlreadyExist = 'DidAlreadyExist'
   export const DidHasBeenDeactivated = 'DidHasBeenDeactivated'
-  export const UnauthorizedSender = 'UnauthorizedSender'
   export const IncorrectDid = 'IncorrectDid'
   export const NotIdentityOwner = 'NotIdentityOwner'
 }
@@ -50,4 +49,5 @@ export namespace MigrationErrors {
   export const DidMappingAlreadyExist = 'DidMappingAlreadyExist'
   export const ResourceMappingAlreadyExist = 'ResourceMappingAlreadyExist'
   export const InvalidEd25519Key = 'InvalidEd25519Key'
+  export const DidMappingDoesNotExist = 'DidMappingDoesNotExist'
 }

@@ -131,6 +131,7 @@ export function prepareConfig(): ContractsConfigs {
         universalDidResolverAddress: contracts.universalDidResolver.address,
         schemaRegistryAddress: contracts.schemaRegistry.address,
         upgradeControlAddress: contracts.upgradeControl.address,
+        roleControlContractAddress: contracts.roleControl.address,
       },
     },
     indyDidRegistry: {
@@ -139,6 +140,7 @@ export function prepareConfig(): ContractsConfigs {
       description: 'Smart contract to manage DIDs',
       data: {
         upgradeControlAddress: contracts.upgradeControl.address,
+        roleControlContractAddress: contracts.roleControl.address,
       },
     },
     universalDidResolver: {
@@ -201,6 +203,7 @@ export function prepareConfig(): ContractsConfigs {
       data: {
         universalDidResolverAddress: contracts.universalDidResolver.address,
         upgradeControlAddress: contracts.upgradeControl.address,
+        roleControlContractAddress: contracts.roleControl.address,
       },
     },
     upgradeControl: {
@@ -245,6 +248,7 @@ export function prepareConfig(): ContractsConfigs {
       data: {
         universalDidResolver: contracts.universalDidResolver.address,
         upgradeControlAddress: contracts.upgradeControl.address,
+        roleControlContractAddress: contracts.roleControl.address,
       },
     },
   }

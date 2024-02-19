@@ -68,14 +68,14 @@ describe('AccountControl', function () {
       expect(await accountControl.transactionAllowed(transaction)).to.be.false
     })
 
-    it('Should not allow write any transaction to sender without role', async function () {
+    it('Should allow write any transaction to sender without role', async function () {
       const { accountControl, testAccounts } = await loadFixture(deployAccountControlFixture)
 
       const deployTransaction = createContractDeployTransaction(testAccounts.noRole.account.address)
       const writeTransaction = createWriteTransaction(testAccounts.noRole.account.address)
 
       expect(await accountControl.transactionAllowed(deployTransaction)).to.be.false
-      expect(await accountControl.transactionAllowed(writeTransaction)).to.be.false
+      expect(await accountControl.transactionAllowed(writeTransaction)).to.be.true
     })
   })
 })

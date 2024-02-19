@@ -8,6 +8,7 @@ import { CredentialDefinitionRecord } from "./CredentialDefinitionTypes.sol";
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
 import { CredentialDefinitionAlreadyExist, CredentialDefinitionNotFound } from "./ClErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
+import { RoleControlInterface } from "../auth/RoleControl.sol";
 import { CLRegistry } from "./CLRegistry.sol";
 
 contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, ControlledUpgradeable, CLRegistry {
@@ -48,11 +49,13 @@ contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, 
     function initialize(
         address upgradeControlAddress,
         address didResolverAddress,
-        address schemaRegistryAddress
+        address schemaRegistryAddress,
+        address roleControlContractAddress
     ) public reinitializer(1) {
         _initializeUpgradeControl(upgradeControlAddress);
         _didResolver = UniversalDidResolverInterface(didResolverAddress);
         _schemaRegistry = SchemaRegistryInterface(schemaRegistryAddress);
+        _roleControl = RoleControlInterface(roleControlContractAddress);
     }
 
     /// @inheritdoc CredentialDefinitionRegistryInterface
@@ -107,7 +110,13 @@ contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, 
         string calldata issuerId,
         bytes32 schemaId,
         bytes calldata credDef
-    ) internal _uniqueCredDefId(id) _validIssuer(issuerId, identity, actor) _schemaExist(schemaId) {
+    )
+        internal
+        _senderIsTrusteeOrEndorserOrSteward
+        _uniqueCredDefId(id)
+        _validIssuer(issuerId, identity, actor)
+        _schemaExist(schemaId)
+    {
         _credDefs[id].credDef = credDef;
         _credDefs[id].metadata.created = block.timestamp;
 

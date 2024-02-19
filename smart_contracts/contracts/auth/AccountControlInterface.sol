@@ -9,8 +9,7 @@ interface AccountControlInterface {
      * @dev Determine whether to accept a transaction received from a given account.
      *
      * This function enforces the following restrictions:
-     * - Only senders with the Trustee role are permitted to deploy transactions.
-     * - Senders with not-empty roles (Trustee, Steward and Endorser) can invoke state modifying contract methods.
+     * - Only senders with the Trustee role are permitted to deploy new smart contracts.
      *
      *  Note: This function does not impose any restrictions to reading state values
      *

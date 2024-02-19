@@ -26,7 +26,7 @@ use indy_vdr::{
     utils::did::DidValue,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use std::{env, fs, str::FromStr, time::Duration};
 
 pub enum Ledgers {

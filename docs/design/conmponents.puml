@@ -12,6 +12,7 @@ package "Ethereum Network" {
             component [Universal Did Resolver]
             component [Schema Registry]
             component [Credential Definition Registry]
+            component [Legacy Mapping Registry]
         }
     }
 }

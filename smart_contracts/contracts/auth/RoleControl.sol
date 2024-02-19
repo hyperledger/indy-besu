@@ -89,6 +89,33 @@ contract RoleControl is RoleControlInterface, ControlledUpgradeable {
         return _roleCounts[role];
     }
 
+    /// @inheritdoc RoleControlInterface
+    function isTrustee(address identity) public view virtual {
+        if (_roles[identity] != ROLES.TRUSTEE) revert Unauthorized(identity);
+    }
+
+    /// @inheritdoc RoleControlInterface
+    function isEndorser(address identity) public view virtual {
+        if (_roles[identity] != ROLES.ENDORSER) revert Unauthorized(identity);
+    }
+
+    /// @inheritdoc RoleControlInterface
+    function isSteward(address identity) public view virtual {
+        if (_roles[identity] != ROLES.STEWARD) revert Unauthorized(identity);
+    }
+
+    /// @inheritdoc RoleControlInterface
+    function isTrusteeOrEndorser(address identity) public view virtual {
+        ROLES role = _roles[identity];
+        if (role != ROLES.ENDORSER && role != ROLES.TRUSTEE) revert Unauthorized(identity);
+    }
+
+    /// @inheritdoc RoleControlInterface
+    function isTrusteeOrEndorserOrSteward(address identity) public view virtual {
+        ROLES role = _roles[identity];
+        if (role != ROLES.ENDORSER && role != ROLES.TRUSTEE && role != ROLES.STEWARD) revert Unauthorized(identity);
+    }
+
     /**
      * @dev Function to set initial owners for roles.
      */

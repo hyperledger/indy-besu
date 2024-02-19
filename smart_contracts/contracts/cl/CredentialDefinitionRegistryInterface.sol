@@ -18,6 +18,9 @@ interface CredentialDefinitionRegistryInterface {
      * Once the Credential Definition is created, this function emits a `CredentialDefinitionCreated` event
      * with the new Credential Definition's ID and issuer address.
      *
+     * Restrictions:
+     * - Only senders with either TRUSTEE or ENDORSER or STEWARD role are permitted to create new object;
+     *
      * This function can revert with following errors:
      * - `CredentialDefinitionAlreadyExist`: Raised if Credential Definition with provided ID already exist.
      * - `SchemaNotFound`: Raised if the associated schema doesn't exist.
@@ -45,6 +48,9 @@ interface CredentialDefinitionRegistryInterface {
      *
      * Once the Credential Definition is created, this function emits a `CredentialDefinitionCreated` event
      * with the new Credential Definition's ID and issuer address.
+     *
+     * Restrictions:
+     * - Only senders with either TRUSTEE or ENDORSER or STEWARD role are permitted to create new object;
      *
      * This function can revert with following errors:
      * - `CredentialDefinitionAlreadyExist`: Raised if Credential Definition with provided ID already exist.

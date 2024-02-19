@@ -78,6 +78,13 @@ package "Smart Contracts" {
               Store CL Credential Definitions
             end note
         }
+
+        package "Migration" {
+            component [Legacy Mapping Registry]
+            note bottom of [Legacy Mapping Registry]
+              Store Mapping for legacy DID/Schema/CredentialDefinition identifiers
+            end note
+        }
     }
 
     [Identity] --> [Role Control]
@@ -86,6 +93,7 @@ package "Smart Contracts" {
     [Universal Did Resolver] --> [Ethereum Did Registry]
     [Schema Registry] --> [Universal Did Resolver]
     [Credential Definition Registry] --> [Universal Did Resolver]
+    [Legacy Mapping Registry] --> [Universal Did Resolver]
 }
 
 @enduml

@@ -6,8 +6,11 @@ logs
 .idea
 vdr/out
 vdr/target
+network/config/nodes/validator5/key
 
 # Blockscout
 blockscout-db-data
 redis-data
 stats-db-data
+
+
