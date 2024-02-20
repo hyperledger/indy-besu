@@ -165,6 +165,7 @@ impl LedgerClient {
     pub(crate) fn chain_id(&self) -> u64 {
         self.chain_id
     }
+
     pub(crate) fn network(&self) -> Option<&String> {
         self.network.as_ref()
     }

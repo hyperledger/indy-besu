@@ -27,11 +27,11 @@
             "address": "0x0000000000000000000000000000000000003333"
         },
         "schemaRegistry": {
-            "specPath": "smart_contracts/artifacts/contracts/cl/SchemaRegistry.sol/SchemaRegistry.json",
+            "specPath": "smart_contracts/artifacts/contracts/anoncreds/SchemaRegistry.sol/SchemaRegistry.json",
             "address": "0x0000000000000000000000000000000000005555"
         },
         "credDefRegistry": {
-            "specPath": "smart_contracts/artifacts/contracts/cl/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json",
+            "specPath": "smart_contracts/artifacts/contracts/anoncreds/CredentialDefinitionRegistry.sol/CredentialDefinitionRegistry.json",
             "address": "0x0000000000000000000000000000000000004444"
         },
         "legacyMappingRegistry": {

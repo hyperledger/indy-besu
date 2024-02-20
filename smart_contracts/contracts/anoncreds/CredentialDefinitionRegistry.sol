@@ -6,12 +6,16 @@ import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
 import { CredentialDefinitionRecord } from "./CredentialDefinitionTypes.sol";
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
-import { CredentialDefinitionAlreadyExist, CredentialDefinitionNotFound } from "./ClErrors.sol";
+import { CredentialDefinitionAlreadyExist, CredentialDefinitionNotFound } from "./AnoncredsErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
-import { CLRegistry } from "./CLRegistry.sol";
+import { AnoncredsRegistry } from "./AnoncredsRegistry.sol";
 
-contract CredentialDefinitionRegistry is CredentialDefinitionRegistryInterface, ControlledUpgradeable, CLRegistry {
+contract CredentialDefinitionRegistry is
+    CredentialDefinitionRegistryInterface,
+    ControlledUpgradeable,
+    AnoncredsRegistry
+{
     /**
      * @dev Reference to the contract that manages AnonCreds schemas
      */

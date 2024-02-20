@@ -232,7 +232,7 @@ Contract name: **transactionAllowed**
 | EthereumExtDidRegistry | changed               | any           | Get block number of latest DID change |
 | EthereumExtDidRegistry | nonce                 | any           | Get nonce to signe for endorsing      |
 
-### CL Registry management
+### Anoncreds Registry management
 
 | Contract                     | Method                           | Required Role               | Action Description                              |
 |------------------------------|----------------------------------|-----------------------------|-------------------------------------------------|

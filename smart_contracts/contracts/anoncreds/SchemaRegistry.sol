@@ -4,13 +4,13 @@ pragma solidity ^0.8.20;
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
 
-import { SchemaAlreadyExist, SchemaNotFound } from "./ClErrors.sol";
+import { SchemaAlreadyExist, SchemaNotFound } from "./AnoncredsErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
 import { SchemaRecord } from "./SchemaTypes.sol";
-import { CLRegistry } from "./CLRegistry.sol";
+import { AnoncredsRegistry } from "./AnoncredsRegistry.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
 
-contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, CLRegistry {
+contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, AnoncredsRegistry {
     /**
      * Mapping Schema ID to its Schema Details and Metadata.
      */

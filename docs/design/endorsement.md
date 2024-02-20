@@ -93,7 +93,7 @@ function changeOwnerSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 s
 
 TO BE defined later.
 
-### CL Registry (Schema / Credential Definition)
+### Anoncreds Registry (Schema / Credential Definition)
 
 #### Flow
 

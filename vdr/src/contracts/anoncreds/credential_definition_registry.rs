@@ -2,7 +2,7 @@ use log_derive::{logfn, logfn_inputs};
 
 use crate::{
     client::LedgerClient,
-    contracts::cl::types::{
+    contracts::anoncreds::types::{
         credential_definition::{CredentialDefinition, CredentialDefinitionRecord},
         credential_definition_id::{CredentialDefinitionId, ParsedCredentialDefinitionId},
     },
@@ -188,7 +188,6 @@ pub async fn resolve_credential_definition(
 
     let transaction = build_resolve_credential_definition_transaction(client, id).await?;
     let response = client.submit_transaction(&transaction).await?;
-
     if response.is_empty() {
         return Err(VdrError::ClientInvalidResponse(format!(
             "Credential Definition not found for id: {:?}",
@@ -215,7 +214,7 @@ pub mod test {
     use crate::{
         client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT, TRUSTEE_ACCOUNT},
         contracts::{
-            cl::types::{
+            anoncreds::types::{
                 credential_definition::test::{
                     credential_definition, credential_definition_value, CREDENTIAL_DEFINITION_TAG,
                 },
