@@ -3,6 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 
 pub const DID_PREFIX: &str = "did";
 
+/// Wrapper structure for DID
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct DID(String);
 

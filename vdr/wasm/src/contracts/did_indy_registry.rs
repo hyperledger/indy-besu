@@ -1,5 +1,4 @@
-use indy_besu_vdr::{did_indy_registry, Address, DidDocument, SignatureData, DID};
-use std::rc::Rc;
+use indy_besu_vdr::{did_indy_registry, Address, DidDocument, DID};
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -23,11 +22,11 @@ impl IndyDidRegistry {
         let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
         let address = Address::from(from);
         let did = DID::from(did);
-        let transaction =
-            did_indy_registry::build_create_did_transaction(&client.0, &address, &did, &did_doc)
-                .await
-                .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        did_indy_registry::build_create_did_transaction(&client.0, &address, &did, &did_doc)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildCreateDidEndorsingData)]
@@ -38,34 +37,11 @@ impl IndyDidRegistry {
     ) -> Result<TransactionEndorsingDataWrapper> {
         let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
         let did = DID::from(did);
-        let data = did_indy_registry::build_create_did_endorsing_data(&client.0, &did, &did_doc)
+        did_indy_registry::build_create_did_endorsing_data(&client.0, &did, &did_doc)
             .await
-            .as_js()?;
-        Ok(TransactionEndorsingDataWrapper(Rc::new(data)))
-    }
-
-    #[wasm_bindgen(js_name = buildCreateDidSignedTransaction)]
-    pub async fn build_create_did_signed_transaction(
-        client: &LedgerClientWrapper,
-        from: &str,
-        did: &str,
-        did_doc: JsValue,
-        signature_data: JsValue,
-    ) -> Result<TransactionWrapper> {
-        let from = Address::from(from);
-        let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
-        let did = DID::from(did);
-        let signature_data: SignatureData = serde_wasm_bindgen::from_value(signature_data)?;
-        let transaction = did_indy_registry::build_create_did_signed_transaction(
-            &client.0,
-            &from,
-            &did,
-            &did_doc,
-            &signature_data,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionEndorsingDataWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildUpdateDidTransaction)]
@@ -78,11 +54,11 @@ impl IndyDidRegistry {
         let from = Address::from(from);
         let did = DID::from(did);
         let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
-        let transaction =
-            did_indy_registry::build_update_did_transaction(&client.0, &from, &did, &did_doc)
-                .await
-                .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        did_indy_registry::build_update_did_transaction(&client.0, &from, &did, &did_doc)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildUpdateDidEndorsingData)]
@@ -93,34 +69,11 @@ impl IndyDidRegistry {
     ) -> Result<TransactionEndorsingDataWrapper> {
         let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
         let did = DID::from(did);
-        let data = did_indy_registry::build_update_did_endorsing_data(&client.0, &did, &did_doc)
+        did_indy_registry::build_update_did_endorsing_data(&client.0, &did, &did_doc)
             .await
-            .as_js()?;
-        Ok(TransactionEndorsingDataWrapper(Rc::new(data)))
-    }
-
-    #[wasm_bindgen(js_name = buildUpdateDidSignedTransaction)]
-    pub async fn build_update_did_signed_transaction(
-        client: &LedgerClientWrapper,
-        from: &str,
-        did: &str,
-        did_doc: JsValue,
-        signature_data: JsValue,
-    ) -> Result<TransactionWrapper> {
-        let from = Address::from(from);
-        let did_doc: DidDocument = serde_wasm_bindgen::from_value(did_doc)?;
-        let did = DID::from(did);
-        let signature_data: SignatureData = serde_wasm_bindgen::from_value(signature_data)?;
-        let transaction = did_indy_registry::build_update_did_signed_transaction(
-            &client.0,
-            &from,
-            &did,
-            &did_doc,
-            &signature_data,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionEndorsingDataWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildDeactivateDidTransaction)]
@@ -131,11 +84,11 @@ impl IndyDidRegistry {
     ) -> Result<TransactionWrapper> {
         let address = Address::from(from);
         let did = DID::from(did);
-        let transaction =
-            did_indy_registry::build_deactivate_did_transaction(&client.0, &address, &did)
-                .await
-                .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        did_indy_registry::build_deactivate_did_transaction(&client.0, &address, &did)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildDeactivateDidEndorsingData)]
@@ -144,31 +97,11 @@ impl IndyDidRegistry {
         did: &str,
     ) -> Result<TransactionEndorsingDataWrapper> {
         let did = DID::from(did);
-        let data = did_indy_registry::build_deactivate_did_endorsing_data(&client.0, &did)
+        did_indy_registry::build_deactivate_did_endorsing_data(&client.0, &did)
             .await
-            .as_js()?;
-        Ok(TransactionEndorsingDataWrapper(Rc::new(data)))
-    }
-
-    #[wasm_bindgen(js_name = buildDeactivateDidSignedTransaction)]
-    pub async fn build_deactivate_did_signed_transaction(
-        client: &LedgerClientWrapper,
-        from: &str,
-        did: &str,
-        signature_data: JsValue,
-    ) -> Result<TransactionWrapper> {
-        let from = Address::from(from);
-        let did = DID::from(did);
-        let signature_data: SignatureData = serde_wasm_bindgen::from_value(signature_data)?;
-        let transaction = did_indy_registry::build_deactivate_did_signed_transaction(
-            &client.0,
-            &from,
-            &did,
-            &signature_data,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionEndorsingDataWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildResolveDidTransaction)]
@@ -177,10 +110,11 @@ impl IndyDidRegistry {
         did: &str,
     ) -> Result<TransactionWrapper> {
         let did = DID::from(did);
-        let transaction = did_indy_registry::build_resolve_did_transaction(&client.0, &did)
+        did_indy_registry::build_resolve_did_transaction(&client.0, &did)
             .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = parseResolveDidResult)]

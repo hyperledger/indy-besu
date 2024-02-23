@@ -15,13 +15,13 @@ const METHOD_GET_ROLE: &str = "getRole";
 /// Build transaction to execute RoleControl.assignRole contract method to assign a role to an account
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `role` role to assign
-/// - `account` assignee account
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `role`: [Role] - role to assign
+/// - `account`: [Address] - assignee account
 ///
 /// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_assign_role_transaction(
@@ -44,13 +44,13 @@ pub async fn build_assign_role_transaction(
 /// Build transaction to execute RoleControl.revokeRole contract method to revoke a role from an account
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `role` role to assign
-/// - `account` revokee account
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `role`: [Role] - role to assign
+/// - `account`: [Address] - revoke account
 ///
 /// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_revoke_role_transaction(
@@ -73,12 +73,12 @@ pub async fn build_revoke_role_transaction(
 /// Build transaction to execute RoleControl.hasRole contract method to check an account has a role
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `role` role to check
-/// - `account` account to check
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `role`: [Role] - role to check
+/// - `account`: [Address] - account to check
 ///
 /// # Returns
-/// Read transaction to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_has_role_transaction(
@@ -99,11 +99,11 @@ pub async fn build_has_role_transaction(
 /// Build transaction to execute RoleControl.getRole contract method to get account's role
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `account` account address
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `account`: [Address] - account address
 ///
 /// # Returns
-/// Read transaction to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_get_role_transaction(
@@ -122,8 +122,8 @@ pub async fn build_get_role_transaction(
 /// Parse the result of execution RoleControl.HasRole contract method to check an account has a role
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
 /// Account has role result
@@ -139,11 +139,11 @@ pub fn parse_has_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<b
 /// Parse the result of execution RoleControl.GetRole contract method to get account's role
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-/// Account's role
+/// [Role] Account's role
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_get_role_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Role> {
@@ -159,7 +159,6 @@ pub mod test {
     use crate::client::client::test::{
         mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT, TRUSTEE_ACCOUNT,
     };
-    use std::sync::RwLock;
 
     pub static ACCOUNT_ROLES: [Role; 4] =
         [Role::Empty, Role::Trustee, Role::Steward, Role::Endorser];
@@ -192,7 +191,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CONFIG.chain_id,
                 data: expected_data,
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
 
@@ -228,7 +227,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CONFIG.chain_id,
                 data: expected_data,
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
 
@@ -258,7 +257,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CONFIG.chain_id,
                 data: expected_data,
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
 
@@ -304,7 +303,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CONFIG.chain_id,
                 data: expected_data,
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
 

@@ -8,10 +8,10 @@ use crate::{
     },
     error::VdrResult,
     types::{
-        Address, MethodStringParam, Transaction, TransactionBuilder,
-        TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
+        Address, Transaction, TransactionBuilder, TransactionEndorsingDataBuilder,
+        TransactionParser, TransactionType,
     },
-    SignatureData, TransactionEndorsingData,
+    TransactionEndorsingData,
 };
 
 const CONTRACT_NAME: &str = "IndyDidRegistry";
@@ -25,16 +25,16 @@ const METHOD_RESOLVE_DID: &str = "resolveDid";
 
 pub const INDYBESU_DID_METHOD: &str = "indybesu";
 
-/// Build transaction to execute IndyDidRegistry.createDid contract method to create a new DID
+/// Build a transaction to create a new DID record (IndyDidRegistry.createDid contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `did` DID to create.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `did`: [DID] - DID to create.
+/// - `did_doc`: [DidDocument] - DID Document matching to the specification: `<https://www.w3.org/TR/did-core/>`
 ///
 /// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_did_transaction(
@@ -43,11 +43,10 @@ pub async fn build_create_did_transaction(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_DID)
-        .add_param(&identity)?
+        .add_param(&Address::try_from(did)?)?
         .add_param(did_doc)?
         .set_type(TransactionType::Write)
         .set_from(from)
@@ -55,14 +54,15 @@ pub async fn build_create_did_transaction(
         .await
 }
 
-/// Prepared data for endorsing IndyDidRegistry.createDid contract method
+/// Prepared data for endorsing creation of a new DID record (IndyDidRegistry.createDidSigned contract method)
 ///
 /// #Params
-/// - `did` DID to create.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `did`: [DID] - DID to create.
+/// - `did_doc`: [DidDocument] - DID Document matching to the specification: `<https://www.w3.org/TR/did-core/>`
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_did_endorsing_data(
@@ -70,63 +70,26 @@ pub async fn build_create_did_endorsing_data(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<TransactionEndorsingData> {
-    let identity = Address::try_from(did)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
-        .set_identity(&identity)
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_CREATE_DID))?
+        .set_identity(&Address::try_from(did)?)
+        .set_method(METHOD_CREATE_DID)
+        .set_endorsing_method(METHOD_CREATE_DID_SIGNED)
         .add_param(did_doc)?
         .build(client)
         .await
 }
 
-/// Build transaction to execute IndyDidRegistry.createDidSigned contract method to endorse a new DID
-/// Endorsing version of the method - sender is not identity owner
+/// Build a transaction to update an existing DID record (IndyDidRegistry.updateDid contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `did` DID to create.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
-///  - `signature` signature of DID identity owner
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `did`: [DID] - DID to update.
+/// - `did_doc`: [DidDocument] - DID Document matching to the specification: `<https://www.w3.org/TR/did-core/>`
 ///
 /// # Returns
-/// Write transaction to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_create_did_signed_transaction(
-    client: &LedgerClient,
-    from: &Address,
-    did: &DID,
-    did_doc: &DidDocument,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_CREATE_DID_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(did_doc)?
-        .set_type(TransactionType::Write)
-        .set_from(from)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute IndyDidRegistry.updateDid contract method to update DID document for an existing DID
-///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `did` DID to update.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
-///
-/// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_update_did_transaction(
@@ -135,11 +98,10 @@ pub async fn build_update_did_transaction(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_UPDATE_DID)
-        .add_param(&identity)?
+        .add_param(&Address::try_from(did)?)?
         .add_param(did_doc)?
         .set_type(TransactionType::Write)
         .set_from(from)
@@ -147,14 +109,15 @@ pub async fn build_update_did_transaction(
         .await
 }
 
-/// Prepared data for endorsing IndyDidRegistry.updateDid contract method
+/// Prepared data for endorsing update of an existing DID record (IndyDidRegistry.updateDidSigned contract method)
 ///
 /// #Params
-/// - `did` DID to create.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `did`: [DID] - DID to create.
+/// - `did_doc`: [DidDocument] - DID Document matching to the specification: `<https://www.w3.org/TR/did-core/>`
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_update_did_endorsing_data(
@@ -162,62 +125,25 @@ pub async fn build_update_did_endorsing_data(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<TransactionEndorsingData> {
-    let identity = Address::try_from(did)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
-        .set_identity(&identity)
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_UPDATE_DID))?
+        .set_identity(&Address::try_from(did)?)
+        .set_method(METHOD_UPDATE_DID)
+        .set_endorsing_method(METHOD_UPDATE_DID_SIGNED)
         .add_param(did_doc)?
         .build(client)
         .await
 }
 
-/// Build transaction to execute IndyDidRegistry.updateDidSigned contract method to update DID document for an existing DID
-/// Endorsing version of the method - sender is not identity owner
+/// Build a transaction to deactivate an existing DID record (IndyDidRegistry.deactivateDid contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `did` DID to create.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
-///  - `signature` signature of DID identity owner
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `did`: [DID] - DID to deactivate.
 ///
 /// # Returns
-/// Write transaction to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_update_did_signed_transaction(
-    client: &LedgerClient,
-    from: &Address,
-    did: &DID,
-    did_doc: &DidDocument,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_UPDATE_DID_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(did_doc)?
-        .set_type(TransactionType::Write)
-        .set_from(from)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute IndyDidRegistry.deactivateDid contract method to deactivate an existing DID
-///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `did` DID to deactivate.
-///
-/// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_deactivate_did_transaction(
@@ -225,83 +151,48 @@ pub async fn build_deactivate_did_transaction(
     from: &Address,
     did: &DID,
 ) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_DEACTIVATE_DID)
-        .add_param(&identity)?
+        .add_param(&Address::try_from(did)?)?
         .set_type(TransactionType::Write)
         .set_from(from)
         .build(client)
         .await
 }
 
-/// Build transaction to execute IndyDidRegistry.deactivateDid contract method to deactivate an existing DID
+/// Prepared data for endorsing deactivation of an existing DID record (IndyDidRegistry.deactivateDidSigned contract method)
 ///
 /// #Params
-/// - `did` DID to create.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `did`: [DID] - DID to create.
+/// - `did_doc`: [DidDocument] - DID Document matching to the specification: `<https://www.w3.org/TR/did-core/>`
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_deactivate_did_endorsing_data(
     client: &LedgerClient,
     did: &DID,
 ) -> VdrResult<TransactionEndorsingData> {
-    let identity = Address::try_from(did)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
-        .set_identity(&identity)
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_DEACTIVATE_DID))?
+        .set_identity(&Address::try_from(did)?)
+        .set_method(METHOD_DEACTIVATE_DID)
+        .set_endorsing_method(METHOD_DEACTIVATE_DID_SIGNED)
         .build(client)
         .await
 }
 
-/// Build transaction to execute IndyDidRegistry.deactivateDidSigned contract method to deactivate an existing DID
-/// Endorsing version of the method - sender is not identity owner
+/// Build a transaction to resolve a DID Record (IndyDidRegistry.resolveDid contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `did` DID to create.
-/// - `did_doc` DID Document matching to the specification: https://www.w3.org/TR/did-core/
-///  - `signature` signature of DID identity owner
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `did`: [DID] - DID to resolve.
 ///
 /// # Returns
-/// Write transaction to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_deactivate_did_signed_transaction(
-    client: &LedgerClient,
-    from: &Address,
-    did: &DID,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_DEACTIVATE_DID_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .set_type(TransactionType::Write)
-        .set_from(from)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
-///
-/// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `did` DID to resolve.
-///
-/// # Returns
-/// Read transaction to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_resolve_did_transaction(
@@ -318,14 +209,14 @@ pub async fn build_resolve_did_transaction(
         .await
 }
 
-/// Parse the result of execution IndyDidRegistry.resolveDid contract method to receive a DID Document associated with the DID
+/// Parse the result of execution transaction to resolve a DID Record (IndyDidRegistry.resolveDid contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-/// parsed DID Record
+/// [DidRecord] DID Record containing DID Document and metadata associated with the DID
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_resolve_did_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<DidRecord> {
@@ -345,7 +236,6 @@ pub mod test {
             did_doc::test::{did_doc, TEST_ETHR_DID},
         },
     };
-    use std::sync::RwLock;
 
     mod build_create_did_transaction {
         use super::*;
@@ -403,7 +293,7 @@ pub mod test {
                     101, 57, 98, 50, 98, 53, 35, 75, 69, 89, 45, 49, 34, 93, 125, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -429,7 +319,7 @@ pub mod test {
                     24, 48, 235, 91, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);

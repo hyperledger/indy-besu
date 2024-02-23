@@ -19,6 +19,7 @@ use crate::{
     Address, BlockDetails, QuorumConfig,
 };
 
+/// Client object for interaction with the network
 pub struct LedgerClient {
     chain_id: u64,
     client: Box<dyn Client>,
@@ -31,14 +32,14 @@ impl LedgerClient {
     /// Create client interacting with ledger
     ///
     /// # Params
-    ///  - `chain_id` - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
-    ///  - `rpc_node` - string - RPC node endpoint
-    ///  - `network` - string - Name of the network
-    ///  - `contract_configs` - [ContractSpec] specifications for contracts  deployed on the network
-    ///  - `quorum_config` - Option<[QuorumConfig]> quorum configuration. Can be None if quorum check is not needed
+    ///  - `chain_id`: [u64] - chain id of network (chain ID is part of the transaction signing process to protect against transaction replay attack)
+    ///  - `rpc_node`: [String] - RPC node endpoint
+    ///  - `network`: [String] - Name of the network
+    ///  - `contract_configs`: [ContractSpec] - specifications for contracts  deployed on the network
+    ///  - `quorum_config`: Option<[QuorumConfig]> - quorum configuration. Can be None if quorum check is not needed
     ///
     /// # Returns
-    ///  client to use for building and sending transactions
+    ///  client: [LedgerClient] - client to use for building and sending transactions
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub fn new(
@@ -70,7 +71,7 @@ impl LedgerClient {
     /// Ping Ledger.
     ///
     /// # Returns
-    ///  ping status
+    ///  status: [PingStatus] - ping status
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub async fn ping(&self) -> VdrResult<PingStatus> {
@@ -84,10 +85,10 @@ impl LedgerClient {
     ///     Depending on the transaction type Write/Read ethereum methods will be used
     ///
     /// #Params
-    ///  `transaction` - transaction to submit
+    ///  `transaction`: [Transaction] - transaction to submit
     ///
     /// #Returns
-    ///  transaction execution result:
+    ///  response: [Vec] - transaction execution result:
     ///    depending on the type it will be either result bytes or block hash
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
@@ -111,10 +112,10 @@ impl LedgerClient {
     /// Submit prepared events query to the ledger
     ///
     /// #Params
-    ///  `query` - events query to submit
+    ///  `query`: [EventQuery] - events query to submit
     ///
     /// #Returns
-    ///  log events received from the ledger
+    ///  events: [Vec] - list of log events received from the ledger
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub async fn query_events(&self, query: &EventQuery) -> VdrResult<Vec<EventLog>> {
@@ -126,10 +127,10 @@ impl LedgerClient {
     /// Get receipt for the given block hash
     ///
     /// # Params
-    ///  `transaction` - transaction to submit
+    ///  `transaction`: [Transaction] - transaction to submit
     ///
     /// # Returns
-    ///  receipt for the given block
+    ///  receipt: [String] - receipt for the given block
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub async fn get_receipt(&self, hash: &[u8]) -> VdrResult<String> {
@@ -139,10 +140,10 @@ impl LedgerClient {
     /// Get a number of transactions sent by the given account address
     ///
     /// # Params
-    ///  `address` - target account address
+    ///  `address`: [Address] - target account address
     ///
     /// # Returns
-    ///  number of sent transaction
+    ///  count: [u64] - number of transaction sent by the given account
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub(crate) async fn get_transaction_count(&self, address: &Address) -> VdrResult<u64> {

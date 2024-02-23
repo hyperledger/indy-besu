@@ -3,6 +3,7 @@ use crate::{
     types::{ContractOutput, ContractParam},
 };
 
+/// Enum listing roles defined on the ledger
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Role {

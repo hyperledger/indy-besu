@@ -1,4 +1,4 @@
-use crate::{LedgerClient, VdrError, VdrResult};
+use crate::{JsonValue, LedgerClient, VdrError, VdrResult};
 use serde_json::json;
 
 use indy_besu_vdr::{did_resolver, Block, DidResolutionOptions as DidResolutionOptions_, DID};
@@ -8,14 +8,14 @@ pub async fn resolve_did(
     client: &LedgerClient,
     did: &str,
     options: Option<DidResolutionOptions>,
-) -> VdrResult<String> {
+) -> VdrResult<JsonValue> {
     let options = match options {
         Some(options) => Some(DidResolutionOptions_::try_from(options)?),
         None => None,
     };
     let did_with_meta =
         did_resolver::resolve_did(&client.client, &DID::from(did), options.as_ref()).await?;
-    Ok(json!(did_with_meta).to_string())
+    Ok(json!(did_with_meta))
 }
 
 #[derive(uniffi::Record)]

@@ -50,17 +50,13 @@ impl Web3Client {
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub fn new(node_address: &str) -> VdrResult<Web3Client> {
-        trace!("Web3Client::new >>> node_address: {}", node_address);
-
         let transport = Http::new(node_address).map_err(|_| VdrError::ClientNodeUnreachable)?;
         let web3 = Web3::new(transport);
         let web3_client = Web3Client { client: web3 };
-
-        trace!("Web3Client::new <<<");
         Ok(web3_client)
     }
 
-    pub fn eth(&self) -> Eth<Http> {
+    pub(crate) fn eth(&self) -> Eth<Http> {
         self.client.eth()
     }
 }

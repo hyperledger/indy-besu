@@ -2,7 +2,7 @@ use crate::JsonValue;
 use indy_besu_vdr::{
     ContractConfig as ContractConfig_, ContractSpec as ContractSpec_, PingStatus as PingStatus_,
     QuorumConfig as QuorumConfig_, SignatureData as SignatureData_, Status as Status_,
-    TransactionSignature as TransactionSignature_, TransactionType as TransactionType_,
+    TransactionType as TransactionType_,
 };
 
 #[derive(uniffi::Record)]
@@ -44,13 +44,6 @@ pub enum TransactionType {
 pub struct SignatureData {
     pub recovery_id: u64,
     pub signature: Vec<u8>,
-}
-
-#[derive(uniffi::Record)]
-pub struct TransactionSignature {
-    v: u64,
-    r: Vec<u8>,
-    s: Vec<u8>,
 }
 
 #[derive(uniffi::Record)]
@@ -103,7 +96,7 @@ impl Into<ContractSpec_> for ContractSpec {
     }
 }
 
-impl Into<TransactionType_> for TransactionType {
+impl Into<TransactionType_> for &TransactionType {
     fn into(self) -> TransactionType_ {
         match self {
             TransactionType::Read => TransactionType_::Read,
@@ -112,21 +105,29 @@ impl Into<TransactionType_> for TransactionType {
     }
 }
 
-impl Into<SignatureData_> for SignatureData {
-    fn into(self) -> SignatureData_ {
-        SignatureData_ {
-            recovery_id: self.recovery_id,
-            signature: self.signature,
+impl From<&TransactionType_> for TransactionType {
+    fn from(type_: &TransactionType_) -> TransactionType {
+        match type_ {
+            TransactionType_::Read => TransactionType::Read,
+            TransactionType_::Write => TransactionType::Write,
         }
     }
 }
 
-impl Into<TransactionSignature_> for TransactionSignature {
-    fn into(self) -> TransactionSignature_ {
-        TransactionSignature_ {
-            v: self.v,
-            r: self.r,
-            s: self.s,
+impl Into<SignatureData_> for &SignatureData {
+    fn into(self) -> SignatureData_ {
+        SignatureData_ {
+            recovery_id: self.recovery_id.to_owned(),
+            signature: self.signature.to_owned(),
+        }
+    }
+}
+
+impl From<&SignatureData_> for SignatureData {
+    fn from(signature: &SignatureData_) -> SignatureData {
+        SignatureData {
+            recovery_id: signature.recovery_id,
+            signature: signature.signature.clone(),
         }
     }
 }

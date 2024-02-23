@@ -8,10 +8,10 @@ use crate::{
     },
     error::VdrResult,
     types::{
-        Address, MethodStringParam, Transaction, TransactionBuilder,
-        TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
+        Address, Transaction, TransactionBuilder, TransactionEndorsingDataBuilder,
+        TransactionParser, TransactionType,
     },
-    SignatureData, TransactionEndorsingData, VdrError,
+    TransactionEndorsingData, VdrError,
 };
 
 const CONTRACT_NAME: &str = "CredentialDefinitionRegistry";
@@ -19,16 +19,15 @@ const METHOD_CREATE_CREDENTIAL_DEFINITION: &str = "createCredentialDefinition";
 const METHOD_CREATE_CREDENTIAL_DEFINITION_SIGNED: &str = "createCredentialDefinitionSigned";
 const METHOD_RESOLVE_CREDENTIAL_DEFINITION: &str = "resolveCredentialDefinition";
 
-/// Build transaction to execute CredentialDefinitionRegistry.createCredentialDefinition contract
-/// method to create a new Credential Definition
+/// Build a transaction to create a new Credential Definition record (CredentialDefinitionRegistry.createCredentialDefinition contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `credential_definition` Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `credential_definition`: [CredentialDefinition] - object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:credential-definition>`
 ///
 /// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_credential_definition_transaction(
@@ -52,14 +51,15 @@ pub async fn build_create_credential_definition_transaction(
         .await
 }
 
-/// Prepared data for endorsing CredentialDefinitionRegistry.createCredentialDefinition contract method
+/// Prepared data for endorsing creation of a new Credential Definition record
+///     (CredentialDefinitionRegistry.createCredentialDefinitionSigned contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-/// - `credential_definition` Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `credential_definition`: [CredentialDefinition] - object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:credential-definition>`
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_credential_definition_endorsing_data(
@@ -67,14 +67,11 @@ pub async fn build_create_credential_definition_endorsing_data(
     credential_definition: &CredentialDefinition,
 ) -> VdrResult<TransactionEndorsingData> {
     credential_definition.validate()?;
-    let identity = Address::try_from(&credential_definition.issuer_id)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
-        .set_identity(&identity)
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(
-            METHOD_CREATE_CREDENTIAL_DEFINITION,
-        ))?
+        .set_identity(&Address::try_from(&credential_definition.issuer_id)?)
+        .set_method(METHOD_CREATE_CREDENTIAL_DEFINITION)
+        .set_endorsing_method(METHOD_CREATE_CREDENTIAL_DEFINITION_SIGNED)
         .add_param(&credential_definition.id().without_network()?)?
         .add_param(&credential_definition.issuer_id.without_network()?)?
         .add_param(&credential_definition.schema_id.without_network()?)?
@@ -83,53 +80,15 @@ pub async fn build_create_credential_definition_endorsing_data(
         .await
 }
 
-/// Build transaction to execute CredentialDefinitionRegistry.createCredentialDefinitionSigned contract method to
-///   endorse a new Credential Definition
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-/// - `credential_definition` Credential Definition object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:credential-definition
-///  - `signature` signature of schema issuer
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_create_credential_definition_signed_transaction(
-    client: &LedgerClient,
-    from: &Address,
-    credential_definition: &CredentialDefinition,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    credential_definition.validate()?;
-    let identity = Address::try_from(&credential_definition.issuer_id)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_CREATE_CREDENTIAL_DEFINITION_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(&credential_definition.id().without_network()?)?
-        .add_param(&credential_definition.issuer_id.without_network()?)?
-        .add_param(&credential_definition.schema_id.without_network()?)?
-        .add_param(credential_definition)?
-        .set_type(TransactionType::Write)
-        .set_from(from)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute CredentialDefinitionRegistry.resolveCredentialDefinition contract
-/// method to retrieve an existing Credential Definition by the given id
+/// Build a transaction to resolve an existing Credential Definition record by the given id
+///  (CredentialDefinitionRegistry.resolveCredentialDefinition contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `id` id of Credential Definition to resolve
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `id`: [CredentialDefinitionId] - id of Credential Definition to resolve
 ///
 /// # Returns
-/// Read transaction to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_resolve_credential_definition_transaction(
@@ -149,11 +108,11 @@ pub async fn build_resolve_credential_definition_transaction(
 /// method to receive a Credential Definition associated with the id
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-/// parsed Credential Definition
+///   record: [CredentialDefinitionRecord] - parsed Credential Definition Record
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_resolve_credential_definition_result(
@@ -169,11 +128,11 @@ pub fn parse_resolve_credential_definition_result(
 /// Single step function to resolve a Credential Definition for the given ID
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `id` id of credential definition to resolve
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `id`: [CredentialDefinitionId] - id of credential definition to resolve
 ///
 /// # Returns
-///   Resolved Credential Definition object
+///   credential_definition: [CredentialDefinition] - Resolved Credential Definition object
 pub async fn resolve_credential_definition(
     client: &LedgerClient,
     id: &CredentialDefinitionId,
@@ -225,7 +184,6 @@ pub mod test {
         },
     };
     use rstest::rstest;
-    use std::sync::RwLock;
 
     mod build_create_credential_definition_transaction {
         use super::*;
@@ -239,7 +197,6 @@ pub mod test {
                 &SchemaId::from(SCHEMA_ID),
                 Some(CREDENTIAL_DEFINITION_TAG),
             );
-            println!("cred_def {:?}", cred_def);
             let transaction =
                 build_create_credential_definition_transaction(&client, &TEST_ACCOUNT, &cred_def)
                     .await
@@ -283,7 +240,7 @@ pub mod test {
                     56, 57, 51, 34, 44, 34, 122, 34, 58, 34, 54, 51, 50, 46, 46, 46, 48, 48, 53,
                     34, 125, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -343,7 +300,7 @@ pub mod test {
                     127, 142, 109, 135, 11, 231, 119, 100, 109, 44, 92, 49, 82, 133, 141, 241, 182,
                     157,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);

@@ -19,6 +19,7 @@ identity = {
 network = 'test'
 project_root = f"{os.getcwd()}/../../.."
 
+
 def sign(secret: str, data: bytes):
     signature = keys.PrivateKey(bytearray.fromhex(secret)).sign_msg_hash(data)
     rec_id = int(signature[-1:][0])
@@ -54,47 +55,45 @@ async def demo():
     print("2. Publish DID")
     did = 'did:ethr:' + identity['address']
     service_attribute = {"serviceEndpoint": "http://10.0.0.2", "type": "TestService"}
-    endorsing_data = await build_did_set_attribute_endorsing_data(client, did, json.dumps(service_attribute), 1000)
+    endorsing_data = await DidEthrRegistry.build_did_set_attribute_endorsing_data(client, did, service_attribute, 1000)
     identity_signature = sign(identity["secret"], endorsing_data.get_signing_bytes())
-    transaction = await build_did_set_attribute_signed_transaction(client, trustee["address"], did,
-                                                                   json.dumps(service_attribute), 1000,
-                                                                   identity_signature)
+    endorsing_data.set_signature(identity_signature)
+    transaction = await Endorsement.build_endorsement_transaction(client, trustee["address"], endorsing_data)
     trustee_signature = sign(trustee["secret"], transaction.get_signing_bytes())
     transaction.set_signature(trustee_signature)
     txn_hash = await client.submit_transaction(transaction)
     print(' Transaction hash: ' + bytes(txn_hash).hex())
     receipt = await client.get_receipt(txn_hash)
-    print(' Transaction receipt: ' + str(receipt))
+    print(' Transaction receipt: ' + receipt)
 
     print("3. Resolve DID Document")
-    resolved_did_doc = await resolve_did(client, did, None)
+    resolved_did_doc = await DidResolver.resolve_did(client, did, None)
     print(' Resolved DID Document:' + resolved_did_doc)
 
     print("4. Publish Schema")
     name = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
-    schema_id = did + '/anoncreds/v0/SCHEMA/' + name + '/1.0.0'
-    schema = {
-        "attrNames": ["First Name", "Last Name"],
-        "issuerId": did,
-        "name": name,
-        "version": "1.0.0"
-    }
-    endorsing_data = await build_create_schema_endorsing_data(client, json.dumps(schema))
+    schema = Schema(did, name, "1.0.0", ["First Name", "Last Name"])
+    endorsing_data = await SchemaRegistry.build_create_schema_endorsing_data(client, schema)
     identity_signature = sign(identity["secret"], endorsing_data.get_signing_bytes())
-    transaction = await build_create_schema_signed_transaction(client,
-                                                               trustee["address"],
-                                                               json.dumps(schema),
-                                                               identity_signature)
+    endorsing_data.set_signature(identity_signature)
+
+    # Author: serialize endorsement data into JSON string and pass it to trustee
+    endorsing_data_json = endorsing_data.to_string()
+    print('  Schema transaction endorsement data: ' + endorsing_data_json)
+    # Trustee: deserialize endorsement data form json
+    schema_endorsing_data = TransactionEndorsingData.from_string(endorsing_data_json)
+    transaction = await Endorsement.build_endorsement_transaction(client, trustee["address"], schema_endorsing_data)
     trustee_signature = sign(trustee["secret"], transaction.get_signing_bytes())
     transaction.set_signature(trustee_signature)
     txn_hash = await client.submit_transaction(transaction)
     print(' Transaction hash: ' + bytes(txn_hash).hex())
     receipt = await client.get_receipt(txn_hash)
-    print(' Transaction receipt: ' + str(receipt))
+    print(' Transaction receipt: ' + receipt)
 
     print("5. Resolve Schema")
-    resolved_schema = await resolve_schema(client, schema_id)
-    print(' Resolved Schema:' + resolved_schema)
+    resolved_schema = await SchemaRegistry.resolve_schema(client, schema.id)
+    print(' Resolved Schema:' + resolved_schema.to_string())
+
 
 if __name__ == "__main__":
     asyncio.get_event_loop().run_until_complete(demo())

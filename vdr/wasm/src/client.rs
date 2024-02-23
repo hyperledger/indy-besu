@@ -54,6 +54,7 @@ impl LedgerClientWrapper {
         let client = self.0.clone();
         let transaction = transaction.0.clone();
         future_to_promise(async move {
+            let transaction = transaction.borrow();
             let response = client.submit_transaction(&transaction).await.as_js()?;
             let result: JsValue = serde_wasm_bindgen::to_value(&response)?;
             Ok(result)

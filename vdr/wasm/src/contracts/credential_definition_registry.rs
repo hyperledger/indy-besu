@@ -1,6 +1,6 @@
 use indy_besu_vdr::{
     credential_definition_registry, Address, CredentialDefinition, CredentialDefinitionId,
-    SignatureData,
+    SchemaId, SignatureType, DID,
 };
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -20,56 +20,34 @@ impl CredentialDefinitionRegistry {
     pub async fn build_create_credential_definition_transaction(
         client: &LedgerClientWrapper,
         from: &str,
-        cred_def: JsValue,
+        cred_def: CredentialDefinitionWrapper,
     ) -> Result<TransactionWrapper> {
         let client = client.0.clone();
-        let cred_def: CredentialDefinition = serde_wasm_bindgen::from_value(cred_def)?;
         let address = Address::from(from);
-        let transaction =
-            credential_definition_registry::build_create_credential_definition_transaction(
-                &client, &address, &cred_def,
-            )
-            .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        credential_definition_registry::build_create_credential_definition_transaction(
+            &client,
+            &address,
+            &cred_def.0,
+        )
+        .await
+        .as_js()
+        .map(TransactionWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildCreateCredentialDefinitionEndorsingData)]
     pub async fn build_create_credential_definition_endorsing_data(
         client: &LedgerClientWrapper,
-        cred_def: JsValue,
+        cred_def: CredentialDefinitionWrapper,
     ) -> Result<TransactionEndorsingDataWrapper> {
-        let cred_def: CredentialDefinition = serde_wasm_bindgen::from_value(cred_def)?;
-        let data =
-            credential_definition_registry::build_create_credential_definition_endorsing_data(
-                &client.0, &cred_def,
-            )
-            .await
-            .as_js()?;
-        Ok(TransactionEndorsingDataWrapper(Rc::new(data)))
-    }
-
-    #[wasm_bindgen(js_name = buildCreateCredentialDefinitionSignedTransaction)]
-    pub async fn build_create_credential_definition_signed_transaction(
-        client: &LedgerClientWrapper,
-        from: &str,
-        cred_def: JsValue,
-        signature_data: JsValue,
-    ) -> Result<TransactionWrapper> {
-        let client = client.0.clone();
-        let cred_def: CredentialDefinition = serde_wasm_bindgen::from_value(cred_def)?;
-        let address = Address::from(from);
-        let signature_data: SignatureData = serde_wasm_bindgen::from_value(signature_data)?;
-        let transaction =
-            credential_definition_registry::build_create_credential_definition_signed_transaction(
-                &client,
-                &address,
-                &cred_def,
-                &signature_data,
-            )
-            .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        credential_definition_registry::build_create_credential_definition_endorsing_data(
+            &client.0,
+            &cred_def.0,
+        )
+        .await
+        .as_js()
+        .map(TransactionEndorsingDataWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildResolveCredentialDefinitionTransaction)]
@@ -78,13 +56,13 @@ impl CredentialDefinitionRegistry {
         id: &str,
     ) -> Result<TransactionWrapper> {
         let id = CredentialDefinitionId::from(id);
-        let transaction =
-            credential_definition_registry::build_resolve_credential_definition_transaction(
-                &client.0, &id,
-            )
-            .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        credential_definition_registry::build_resolve_credential_definition_transaction(
+            &client.0, &id,
+        )
+        .await
+        .as_js()
+        .map(TransactionWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = parseResolveCredentialDefinitionResult)]
@@ -104,13 +82,64 @@ impl CredentialDefinitionRegistry {
     pub async fn resolve_credential_definition(
         client: &LedgerClientWrapper,
         id: &str,
-    ) -> Result<JsValue> {
+    ) -> Result<CredentialDefinitionWrapper> {
         let id = CredentialDefinitionId::from(id);
-        let cred_def =
-            credential_definition_registry::resolve_credential_definition(&client.0, &id)
-                .await
-                .as_js()?;
-        let result: JsValue = serde_wasm_bindgen::to_value(&cred_def)?;
-        Ok(result)
+        credential_definition_registry::resolve_credential_definition(&client.0, &id)
+            .await
+            .as_js()
+            .map(CredentialDefinitionWrapper::from)
+            .map_err(JsValue::from)
+    }
+}
+
+#[wasm_bindgen(js_name = CredentialDefinition)]
+pub struct CredentialDefinitionWrapper(pub(crate) Rc<CredentialDefinition>);
+
+#[wasm_bindgen(js_class = CredentialDefinition)]
+impl CredentialDefinitionWrapper {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        issuer_id: String,
+        schema_id: String,
+        tag: String,
+        value: JsValue,
+    ) -> CredentialDefinitionWrapper {
+        let value: serde_json::Value = serde_wasm_bindgen::from_value(value).unwrap_or_default();
+        CredentialDefinitionWrapper(Rc::new(CredentialDefinition {
+            issuer_id: DID::from(issuer_id.as_str()),
+            schema_id: SchemaId::from(schema_id.as_str()),
+            cred_def_type: SignatureType::CL,
+            tag,
+            value,
+        }))
+    }
+
+    #[wasm_bindgen(js_name = getId)]
+    pub fn get_id(&self) -> String {
+        self.0.id().as_ref().to_string()
+    }
+
+    #[wasm_bindgen(js_name = toString)]
+    pub fn to_string(&self) -> Result<String> {
+        self.0.to_string().as_js().map_err(JsValue::from)
+    }
+
+    #[wasm_bindgen(js_name = fromString)]
+    pub fn from_string(string: &str) -> Result<CredentialDefinitionWrapper> {
+        CredentialDefinition::from_string(string)
+            .as_js()
+            .map(CredentialDefinitionWrapper::from)
+            .map_err(JsValue::from)
+    }
+
+    #[wasm_bindgen(js_name = asValue)]
+    pub fn as_value(&self) -> Result<JsValue> {
+        serde_wasm_bindgen::to_value(&*self.0).map_err(JsValue::from)
+    }
+}
+
+impl From<CredentialDefinition> for CredentialDefinitionWrapper {
+    fn from(data: CredentialDefinition) -> CredentialDefinitionWrapper {
+        CredentialDefinitionWrapper(Rc::new(data))
     }
 }

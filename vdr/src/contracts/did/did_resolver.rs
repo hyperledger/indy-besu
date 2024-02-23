@@ -22,12 +22,12 @@ use crate::{
 /// Single step function to resolve a DidDocument with metadata for the given DID
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `did` DID to get a DID Document and metadata
-/// - `options` Resolution options
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `did`: [DID] - DID to get a DID Document and metadata
+/// - `options`: [DidResolutionOptions] - Resolution options
 ///
 /// # Returns
-///   Parsed DID event object
+///   did_with_meta: [DidDocumentWithMeta] - resolved DID Document with associate metadata
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn resolve_did(

@@ -1,5 +1,4 @@
 use indy_besu_vdr::{role_control, Address, Role};
-use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -23,11 +22,11 @@ impl RoleControl {
         let role = Role::try_from(role).as_js()?;
         let from = Address::from(from);
         let account = Address::from(account);
-        let transaction =
-            role_control::build_assign_role_transaction(&client.0, &from, &role, &account)
-                .await
-                .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        role_control::build_assign_role_transaction(&client.0, &from, &role, &account)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildRevokeRoleTransaction)]
@@ -40,11 +39,11 @@ impl RoleControl {
         let role = Role::try_from(role).as_js()?;
         let from = Address::from(from);
         let account = Address::from(account);
-        let transaction =
-            role_control::build_revoke_role_transaction(&client.0, &from, &role, &account)
-                .await
-                .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        role_control::build_revoke_role_transaction(&client.0, &from, &role, &account)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildHasRoleTransaction)]
@@ -55,10 +54,11 @@ impl RoleControl {
     ) -> Result<TransactionWrapper> {
         let role = Role::try_from(role).as_js()?;
         let account = Address::from(account);
-        let transaction = role_control::build_has_role_transaction(&client.0, &role, &account)
+        role_control::build_has_role_transaction(&client.0, &role, &account)
             .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildGetRoleTransaction)]
@@ -67,10 +67,11 @@ impl RoleControl {
         account: &str,
     ) -> Result<TransactionWrapper> {
         let account = Address::from(account);
-        let transaction = role_control::build_get_role_transaction(&client.0, &account)
+        role_control::build_get_role_transaction(&client.0, &account)
             .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = parseHasRoleResult)]

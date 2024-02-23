@@ -20,8 +20,12 @@ pub use contracts::{
     anoncreds::{
         credential_definition_registry, schema_registry,
         types::{
-            credential_definition::CredentialDefinition,
-            credential_definition_id::CredentialDefinitionId, schema::Schema, schema_id::SchemaId,
+            credential_definition::{
+                CredentialDefinition, CredentialDefinitionRecord, SignatureType,
+            },
+            credential_definition_id::CredentialDefinitionId,
+            schema::{Schema, SchemaRecord},
+            schema_id::SchemaId,
         },
     },
     auth::{role_control, Role},
@@ -30,8 +34,8 @@ pub use contracts::{
         types::{
             did::DID,
             did_doc::{
-                DidDocument, DidResolutionOptions, Service, ServiceEndpoint, ServiceEndpointObject,
-                VerificationKeyType,
+                DidDocument, DidDocumentWithMeta, DidRecord, DidResolutionOptions, Service,
+                ServiceEndpoint, ServiceEndpointObject, StringOrVector, VerificationKeyType,
             },
             did_doc_attribute::{
                 DelegateType, DidDocAttribute, PublicKeyAttribute, PublicKeyPurpose, PublicKeyType,
@@ -41,6 +45,7 @@ pub use contracts::{
             did_events::{DidAttributeChanged, DidDelegateChanged, DidEvents, DidOwnerChanged},
         },
     },
+    endorsing,
     migration::{
         legacy_mapping_registry,
         types::{
@@ -50,7 +55,6 @@ pub use contracts::{
         },
     },
     network::validator_control,
-    StringOrVector,
 };
 pub use error::{VdrError, VdrResult};
 pub use types::*;

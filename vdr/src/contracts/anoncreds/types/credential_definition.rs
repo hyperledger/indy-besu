@@ -7,6 +7,7 @@ use crate::{
 use crate::contracts::{anoncreds::types::schema_id::SchemaId, did::types::did::DID};
 use serde_derive::{Deserialize, Serialize};
 
+/// Credential Definition Record stored in the Registry
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialDefinitionRecord {
@@ -16,6 +17,7 @@ pub struct CredentialDefinitionRecord {
 
 pub use indy_data_types::anoncreds::cred_def::SignatureType;
 
+/// Definition of AnonCreds Credential Definition object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:credential-definition>`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CredentialDefinition {
     #[serde(rename = "issuerId")]
@@ -63,6 +65,15 @@ impl CredentialDefinition {
         }
 
         Ok(())
+    }
+
+    pub fn to_string(&self) -> VdrResult<String> {
+        serde_json::to_string(self).map_err(|err| {
+            VdrError::InvalidCredentialDefinition(format!(
+                "Unable to serialize Credential Definition as JSON. Err: {:?}",
+                err
+            ))
+        })
     }
 
     pub fn from_string(value: &str) -> VdrResult<CredentialDefinition> {

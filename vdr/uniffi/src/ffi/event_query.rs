@@ -1,35 +1,35 @@
 use indy_besu_vdr::{Address, Block, EventLog as EventLog_, EventQuery as EventQuery_};
 
-#[derive(uniffi::Object)]
+#[derive(uniffi::Record)]
 pub struct EventQuery {
-    pub query: EventQuery_,
+    pub address: String,
+    pub from_block: Option<u64>,
+    pub to_block: Option<u64>,
+    pub event_signature: Option<String>,
+    pub event_filter: Option<String>,
 }
 
-#[uniffi::export]
-impl EventQuery {
-    #[uniffi::constructor]
-    pub fn new(
-        address: String,
-        from_block: Option<u64>,
-        to_block: Option<u64>,
-        event_signature: Option<String>,
-        event_filter: Option<String>,
-    ) -> EventQuery {
-        EventQuery {
-            query: EventQuery_ {
-                address: Address::from(address.as_str()),
-                from_block: from_block.map(Block::from),
-                to_block: to_block.map(Block::from),
-                event_signature,
-                event_filter,
-            },
+impl From<&EventQuery> for EventQuery_ {
+    fn from(query: &EventQuery) -> Self {
+        EventQuery_ {
+            address: Address::from(query.address.as_ref()),
+            from_block: query.from_block.map(Block::from),
+            to_block: query.to_block.map(Block::from),
+            event_signature: query.event_signature.to_owned(),
+            event_filter: query.event_filter.to_owned(),
         }
     }
 }
 
 impl From<EventQuery_> for EventQuery {
     fn from(query: EventQuery_) -> Self {
-        EventQuery { query }
+        EventQuery {
+            address: query.address.as_ref().to_string(),
+            from_block: query.from_block.map(|block| block.value()),
+            to_block: query.to_block.map(|block| block.value()),
+            event_signature: query.event_signature,
+            event_filter: query.event_filter,
+        }
     }
 }
 

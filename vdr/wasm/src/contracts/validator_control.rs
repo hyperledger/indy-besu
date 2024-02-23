@@ -1,5 +1,4 @@
 use indy_besu_vdr::{validator_control, Address};
-use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -21,14 +20,11 @@ impl ValidatorControl {
     ) -> Result<TransactionWrapper> {
         let from = Address::from(from);
         let validator_address = Address::from(validator_address);
-        let transaction = validator_control::build_add_validator_transaction(
-            &client.0,
-            &from,
-            &validator_address,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        validator_control::build_add_validator_transaction(&client.0, &from, &validator_address)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildRemoveValidatorTransaction)]
@@ -39,24 +35,22 @@ impl ValidatorControl {
     ) -> Result<TransactionWrapper> {
         let from = Address::from(from);
         let validator_address = Address::from(validator_address);
-        let transaction = validator_control::build_remove_validator_transaction(
-            &client.0,
-            &from,
-            &validator_address,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        validator_control::build_remove_validator_transaction(&client.0, &from, &validator_address)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildGetValidatorsTransaction)]
     pub async fn build_get_validators_transaction(
         client: &LedgerClientWrapper,
     ) -> Result<TransactionWrapper> {
-        let transaction = validator_control::build_get_validators_transaction(&client.0)
+        validator_control::build_get_validators_transaction(&client.0)
             .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = parseGetValidatorsResult)]

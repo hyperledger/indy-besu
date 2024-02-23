@@ -12,6 +12,7 @@ use std::str::FromStr;
 const PREFIX: &str = "0x";
 const NULL_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
 
+/// Wrapper structure for Ethereum account address
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Address(String);
 

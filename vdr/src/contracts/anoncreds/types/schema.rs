@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use crate::contracts::did::types::did::DID;
 use serde_derive::{Deserialize, Serialize};
 
+/// Schema Record stored in the Registry
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaRecord {
@@ -15,6 +16,7 @@ pub struct SchemaRecord {
     pub metadata: SchemaMetadata,
 }
 
+/// Definition of AnonCreds Schema object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:schema>`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Schema {
     #[serde(rename = "issuerId")]
@@ -62,6 +64,15 @@ impl Schema {
         }
 
         Ok(())
+    }
+
+    pub fn to_string(&self) -> VdrResult<String> {
+        serde_json::to_string(self).map_err(|err| {
+            VdrError::InvalidSchema(format!(
+                "Unable to serialize Schema as JSON. Err: {:?}",
+                err
+            ))
+        })
     }
 
     pub fn from_string(value: &str) -> VdrResult<Schema> {

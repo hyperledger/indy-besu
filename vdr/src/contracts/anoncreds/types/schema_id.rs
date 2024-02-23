@@ -4,6 +4,7 @@ use crate::contracts::types::did::ParsedDid;
 use serde_derive::{Deserialize, Serialize};
 use sha3::Digest;
 
+/// Wrapper structure for AnonCreds Schema ID
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct SchemaId(String);
 

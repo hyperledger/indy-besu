@@ -13,6 +13,7 @@ pub const SECPK_CONTEXT: &str = "https://w3id.org/security/suites/secp256k1recov
 pub const KEYS_CONTEXT: &str = "https://w3id.org/security/v3-unstable";
 pub const DID_RESOLUTION_FORMAT: &str = "application/did+ld+json";
 
+/// DID Document with associate metadata
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocumentWithMeta {
@@ -37,6 +38,7 @@ pub struct DidResolutionOptions {
     pub block_tag: Option<Block>,
 }
 
+/// Definition of DID Document object matching to the specification - `<https://www.w3.org/TR/did-core/>`
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
@@ -68,6 +70,7 @@ pub struct DidDocument {
     pub also_known_as: Option<Vec<String>>,
 }
 
+/// DID Record stored in the IndyBesu DID Registry
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DidRecord {

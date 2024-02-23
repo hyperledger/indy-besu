@@ -3,7 +3,7 @@ import secp256k1 from "secp256k1";
 
 import { readFileSync } from "fs";
 import { resolve } from 'path'
-import { LedgerClient, EthrDidRegistry, DidResolver, SchemaRegistry } from "indy-besu-vdr";
+import { LedgerClient, EthrDidRegistry, DidResolver, SchemaRegistry, Endorsement, Schema } from "indy-besu-vdr";
 
 const projectRootPath = resolve('../../../..')
 const trustee = {
@@ -55,7 +55,8 @@ async function demo() {
     const validity = BigInt(1000)
     let endorsingData = await EthrDidRegistry.buildDidSetAttributeEndorsingData(client, did, serviceAttribute, validity)
     let authorSignature = sign(endorsingData.getSigningBytes(), identity.secret)
-    let transaction = await EthrDidRegistry.buildDidSetAttributeSignedTransaction(client, trustee.address, did, serviceAttribute, validity, authorSignature)
+    endorsingData.setSignature(authorSignature)
+    let transaction = await Endorsement.buildEndorsementTransaction(client, trustee.address, endorsingData)
     let transactionSignature = sign(transaction.getSigningBytes(), trustee.secret)
     transaction.setSignature(transactionSignature)
     let txnHash = await client.submitTransaction(transaction)
@@ -68,16 +69,11 @@ async function demo() {
 
     console.log('4. Publish Schema')
     const name  = (Math.random() + 1).toString(36).substring(7)
-    const schemaId = `${did}/anoncreds/v0/SCHEMA/${name}/1.0.0`
-    const schema = {
-        "attrNames": [ "First Name", "Last Name" ],
-        "issuerId": did,
-        "name": name,
-        "version": "1.0.0"
-    }
+    let schema = new Schema(did, name, "1.0.0", [ "First Name", "Last Name" ])
     let schemaEndorsingData = await SchemaRegistry.buildCreateSchemaEndorsingData(client, schema)
     authorSignature =  sign(schemaEndorsingData.getSigningBytes(), identity.secret)
-    transaction = await SchemaRegistry.buildCreateSchemaSignedTransaction(client, trustee.address, schema, authorSignature)
+    schemaEndorsingData.setSignature(authorSignature)
+    transaction = await Endorsement.buildEndorsementTransaction(client, trustee.address, schemaEndorsingData)
     transactionSignature = sign(transaction.getSigningBytes(), trustee.secret)
     transaction.setSignature(transactionSignature)
     txnHash = await client.submitTransaction(transaction)
@@ -85,8 +81,8 @@ async function demo() {
     console.log('   Schema Transaction receipt: ' + receipt)
 
     console.log('5. Resolve Schema')
-    const resolvedSchema = await SchemaRegistry.resolveSchema(client, schemaId)
-    console.log('   Resolved Schema: ' + JSON.stringify(resolvedSchema, null, 2))
+    const resolvedSchema = await SchemaRegistry.resolveSchema(client, schema.getId())
+    console.log('   Resolved Schema: ' + resolvedSchema.toString())
 }
 
 async function main() {

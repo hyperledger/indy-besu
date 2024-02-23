@@ -9,10 +9,10 @@ use crate::{
     },
     error::VdrResult,
     types::{
-        Address, MethodStringParam, Transaction, TransactionBuilder,
-        TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
+        Address, Transaction, TransactionBuilder, TransactionEndorsingDataBuilder,
+        TransactionParser, TransactionType,
     },
-    SignatureData, TransactionEndorsingData, DID,
+    TransactionEndorsingData, DID,
 };
 
 const CONTRACT_NAME: &str = "LegacyMappingRegistry";
@@ -23,19 +23,19 @@ const METHOD_CREATE_RESOURCE_MAPPING_SIGNED: &str = "createResourceMappingSigned
 const METHOD_DID_MAPPING: &str = "didMapping";
 const METHOD_RESOURCE_MAPPING: &str = "resourceMapping";
 
-/// Build transaction to execute LegacyMappingRegistry.createDidMapping contract method to
-///  create a legacy DID identifier mapping
+/// Build a transaction to create a legacy DID identifier mapping
+///     (LegacyMappingRegistry.createDidMapping contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address (new account)
-/// - `did` new DID
-/// - `legacy_identifier` identifier of legacy sov/indy DID
-/// - `legacy_verkey` Ed25519 verification key of the legacy DID identifier.
-/// - `ed25519_signature` ED25519 signature to prove key possession.
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address (new account)
+/// - `did`: [DID] - new DID
+/// - `legacy_identifier`: [LegacyDid] - identifier of legacy sov/indy DID
+/// - `legacy_verkey`: [LegacyVerkey] - Ed25519 verification key of the legacy DID identifier.
+/// - `ed25519_signature`: [Ed25519Signature] - ED25519 signature to prove key possession.
 ///
 /// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_did_mapping_transaction(
@@ -61,17 +61,18 @@ pub async fn build_create_did_mapping_transaction(
         .await
 }
 
-/// Prepared data for execution of LegacyMappingRegistry.createDidMapping contract method to endorse a new DID mapping
+/// Prepared data for endorsing creation of a legacy DID identifier mapping
+///     (LegacyMappingRegistry.createDidMappingSigned contract method)
 ///
 /// #Params
-/// - `client` client connected to the network where contract will be executed
-/// - `did` new DID
-/// - `legacy_identifier` identifier of legacy sov/indy DID
-/// - `legacy_verkey` Ed25519 verification key of the legacy DID identifier.
-/// - `ed25519_signature` ED25519 signature to prove key possession.
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `did`: [DID] - new DID
+/// - `legacy_identifier`: [LegacyDid] - identifier of legacy sov/indy DID
+/// - `legacy_verkey`: [LegacyVerkey] - Ed25519 verification key of the legacy DID identifier.
+/// - `ed25519_signature`: [Ed25519Signature] - ED25519 signature to prove key possession.
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_did_mapping_endorsing_data(
@@ -81,12 +82,11 @@ pub async fn build_create_did_mapping_endorsing_data(
     legacy_verkey: &LegacyVerkey,
     ed25519_signature: &Ed25519Signature,
 ) -> VdrResult<TransactionEndorsingData> {
-    let identity = Address::try_from(did)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
-        .set_identity(&identity)
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_CREATE_DID_MAPPING))?
+        .set_identity(&Address::try_from(did)?)
+        .set_method(METHOD_CREATE_DID_MAPPING)
+        .set_endorsing_method(METHOD_CREATE_DID_MAPPING_SIGNED)
         .add_param(legacy_identifier)?
         .add_param(&did.without_network()?)?
         .add_param(legacy_verkey)?
@@ -95,59 +95,15 @@ pub async fn build_create_did_mapping_endorsing_data(
         .await
 }
 
-/// Build transaction to execute LegacyMappingRegistry.createDidMappingSigned contract method to
-///  endorse a legacy DID identifier mapping
-/// Endorsing version of the method - sender is not identity owner
+/// Build a transaction to resolve new identity DID for the given legacy DID identifier
+///  (LegacyMappingRegistry.didMapping contract method)
 ///
 /// #Params
-/// - `client` client connected to the network where contract will be executed
-/// - `sender` transaction sender account address (new account)
-/// - `did` new DID
-/// - `legacy_identifier` identifier of legacy sov/indy DID
-/// - `legacy_verkey` Ed25519 verification key of the legacy DID identifier.
-/// - `ed25519_signature` ED25519 signature to prove key possession.
-/// - `signature` signature of DID identity owner
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `legacy_identifier`: [LegacyDid] - identifier of legacy sov/indy DID
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_create_did_mapping_signed_transaction(
-    client: &LedgerClient,
-    from: &Address,
-    did: &DID,
-    legacy_identifier: &LegacyDid,
-    legacy_verkey: &LegacyVerkey,
-    ed25519_signature: &Ed25519Signature,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_CREATE_DID_MAPPING_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(legacy_identifier)?
-        .add_param(&did.without_network()?)?
-        .add_param(legacy_verkey)?
-        .add_param(ed25519_signature)?
-        .set_type(TransactionType::Write)
-        .set_from(from)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute LegacyMappingRegistry.didMapping contract method to get
-///   new identity DID for legacy DID identifier
-///
-/// #Params
-/// - `client` client connected to the network where contract will be executed
-/// - `legacy_identifier` identifier of legacy sov/indy DID
-///
-/// #Returns
-///   transaction: Transaction - prepared read transaction object to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_get_did_mapping_transaction(
@@ -167,8 +123,8 @@ pub async fn build_get_did_mapping_transaction(
 ///   new identity DID for legacy DID identifier
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
 ///   Identity DID
@@ -181,19 +137,19 @@ pub fn parse_did_mapping_result(client: &LedgerClient, bytes: &[u8]) -> VdrResul
         .parse::<DID>(client, bytes)
 }
 
-/// Build transaction to execute LegacyMappingRegistry.createResourceMapping contract method to
-///  create mapping of legacy schema/credential definition identifier to new one.
+/// Build a transaction to create a mapping of legacy schema/credential definition identifier to new one
+///  (LegacyMappingRegistry.createResourceMapping contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address (new account)
-/// - `did` new DID
-/// - `legacy_issuer_identifier` identifier of legacy sov/indy DID
-/// - `legacy_identifier` legacy identifier.
-/// - `new_identifier` new identifier.
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address (new account)
+/// - `did`: [DID] - new DID
+/// - `legacy_issuer_identifier`: [LegacyDid] - identifier of legacy sov/indy DID
+/// - `legacy_identifier`: [ResourceIdentifier] - legacy identifier.
+/// - `new_identifier`: [ResourceIdentifier] - new identifier.
 ///
 /// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_resource_mapping_transaction(
@@ -218,18 +174,18 @@ pub async fn build_create_resource_mapping_transaction(
         .await
 }
 
-/// Prepared data for execution of LegacyMappingRegistry.createResourceMapping contract method to
-///     endorse a new resource mapping.
+/// Prepared data for endorsing creation of a new resource mapping
+///     (LegacyMappingRegistry.createResourceMappingSigned contract method)
 ///
 /// #Params
-/// - `client` client connected to the network where contract will be executed
-/// - `did` new DID
-/// - `legacy_issuer_identifier` identifier of legacy sov/indy DID
-/// - `legacy_identifier` legacy identifier.
-/// - `new_identifier` new identifier.
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `did`: [DID] - new DID
+/// - `legacy_issuer_identifier`: [LegacyDid] - identifier of legacy sov/indy DID
+/// - `legacy_identifier`: [ResourceIdentifier] - legacy identifier.
+/// - `new_identifier`: [ResourceIdentifier] - new identifier.
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_resource_mapping_endorsing_data(
@@ -239,12 +195,11 @@ pub async fn build_create_resource_mapping_endorsing_data(
     legacy_identifier: &ResourceIdentifier,
     new_identifier: &ResourceIdentifier,
 ) -> VdrResult<TransactionEndorsingData> {
-    let identity = Address::try_from(did)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
-        .set_identity(&identity)
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_CREATE_RESOURCE_MAPPING))?
+        .set_identity(&Address::try_from(did)?)
+        .set_method(METHOD_CREATE_RESOURCE_MAPPING)
+        .set_endorsing_method(METHOD_CREATE_RESOURCE_MAPPING_SIGNED)
         .add_param(legacy_issuer_identifier)?
         .add_param(legacy_identifier)?
         .add_param(new_identifier)?
@@ -252,57 +207,15 @@ pub async fn build_create_resource_mapping_endorsing_data(
         .await
 }
 
-/// Build transaction to execute LegacyMappingRegistry.createResourceMappingSigned contract method to
-///  endorse a legacy DID identifier mapping
-/// Endorsing version of the method - sender is not identity owner
+/// Build a transaction to resolve new identifier for the given legacy Schema/CredentialDefinition ID
+///  (LegacyMappingRegistry.resourceMapping contract method)
 ///
 /// #Params
-/// - `client` client connected to the network where contract will be executed
-/// - `identity` transaction sender account address (new account)
-/// - `legacy_issuer_identifier` identifier of legacy sov/indy DID
-/// - `legacy_identifier` legacy identifier.
-/// - `new_identifier` new identifier.
-/// - `signature` signature of DID identity owner
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `legacy_identifier`: [ResourceIdentifier] - identifier of legacy Schema/CredentialDefinition
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_create_resource_mapping_signed_transaction(
-    client: &LedgerClient,
-    from: &Address,
-    did: &DID,
-    legacy_issuer_identifier: &LegacyDid,
-    legacy_identifier: &ResourceIdentifier,
-    new_identifier: &ResourceIdentifier,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_CREATE_RESOURCE_MAPPING_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(legacy_issuer_identifier)?
-        .add_param(legacy_identifier)?
-        .add_param(new_identifier)?
-        .set_type(TransactionType::Write)
-        .set_from(from)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute LegacyMappingRegistry.resourceMapping contract method to get
-///   new identifier for a legacy Schema/CredentialDefinition
-///
-/// #Params
-/// - `client` client connected to the network where contract will be executed
-/// - `legacy_identifier` identifier of legacy Schema/CredentialDefinition
-///
-/// #Returns
-///   transaction: Transaction - prepared read transaction object to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_get_resource_mapping_transaction(
@@ -322,8 +235,8 @@ pub async fn build_get_resource_mapping_transaction(
 ///   new identifier for a legacy Schema/CredentialDefinition
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
 ///   New identifier
@@ -346,8 +259,6 @@ pub mod test {
         client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TEST_ACCOUNT},
         contracts::{did::types::did::DID, types::did_doc::test::TEST_ETHR_DID},
     };
-
-    use std::sync::RwLock;
 
     const LEGACY_DID: &str = "VsKV7grR1BUE29mG2Fm2kX";
     const LEGACY_VERKEY: &str = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
@@ -397,7 +308,7 @@ pub mod test {
                     1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -427,7 +338,7 @@ pub mod test {
                     103, 114, 82, 49, 66, 85, 69, 50, 57, 109, 71, 50, 70, 109, 50, 107, 88, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -478,7 +389,7 @@ pub mod test {
                     47, 116, 101, 115, 116, 95, 99, 114, 101, 100, 101, 110, 116, 105, 97, 108, 47,
                     49, 46, 48, 46, 48, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -511,7 +422,7 @@ pub mod test {
                     50, 58, 116, 101, 115, 116, 95, 99, 114, 101, 100, 101, 110, 116, 105, 97, 108,
                     58, 49, 46, 48, 46, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);

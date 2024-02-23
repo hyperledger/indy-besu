@@ -4,6 +4,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Wrapper structure for resource identifier (Schema Id / Credential Definition Id)
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ResourceIdentifier(String);
 
