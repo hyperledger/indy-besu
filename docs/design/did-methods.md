@@ -137,7 +137,7 @@ remaining in the DID URL for a Cred Def in future versions of the `did:indybesu`
 
 ## Security Considerations
 
-Hyperledger Indy is a public, permissioned distributed ledger that uses ЙBFT to establish a consensus between upfront well-authenticated nodes. The security mechanisms by Hyperledger Indy Besu and Hyperledger Besu guarantee the correct processing of requests and transactions according to the rules, which are themselves part of the consensus on the ledger. In particular, this enables the creation and update of schemas, credential definitions and DIDs by their owners by authenticating with the corresponding public keys stored on the ledger.
+Hyperledger Indy is a public, permissioned distributed ledger that uses QBFT to establish a consensus between upfront well-authenticated nodes. The security mechanisms by Hyperledger Indy Besu and Hyperledger Besu guarantee the correct processing of requests and transactions according to the rules, which are themselves part of the consensus on the ledger. In particular, this enables the creation and update of schemas, credential definitions and DIDs by their owners by authenticating with the corresponding public keys stored on the ledger.
 
 //todo
 
