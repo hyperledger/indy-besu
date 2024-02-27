@@ -156,7 +156,7 @@ Furthermore, authors of read and write requests can be surveilled by their commu
 
 > #### Stored Data Compromise
 
-T> he compromise of stored data on the ledger is prevented by the distributed, signed and consensus-based storage of the data. The stored data of an individual ledger node shall be protected by implementing best practice in securing the IT infrastructure, like ISO27001 and Information Security Management systems (ISMS).
+> The compromise of stored data on the ledger is prevented by the distributed, signed and consensus-based storage of the data. The stored data of an individual ledger node shall be protected by implementing best practice in securing the IT infrastructure, like ISO27001 and Information Security Management systems (ISMS).
 
 > #### Unsolicited Traffic
 
