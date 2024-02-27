@@ -82,7 +82,7 @@ Example DID: `did:indybesu:testnet:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266`
 
 > The components of the DID URL are:
 
-> - `<did>` the `did:indy` DID of the object-owning controller
+> - `<did>` the `did:indybesu` DID of the object-owning controller
 > - `<object-family>` family of the object
 > - `<object-family-version>` version of the object family
 > - `<object-type>` one of [[ref: SCHEMA]], [[ref: CRED_DEF]], [[ref: REV_REG_DEF]], [[ref: REV_REG_ENTRY]], [[ref: ATTRIB]]
@@ -105,12 +105,12 @@ Example DID: `did:indybesu:testnet:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266`
 
 > This first version of the `did:indybesu` DID Method will use an `<object-family>` value of `anoncreds` and an `<object-family-version>` of `v0` to match the
 pre-specification, open source version of anoncreds as implemented in the [indy-sdk](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/002-anoncreds).
-Later versions of the `did:indy` specification will use a higher `<object-family-version>` as the AnonCreds standardization work proceeds
+Later versions of the `did:indybesu` specification will use a higher `<object-family-version>` as the AnonCreds standardization work proceeds
 and the required dependency on Hyperledger Indy is removed. In this initial version, the DID URLs are closely aligned with the existing object identifiers.
 
 > #### Schema
 
-DID URL: `did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0`
+DID URL: `did:indybesu:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0`
 
 > - Object Family: `anoncreds`
 > - Family Version: `v0`
@@ -141,7 +141,7 @@ Hyperledger Indy is a public, permissioned distributed ledger that uses QBFT to 
 
 //todo
 
-The following sections describe how the `did:indy` DID Method adheres to the security considerations outlined in the [DID Core 1.0 specification](https://w3c.github.io/did-core) and in accordance with RFC3552.
+The following sections describe how the `did:indybesu` DID Method adheres to the security considerations outlined in the [DID Core 1.0 specification](https://w3c.github.io/did-core) and in accordance with RFC3552.
 
 > ### Privacy Considerations
 
