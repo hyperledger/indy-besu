@@ -128,7 +128,7 @@ impl Transaction {
         })
     }
 
-    /// Deserialize transaction from JSOn string
+    /// Deserialize transaction from JSON string
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
     pub fn from_string(value: &str) -> VdrResult<Self> {
@@ -170,7 +170,7 @@ impl Transaction {
             .clone();
 
         let signature = EthTransactionSignature::new(
-            signature.v().0 + 35 + self.chain_id * 2,
+            signature.v().0 + 35 + self.chain_id * 2, // `v` is calculated according to EIP-155: https://eips.ethereum.org/EIPS/eip-155
             H256::from_slice(&signature.r().0),
             H256::from_slice(&signature.s().0),
         )

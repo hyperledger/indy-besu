@@ -31,7 +31,7 @@ impl TryFrom<&LegacyDid> for ContractParam {
     }
 }
 
-/// Wrapper structure for legacy ED25518 verification key
+/// Wrapper structure for legacy ED25519 verification key
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LegacyVerkey(String);
 

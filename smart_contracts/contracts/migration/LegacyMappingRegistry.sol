@@ -78,7 +78,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         string calldata legacyIdentifier,
         string calldata newDid,
         bytes32 ed25519Key,
-        bytes calldata ed25518Signature
+        bytes calldata ed25519Signature
     ) public virtual {
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -90,7 +90,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
                 legacyIdentifier,
                 newDid,
                 ed25519Key,
-                ed25518Signature
+                ed25519Signature
             )
         );
         _createDidMapping(
@@ -99,7 +99,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
             legacyIdentifier,
             newDid,
             ed25519Key,
-            ed25518Signature
+            ed25519Signature
         );
     }
 
@@ -150,7 +150,7 @@ contract LegacyMappingRegistry is LegacyMappingRegistryInterface, ControlledUpgr
         string calldata legacyIdentifier,
         string calldata newDid,
         bytes32 ed25519Key,
-        bytes calldata ed25518Signature
+        bytes calldata ed25519Signature
     ) internal _identityOwner(identity, actor) _senderIsTrusteeOrEndorserOrSteward {
         // Checks the uniqueness of the DID mapping
         if (!isEmpty(didMapping[legacyIdentifier].toSlice())) revert DidMappingAlreadyExist(legacyIdentifier);

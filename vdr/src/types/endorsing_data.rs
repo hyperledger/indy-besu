@@ -74,7 +74,7 @@ impl TransactionEndorsingData {
         })
     }
 
-    /// Deserialize transaction endorsement data from JSOn string
+    /// Deserialize transaction endorsement data from JSON string
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
     pub fn from_string(value: &str) -> VdrResult<Self> {

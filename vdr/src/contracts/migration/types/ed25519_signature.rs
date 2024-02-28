@@ -1,6 +1,6 @@
 use crate::{types::ContractParam, VdrError};
 
-/// Wrapper structure for ED25518 signature
+/// Wrapper structure for ED25519 signature
 #[derive(Debug, Default)]
 pub struct Ed25519Signature(Vec<u8>);
 

@@ -63,7 +63,7 @@ describe('LegacyMappingRegistry', function () {
       ).to.be.revertedWithCustomError(legacyMappingRegistry.baseInstance, MigrationErrors.DidMappingAlreadyExist)
     })
 
-    it('Should fail if DID mapping is being created with not matching ed25518 key', async function () {
+    it('Should fail if DID mapping is being created with not matching ed25519 key', async function () {
       const ed25519Key = Uint8Array.from([
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 25, 180, 23, 224, 175, 15, 188, 235, 170, 233, 240, 145, 111, 204, 153,
         108, 117, 188, 145,
