@@ -34,7 +34,7 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^1.0.0",
-    "@openzeppelin/contracts": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
     "async-promise-pool": "^1.0.6",
     "base58-solidity": "^1.0.2",
     "ethers": "6.8.0",
