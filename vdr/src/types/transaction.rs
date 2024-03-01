@@ -7,8 +7,7 @@ use ethereum_types::{H160, H256, U256};
 use log::warn;
 use log_derive::{logfn, logfn_inputs};
 use serde_derive::{Deserialize, Serialize};
-use sha3::Digest;
-use std::{fmt::Debug, str::FromStr, sync::RwLock};
+use std::{fmt::Debug, str::FromStr};
 
 use crate::{
     client::{GAS_LIMIT, GAS_PRICE},
@@ -28,8 +27,8 @@ pub enum TransactionType {
     Write,
 }
 
-/// Transaction object
-#[derive(Debug, Default, Serialize, Deserialize)]
+/// Definition of transaction object to send on the ledger
+#[derive(Debug, Default, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Transaction {
     /// type of transaction: write/read
     /// depending on the transaction type different client methods will be executed to submit transaction
@@ -48,16 +47,9 @@ pub struct Transaction {
     /// transaction payload
     pub data: Vec<u8>,
     /// transaction signature
-    pub signature: RwLock<Option<TransactionSignature>>,
+    pub signature: Option<SignatureData>,
     /// transaction hash
     pub hash: Option<Vec<u8>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TransactionSignature {
-    pub v: u64,
-    pub r: Vec<u8>,
-    pub s: Vec<u8>,
 }
 
 impl Transaction {
@@ -70,7 +62,7 @@ impl Transaction {
         chain_id: u64,
         data: Vec<u8>,
         nonce: Option<u64>,
-        signature: Option<TransactionSignature>,
+        signature: Option<SignatureData>,
     ) -> Transaction {
         Transaction {
             type_,
@@ -79,11 +71,12 @@ impl Transaction {
             chain_id,
             data,
             nonce,
-            signature: RwLock::new(signature),
+            signature,
             hash: None,
         }
     }
 
+    /// Get transaction bytes which are need to be signed by the sender before the submitting on the ledger
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
     pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
@@ -100,17 +93,14 @@ impl Transaction {
         Ok(hash.as_bytes().to_vec())
     }
 
+    /// Set sender's transaction signature
     #[logfn(Info)]
     #[logfn_inputs(Debug)]
-    pub fn set_signature(&self, signature_data: SignatureData) {
-        let mut signature = self.signature.write().unwrap();
-        *signature = Some(TransactionSignature {
-            v: signature_data.v().0 + 35 + self.chain_id * 2,
-            r: signature_data.r().0,
-            s: signature_data.s().0,
-        })
+    pub fn set_signature(&mut self, signature_data: SignatureData) {
+        self.signature = Some(signature_data)
     }
 
+    /// Encode transaction as bytes
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
     pub fn encode(&self) -> VdrResult<Vec<u8>> {
@@ -124,6 +114,30 @@ impl Transaction {
             signature: self.get_transaction_signature()?,
         };
         Ok(transaction.encode().to_vec())
+    }
+
+    /// Serialize transaction as JSON string
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn to_string(&self) -> VdrResult<String> {
+        serde_json::to_string(self).map_err(|err| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Unable to serialize transaction as JSON. Err: {:?}",
+                err
+            ))
+        })
+    }
+
+    /// Deserialize transaction from JSON string
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn from_string(value: &str) -> VdrResult<Self> {
+        serde_json::from_str(value).map_err(|err| {
+            VdrError::ClientInvalidTransaction(format!(
+                "Unable to deserialize transaction from JSON. Err: {:?}",
+                err
+            ))
+        })
     }
 
     #[logfn(Trace)]
@@ -149,51 +163,21 @@ impl Transaction {
     #[logfn(Trace)]
     #[logfn_inputs(Trace)]
     fn get_transaction_signature(&self) -> VdrResult<EthTransactionSignature> {
-        let signature = self.signature.read().unwrap();
-        let signature = signature
+        let signature = self
+            .signature
             .as_ref()
             .ok_or_else(|| VdrError::ClientInvalidTransaction("Missing signature".to_string()))?
             .clone();
 
         let signature = EthTransactionSignature::new(
-            signature.v,
-            H256::from_slice(&signature.r),
-            H256::from_slice(&signature.s),
+            signature.v().0 + 35 + self.chain_id * 2, // `v` is calculated according to EIP-155: https://eips.ethereum.org/EIPS/eip-155
+            H256::from_slice(&signature.r().0),
+            H256::from_slice(&signature.s().0),
         )
         .ok_or_else(|| {
-            VdrError::ClientInvalidTransaction("Transaction `nonce` is not set".to_string())
+            VdrError::ClientInvalidTransaction("Unable to create transaction signature".to_string())
         })?;
         Ok(signature)
-    }
-}
-
-impl PartialEq for Transaction {
-    fn eq(&self, other: &Self) -> bool {
-        let self_signature = self.signature.read().unwrap();
-        let other_signature = other.signature.read().unwrap();
-        self.type_ == other.type_
-            && self.from == other.from
-            && self.to == other.to
-            && self.nonce == other.nonce
-            && self.chain_id == other.chain_id
-            && self.data == other.data
-            && *self_signature == *other_signature
-    }
-}
-
-#[cfg(test)]
-impl Clone for Transaction {
-    fn clone(&self) -> Self {
-        Transaction {
-            type_: self.type_.clone(),
-            from: self.from.clone(),
-            to: self.to.clone(),
-            nonce: self.nonce.clone(),
-            chain_id: self.chain_id.clone(),
-            data: self.data.clone(),
-            signature: RwLock::new(self.signature.read().unwrap().clone()),
-            hash: self.hash.clone(),
-        }
     }
 }
 
@@ -235,6 +219,16 @@ impl TransactionBuilder {
         param: T,
     ) -> VdrResult<TransactionBuilder> {
         self.params.push(param.try_into()?);
+        Ok(self)
+    }
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    pub fn add_contract_params(
+        mut self,
+        params: &[ContractParam],
+    ) -> VdrResult<TransactionBuilder> {
+        self.params.extend_from_slice(params);
         Ok(self)
     }
 
@@ -291,7 +285,7 @@ impl TransactionBuilder {
             chain_id: client.chain_id(),
             data,
             nonce,
-            signature: RwLock::new(None),
+            signature: None,
             hash: None,
         };
         Ok(transaction)
@@ -367,84 +361,7 @@ impl TransactionParser {
     }
 }
 
-/// Transaction Endorsing object
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct TransactionEndorsingData {
-    pub to: Address,
-    pub from: Address,
-    pub params: Vec<ContractParam>,
-}
-
-impl TransactionEndorsingData {
-    const PREFIX: u8 = 0x19;
-    const VERSION: u8 = 0x0;
-
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub fn get_signing_bytes(&self) -> VdrResult<Vec<u8>> {
-        let mut tokens = vec![
-            ContractParam::Uint(Uint::from(Self::PREFIX)),
-            ContractParam::FixedBytes(vec![Self::VERSION]),
-            (&self.to).try_into()?,
-        ];
-        tokens.extend_from_slice(self.params.as_slice());
-
-        let encoded = ethers_core::abi::encode_packed(&tokens).unwrap();
-        let hash = sha3::Keccak256::digest(encoded).to_vec();
-        Ok(hash)
-    }
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct TransactionEndorsingDataBuilder {
-    contract: String,
-    identity: Address,
-    params: Vec<ContractParam>,
-}
-
-impl TransactionEndorsingDataBuilder {
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub fn new() -> TransactionEndorsingDataBuilder {
-        TransactionEndorsingDataBuilder::default()
-    }
-
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub fn set_contract(mut self, contract: &str) -> TransactionEndorsingDataBuilder {
-        self.contract = contract.to_string();
-        self
-    }
-
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub fn set_identity(mut self, identity: &Address) -> TransactionEndorsingDataBuilder {
-        self.identity = identity.to_owned();
-        self
-    }
-
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub fn add_param<T: TryInto<ContractParam, Error = VdrError> + Debug>(
-        mut self,
-        param: T,
-    ) -> VdrResult<TransactionEndorsingDataBuilder> {
-        self.params.push(param.try_into()?);
-        Ok(self)
-    }
-
-    #[logfn(Trace)]
-    #[logfn_inputs(Trace)]
-    pub async fn build(self, client: &LedgerClient) -> VdrResult<TransactionEndorsingData> {
-        let contract = client.contract(&self.contract)?;
-        Ok(TransactionEndorsingData {
-            to: contract.address().to_owned(),
-            from: self.identity.to_owned(),
-            params: self.params,
-        })
-    }
-}
-
+/// Wrapper structure for transaction block number
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Block(u64);
 
@@ -478,6 +395,7 @@ impl From<&Block> for ContractParam {
     }
 }
 
+/// Wrapper structure for nonce needed for transactions endorsing
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Nonce(u64);
 
@@ -509,6 +427,7 @@ impl TryFrom<&Nonce> for ContractParam {
     }
 }
 
+/// Transaction block details
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct BlockDetails {
     pub number: u64,
@@ -541,7 +460,7 @@ pub mod test {
             nonce: Some(DEFAULT_NONCE.clone()),
             chain_id: CONFIG.chain_id,
             data: vec![],
-            signature: RwLock::new(None),
+            signature: None,
             hash: None,
         }
     }
@@ -554,7 +473,7 @@ pub mod test {
             nonce: None,
             chain_id: CONFIG.chain_id,
             data: vec![],
-            signature: RwLock::new(None),
+            signature: None,
             hash: None,
         }
     }
@@ -594,25 +513,7 @@ pub mod test {
         #[async_std::test]
         async fn get_transaction_signature_not_set() {
             let transaction = Transaction {
-                signature: RwLock::new(None),
-                ..write_transaction()
-            };
-
-            let get_sig_err = transaction.get_transaction_signature().unwrap_err();
-
-            assert!(matches!(
-                get_sig_err,  | VdrError::ClientInvalidTransaction { .. }
-            ));
-        }
-
-        #[async_std::test]
-        async fn get_transaction_signature_invalid() {
-            let transaction = Transaction {
-                signature: RwLock::new(Some(TransactionSignature {
-                    v: 1,
-                    r: vec![1; 32],
-                    s: vec![1; 32],
-                })),
+                signature: None,
                 ..write_transaction()
             };
 

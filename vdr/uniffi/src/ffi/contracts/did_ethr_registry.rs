@@ -1,9 +1,9 @@
 use crate::{
     ffi::{
         client::LedgerClient,
+        endorsing_data::TransactionEndorsingData,
         error::{VdrError, VdrResult},
-        transaction::{Transaction, TransactionEndorsingData},
-        types::SignatureData,
+        transaction::Transaction,
     },
     EventLog, EventQuery,
 };
@@ -44,26 +44,6 @@ pub async fn build_did_change_owner_endorsing_data(
     )
     .await
     .map(TransactionEndorsingData::from)
-    .map_err(VdrError::from)
-}
-
-#[uniffi::export(async_runtime = "tokio")]
-pub async fn build_did_change_owner_signed_transaction(
-    client: &LedgerClient,
-    from: &str,
-    did: &str,
-    new_owner: &str,
-    signature: SignatureData,
-) -> VdrResult<Transaction> {
-    did_ethr_registry::build_did_change_owner_signed_transaction(
-        &client.client,
-        &Address::from(from),
-        &DID::from(did),
-        &Address::from(new_owner),
-        &signature.into(),
-    )
-    .await
-    .map(Transaction::from)
     .map_err(VdrError::from)
 }
 
@@ -110,30 +90,6 @@ pub async fn build_did_add_delegate_endorsing_data(
 }
 
 #[uniffi::export(async_runtime = "tokio")]
-pub async fn build_did_add_delegate_signed_transaction(
-    client: &LedgerClient,
-    from: &str,
-    did: &str,
-    delegate_type: &str,
-    delegate: &str,
-    validity: u64,
-    signature: SignatureData,
-) -> VdrResult<Transaction> {
-    did_ethr_registry::build_did_add_delegate_signed_transaction(
-        &client.client,
-        &Address::from(from),
-        &DID::from(did),
-        &DelegateType::try_from(delegate_type)?,
-        &Address::from(delegate),
-        &Validity::from(validity),
-        &signature.into(),
-    )
-    .await
-    .map(Transaction::from)
-    .map_err(VdrError::from)
-}
-
-#[uniffi::export(async_runtime = "tokio")]
 pub async fn build_did_revoke_delegate_transaction(
     client: &LedgerClient,
     from: &str,
@@ -168,28 +124,6 @@ pub async fn build_did_revoke_delegate_endorsing_data(
     )
     .await
     .map(TransactionEndorsingData::from)
-    .map_err(VdrError::from)
-}
-
-#[uniffi::export(async_runtime = "tokio")]
-pub async fn build_did_revoke_delegate_signed_transaction(
-    client: &LedgerClient,
-    from: &str,
-    did: &str,
-    delegate_type: &str,
-    delegate: &str,
-    signature: SignatureData,
-) -> VdrResult<Transaction> {
-    did_ethr_registry::build_did_revoke_delegate_signed_transaction(
-        &client.client,
-        &Address::from(from),
-        &DID::from(did),
-        &DelegateType::try_from(delegate_type)?,
-        &Address::from(delegate),
-        &signature.into(),
-    )
-    .await
-    .map(Transaction::from)
     .map_err(VdrError::from)
 }
 
@@ -242,33 +176,6 @@ pub async fn build_did_set_attribute_endorsing_data(
 }
 
 #[uniffi::export(async_runtime = "tokio")]
-pub async fn build_did_set_attribute_signed_transaction(
-    client: &LedgerClient,
-    from: &str,
-    did: &str,
-    attribute: &str,
-    validity: u64,
-    signature: SignatureData,
-) -> VdrResult<Transaction> {
-    let attribute: DidDocAttribute =
-        serde_json::from_str(attribute).map_err(|err| VdrError::CommonInvalidData {
-            msg: format!("Unable to parse DID Attribute. Err: {:?}", err),
-        })?;
-
-    did_ethr_registry::build_did_set_attribute_signed_transaction(
-        &client.client,
-        &Address::from(from),
-        &DID::from(did),
-        &attribute,
-        &Validity::from(validity),
-        &signature.into(),
-    )
-    .await
-    .map(Transaction::from)
-    .map_err(VdrError::from)
-}
-
-#[uniffi::export(async_runtime = "tokio")]
 pub async fn build_did_revoke_attribute_transaction(
     client: &LedgerClient,
     from: &str,
@@ -309,31 +216,6 @@ pub async fn build_did_revoke_attribute_endorsing_data(
     )
     .await
     .map(TransactionEndorsingData::from)
-    .map_err(VdrError::from)
-}
-
-#[uniffi::export(async_runtime = "tokio")]
-pub async fn build_did_revoke_attribute_signed_transaction(
-    client: &LedgerClient,
-    from: &str,
-    did: &str,
-    attribute: &str,
-    signature: SignatureData,
-) -> VdrResult<Transaction> {
-    let attribute: DidDocAttribute =
-        serde_json::from_str(attribute).map_err(|err| VdrError::CommonInvalidData {
-            msg: format!("Unable to parse DID Attribute. Err: {:?}", err),
-        })?;
-
-    did_ethr_registry::build_did_revoke_attribute_signed_transaction(
-        &client.client,
-        &Address::from(from),
-        &DID::from(did),
-        &attribute,
-        &signature.into(),
-    )
-    .await
-    .map(Transaction::from)
     .map_err(VdrError::from)
 }
 

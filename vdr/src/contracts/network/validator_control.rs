@@ -16,9 +16,9 @@ const METHOD_GET_VALIDATORS: &str = "getValidators";
 /// Build transaction to execute ValidatorControl.addValidator contract method to add a new Validator
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `validator_address` validator address to be added
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `validator_address`: [Address] - validator address to be added
 ///
 /// # Returns
 /// Write transaction to sign and submit
@@ -42,9 +42,9 @@ pub async fn build_add_validator_transaction(
 /// Build transaction to execute ValidatorControl.removeValidator contract method to remove an existing Validator
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `validator_address` validator address to be removed
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `validator_address`: [Address] - validator address to be removed
 ///
 /// # Returns
 /// Write transaction to sign and submit
@@ -68,7 +68,7 @@ pub async fn build_remove_validator_transaction(
 /// Build transaction to execute ValidatorControl.getValidators contract method to get existing validators
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
 ///
 /// # Returns
 /// Read transaction to submit
@@ -86,8 +86,8 @@ pub async fn build_get_validators_transaction(client: &LedgerClient) -> VdrResul
 /// Parse the result of execution ValidatorControl.getValidators contract method to get existing validators
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
 /// Parsed validator addresses
@@ -108,7 +108,6 @@ pub mod test {
     use super::*;
     use crate::client::client::test::{mock_client, CONFIG, DEFAULT_NONCE, TRUSTEE_ACCOUNT};
     use once_cell::sync::Lazy;
-    use std::sync::RwLock;
 
     pub static VALIDATOR_ADDRESS: Lazy<Address> =
         Lazy::new(|| Address::from("0x93917cadbace5dfce132b991732c6cda9bcc5b8a"));
@@ -151,7 +150,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CONFIG.chain_id,
                 data: expected_data.into(),
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
 
@@ -181,7 +180,7 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CONFIG.chain_id,
                 data: expected_data.into(),
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
 
@@ -205,7 +204,7 @@ pub mod test {
                 nonce: None,
                 chain_id: CONFIG.chain_id,
                 data: encoded_method.into(),
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
 

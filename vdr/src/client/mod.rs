@@ -23,7 +23,7 @@ pub trait Client: Sync + Send + Debug {
     /// Retrieve count of transaction for the given account
     ///
     /// # Params
-    /// - `address` address of an account to get number of written transactions
+    /// - `address` [Address] address of an account to get number of written transactions
     ///
     /// # Returns
     /// number of transactions
@@ -32,8 +32,7 @@ pub trait Client: Sync + Send + Debug {
     /// Submit transaction to the ledger
     ///
     /// # Params
-    /// - `transaction` transaction to submit
-    /// - `transaction` prepared transaction to submit
+    /// - `transaction` [Transaction] transaction to submit
     ///
     /// # Returns
     /// hash of a block in which transaction included
@@ -42,7 +41,7 @@ pub trait Client: Sync + Send + Debug {
     /// Submit read transaction to the ledger
     ///
     /// # Params
-    /// - `transaction` prepared transaction to submit
+    /// - `transaction` [Transaction] prepared transaction to submit
     ///
     /// # Returns
     /// result data of transaction execution
@@ -51,8 +50,7 @@ pub trait Client: Sync + Send + Debug {
     /// Send a prepared query for retrieving log events on the ledger
     ///
     /// #Params
-    ///  param: client: Ledger - client (Ethereum client - for example web3::Http)
-    ///  param: query: EventQuery - query to send
+    /// - `query` [EventQuery] query to send
     ///
     /// #Returns
     ///   logs - list of received events
@@ -92,11 +90,17 @@ pub trait Contract: Sync + Send + Debug {
 
     /// Get the contract function
     ///
+    /// # Params
+    /// - `name` name of a contract method
+    ///
     /// # Returns
     /// Contract function
     fn function(&self, name: &str) -> VdrResult<&Function>;
 
     /// Get the contract event
+    ///
+    /// # Params
+    /// - `name` name of a contract event
     ///
     /// # Returns
     /// Contract event

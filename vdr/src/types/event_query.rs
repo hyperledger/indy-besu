@@ -8,6 +8,7 @@ use log_derive::{logfn, logfn_inputs};
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::Debug;
 
+/// Definition of query object to query logged events from the ledger
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EventQuery {

@@ -46,7 +46,7 @@ impl LedgerClient {
 
     pub async fn submit_transaction(&self, transaction: &Transaction) -> VdrResult<Vec<u8>> {
         self.client
-            .submit_transaction(&transaction.transaction)
+            .submit_transaction(&transaction.into())
             .await
             .map_err(VdrError::from)
     }
@@ -54,7 +54,7 @@ impl LedgerClient {
     pub async fn query_events(&self, query: &EventQuery) -> VdrResult<Vec<EventLog>> {
         Ok(self
             .client
-            .query_events(&query.query)
+            .query_events(&query.into())
             .await?
             .into_iter()
             .map(EventLog::from)

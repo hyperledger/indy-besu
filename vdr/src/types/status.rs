@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-/// Ledger status:  whether connected node and network are alive
+/// Ledger status: whether connected node and network are alive
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct PingStatus {
     pub status: Status,

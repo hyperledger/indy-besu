@@ -7,7 +7,7 @@ use crate::{
 use std::fmt::{Debug, Formatter};
 
 use ethabi::Event;
-use log::{trace, warn};
+use log::warn;
 use log_derive::{logfn, logfn_inputs};
 use std::str::FromStr;
 
@@ -30,17 +30,13 @@ pub struct Web3Contract {
 }
 
 impl Web3Contract {
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
     pub fn new(
         web3_client: &Web3Client,
         address: &str,
         contract_spec: &ContractSpec,
     ) -> VdrResult<Web3Contract> {
-        trace!(
-            "Web3Contract::new >>> address: {:?}, address: {:?}",
-            address,
-            contract_spec
-        );
-
         let abi = serde_json::to_vec(&contract_spec.abi).map_err(|err| {
             let vdr_error = VdrError::CommonInvalidData(format!(
                 "Unable to parse contract ABI from specification. Err: {:?}",
@@ -64,7 +60,6 @@ impl Web3Contract {
         let contract =
             Web3ContractImpl::from_json(web3_client.eth(), parsed_address, abi.as_slice())?;
 
-        trace!("Web3Contract::new <<< contract: {:?}", contract);
         Ok(Web3Contract {
             contract,
             address: Address::from(address),

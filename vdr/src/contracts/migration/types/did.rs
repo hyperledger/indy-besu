@@ -1,6 +1,7 @@
 use crate::{types::ContractParam, VdrError};
 use serde_derive::{Deserialize, Serialize};
 
+/// Wrapper structure for legacy Indy DID identifier
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LegacyDid(String);
 
@@ -30,6 +31,7 @@ impl TryFrom<&LegacyDid> for ContractParam {
     }
 }
 
+/// Wrapper structure for legacy ED25519 verification key
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LegacyVerkey(String);
 

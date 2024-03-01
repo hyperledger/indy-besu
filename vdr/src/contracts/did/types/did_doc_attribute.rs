@@ -111,6 +111,7 @@ impl TryFrom<&str> for PublicKeyPurpose {
     }
 }
 
+/// Enum listing possible DID delegate types
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub enum DelegateType {
     #[default]
@@ -216,6 +217,7 @@ pub struct ServiceAttribute {
     pub service_endpoint: ServiceEndpoint,
 }
 
+/// Enum listing attributes which can be associated with a DID
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum DidDocAttribute {
@@ -383,6 +385,7 @@ impl TryFrom<&DidDocAttributeValue> for ContractParam {
     }
 }
 
+/// Wrapper structure for DID attribute validity time in seconds
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Validity(pub(crate) u64);
 

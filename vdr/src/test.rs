@@ -9,16 +9,16 @@ use crate::{
     },
     signer::basic_signer::{test::basic_signer, BasicSigner},
     types::{Address, SignatureData, Transaction},
-    LedgerClient, TransactionEndorsingData,
+    LedgerClient,
 };
 
 mod helpers {
     use super::*;
-    use crate::{Address, LedgerClient};
+    use crate::{contracts::endorsing, Address, LedgerClient, TransactionEndorsingData};
 
     pub async fn sign_and_submit_transaction(
         client: &LedgerClient,
-        transaction: Transaction,
+        mut transaction: Transaction,
         signer: &BasicSigner,
     ) -> String {
         let sign_bytes = transaction.get_signing_bytes().unwrap();
@@ -36,6 +36,24 @@ mod helpers {
         signer
             .sign(&data.get_signing_bytes().unwrap(), data.from.as_ref())
             .unwrap()
+    }
+
+    pub async fn endorse_transaction(
+        client: &LedgerClient,
+        signer: &BasicSigner,
+        mut data: TransactionEndorsingData,
+    ) {
+        let signature = signer
+            .sign(&data.get_signing_bytes().unwrap(), data.from.as_ref())
+            .unwrap();
+
+        data.set_signature(signature);
+
+        let transaction = endorsing::build_endorsement_transaction(client, &TRUSTEE_ACCOUNT, &data)
+            .await
+            .unwrap();
+
+        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
     }
 
     pub async fn assign_role(
@@ -64,7 +82,7 @@ mod helpers {
 
 mod did_indy {
     use super::*;
-    use crate::client::client::test::TRUSTEE_ACCOUNT;
+    use crate::{client::client::test::TRUSTEE_ACCOUNT, contracts::endorsing};
 
     async fn resolve_did(client: &LedgerClient, did: &DID) -> DidRecord {
         let transaction = did_indy_registry::build_resolve_did_transaction(client, did)
@@ -135,22 +153,18 @@ mod did_indy {
 
         // create
         let did_doc = did_doc(identity.as_ref());
-        let endorsement_data =
+        let mut endorsement_data =
             did_indy_registry::build_create_did_endorsing_data(&client, &did_doc.id, &did_doc)
                 .await
                 .unwrap();
 
         let signature = super::helpers::sign_endorsing_data(&endorsement_data, &signer);
+        endorsement_data.set_signature(signature);
 
-        let transaction = did_indy_registry::build_create_did_signed_transaction(
-            &client,
-            &TRUSTEE_ACCOUNT,
-            &did_doc.id,
-            &did_doc,
-            &signature,
-        )
-        .await
-        .unwrap();
+        let transaction =
+            endorsing::build_endorsement_transaction(&client, &TRUSTEE_ACCOUNT, &endorsement_data)
+                .await
+                .unwrap();
 
         super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
 
@@ -193,20 +207,7 @@ mod did_ethr {
         .await
         .unwrap();
 
-        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, signer);
-
-        let transaction = did_ethr_registry::build_did_set_attribute_signed_transaction(
-            client,
-            &TRUSTEE_ACCOUNT,
-            did,
-            attribute,
-            validity,
-            &signature,
-        )
-        .await
-        .unwrap();
-
-        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::endorse_transaction(client, signer, transaction_endorsing_data).await;
     }
 
     async fn endorse_revoke_did_attribute(
@@ -214,24 +215,13 @@ mod did_ethr {
         did: &DID,
         attribute: &DidDocAttribute,
         signer: &BasicSigner,
-    ) -> String {
+    ) {
         let transaction_endorsing_data =
             did_ethr_registry::build_did_revoke_attribute_endorsing_data(client, did, attribute)
                 .await
                 .unwrap();
 
-        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, signer);
-
-        let transaction = did_ethr_registry::build_did_revoke_attribute_signed_transaction(
-            client,
-            &TRUSTEE_ACCOUNT,
-            did,
-            attribute,
-            &signature,
-        )
-        .await
-        .unwrap();
-        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await
+        super::helpers::endorse_transaction(client, signer, transaction_endorsing_data).await;
     }
 
     #[async_std::test]
@@ -345,19 +335,7 @@ mod did_ethr {
             did_ethr_registry::build_did_change_owner_endorsing_data(&client, &did, &new_owner)
                 .await
                 .unwrap();
-
-        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
-
-        let transaction = did_ethr_registry::build_did_change_owner_signed_transaction(
-            &client,
-            &TRUSTEE_ACCOUNT,
-            &did,
-            &new_owner,
-            &signature,
-        )
-        .await
-        .unwrap();
-        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::endorse_transaction(&client, &signer, transaction_endorsing_data).await;
 
         // Resole DID document
         let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
@@ -452,7 +430,6 @@ mod did_ethr {
         let did_doc_with_meta = did_resolver::resolve_did(&client, &did, None)
             .await
             .unwrap();
-        println!("{:?}", did_doc_with_meta);
         let did_document = did_doc_with_meta.did_document.unwrap();
 
         // DID Document is empty
@@ -478,17 +455,8 @@ mod schema {
                 .await
                 .unwrap();
 
-        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, signer);
+        super::helpers::endorse_transaction(client, signer, transaction_endorsing_data).await;
 
-        let transaction = schema_registry::build_create_schema_signed_transaction(
-            client,
-            &TRUSTEE_ACCOUNT.clone(),
-            &schema,
-            &signature,
-        )
-        .await
-        .unwrap();
-        super::helpers::sign_and_submit_transaction(client, transaction, signer).await;
         schema
     }
 
@@ -603,18 +571,7 @@ mod credential_definition {
             .await
             .unwrap();
 
-        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
-
-        let transaction =
-            credential_definition_registry::build_create_credential_definition_signed_transaction(
-                &client,
-                &TRUSTEE_ACCOUNT.clone(),
-                &credential_definition,
-                &signature,
-            )
-            .await
-            .unwrap();
-        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::endorse_transaction(&client, &signer, transaction_endorsing_data).await;
 
         // read
         let resolved_credential_definition =
@@ -638,7 +595,7 @@ mod role {
         role_to_revoke: &Role,
         signer: &BasicSigner,
     ) -> String {
-        let transaction = role_control::build_revoke_role_transaction(
+        let mut transaction = role_control::build_revoke_role_transaction(
             client,
             &TRUSTEE_ACCOUNT,
             role_to_revoke,
@@ -888,21 +845,7 @@ mod mapping {
             .await
             .unwrap();
 
-        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
-
-        let transaction = legacy_mapping_registry::build_create_did_mapping_signed_transaction(
-            &client,
-            &TRUSTEE_ACCOUNT,
-            &did,
-            &legacy_did,
-            &legacy_verkey,
-            &legacy_signature,
-            &signature,
-        )
-        .await
-        .unwrap();
-
-        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::endorse_transaction(&client, &signer, transaction_endorsing_data).await;
 
         // read DID mapping
         let transaction =
@@ -935,22 +878,7 @@ mod mapping {
             .await
             .unwrap();
 
-        let signature = super::helpers::sign_endorsing_data(&transaction_endorsing_data, &signer);
-
-        let transaction =
-            legacy_mapping_registry::build_create_resource_mapping_signed_transaction(
-                &client,
-                &TRUSTEE_ACCOUNT,
-                &did,
-                &legacy_did,
-                &legacy_schema_id,
-                &schema_id,
-                &signature,
-            )
-            .await
-            .unwrap();
-
-        super::helpers::sign_and_submit_transaction(&client, transaction, &signer).await;
+        super::helpers::endorse_transaction(&client, &signer, transaction_endorsing_data).await;
 
         // read schema mapping
         let transaction = legacy_mapping_registry::build_get_resource_mapping_transaction(

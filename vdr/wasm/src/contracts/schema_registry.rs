@@ -1,4 +1,4 @@
-use indy_besu_vdr::{schema_registry, Address, Schema, SchemaId, SignatureData};
+use indy_besu_vdr::{schema_registry, Address, Schema, SchemaId, DID};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -17,48 +17,26 @@ impl SchemaRegistry {
     pub async fn build_create_schema_transaction(
         client: &LedgerClientWrapper,
         from: &str,
-        schema: JsValue,
+        schema: &SchemaWrapper,
     ) -> Result<TransactionWrapper> {
-        let schema: Schema = serde_wasm_bindgen::from_value(schema)?;
         let address = Address::from(from);
-        let transaction =
-            schema_registry::build_create_schema_transaction(&client.0, &address, &schema)
-                .await
-                .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        schema_registry::build_create_schema_transaction(&client.0, &address, &schema.0)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildCreateSchemaEndorsingData)]
     pub async fn build_create_schema_endorsing_data(
         client: &LedgerClientWrapper,
-        schema: JsValue,
+        schema: &SchemaWrapper,
     ) -> Result<TransactionEndorsingDataWrapper> {
-        let schema: Schema = serde_wasm_bindgen::from_value(schema)?;
-        let data = schema_registry::build_create_schema_endorsing_data(&client.0, &schema)
+        schema_registry::build_create_schema_endorsing_data(&client.0, &schema.0)
             .await
-            .as_js()?;
-        Ok(TransactionEndorsingDataWrapper(Rc::new(data)))
-    }
-
-    #[wasm_bindgen(js_name = buildCreateSchemaSignedTransaction)]
-    pub async fn build_create_schema_signed_transaction(
-        client: &LedgerClientWrapper,
-        from: &str,
-        schema: JsValue,
-        signature_data: JsValue,
-    ) -> Result<TransactionWrapper> {
-        let schema: Schema = serde_wasm_bindgen::from_value(schema)?;
-        let address = Address::from(from);
-        let signature_data: SignatureData = serde_wasm_bindgen::from_value(signature_data)?;
-        let transaction = schema_registry::build_create_schema_signed_transaction(
-            &client.0,
-            &address,
-            &schema,
-            &signature_data,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionEndorsingDataWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildResolveSchemaTransaction)]
@@ -67,10 +45,11 @@ impl SchemaRegistry {
         id: &str,
     ) -> Result<TransactionWrapper> {
         let id = SchemaId::from(id);
-        let transaction = schema_registry::build_resolve_schema_transaction(&client.0, &id)
+        schema_registry::build_resolve_schema_transaction(&client.0, &id)
             .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = parseResolveSchemaResult)]
@@ -84,12 +63,62 @@ impl SchemaRegistry {
     }
 
     #[wasm_bindgen(js_name = resolveSchema)]
-    pub async fn resolve_schema(client: &LedgerClientWrapper, id: &str) -> Result<JsValue> {
+    pub async fn resolve_schema(client: &LedgerClientWrapper, id: &str) -> Result<SchemaWrapper> {
         let id = SchemaId::from(id);
-        let schema = schema_registry::resolve_schema(&client.0, &id)
+        schema_registry::resolve_schema(&client.0, &id)
             .await
-            .as_js()?;
-        let result: JsValue = serde_wasm_bindgen::to_value(&schema)?;
-        Ok(result)
+            .as_js()
+            .map(SchemaWrapper::from)
+            .map_err(JsValue::from)
+    }
+}
+
+#[wasm_bindgen(js_name = Schema)]
+pub struct SchemaWrapper(pub(crate) Rc<Schema>);
+
+#[wasm_bindgen(js_class = Schema)]
+impl SchemaWrapper {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        issuer_id: String,
+        name: String,
+        version: String,
+        attr_names: Vec<String>,
+    ) -> SchemaWrapper {
+        SchemaWrapper(Rc::new(Schema {
+            issuer_id: DID::from(issuer_id.as_str()),
+            name,
+            version,
+            attr_names: attr_names.iter().cloned().collect(),
+        }))
+    }
+
+    #[wasm_bindgen(js_name = getId)]
+    pub fn get_id(&self) -> String {
+        self.0.id().as_ref().to_string()
+    }
+
+    #[wasm_bindgen(js_name = toString)]
+    pub fn to_string(&self) -> Result<String> {
+        self.0.to_string().as_js().map_err(JsValue::from)
+    }
+
+    #[wasm_bindgen(js_name = fromString)]
+    pub fn from_string(string: &str) -> Result<SchemaWrapper> {
+        Schema::from_string(string)
+            .as_js()
+            .map(SchemaWrapper::from)
+            .map_err(JsValue::from)
+    }
+
+    #[wasm_bindgen(js_name = asValue)]
+    pub fn as_value(&self) -> Result<JsValue> {
+        serde_wasm_bindgen::to_value(&*self.0).map_err(JsValue::from)
+    }
+}
+
+impl From<Schema> for SchemaWrapper {
+    fn from(data: Schema) -> SchemaWrapper {
+        SchemaWrapper(Rc::new(data))
     }
 }

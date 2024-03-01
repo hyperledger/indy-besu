@@ -8,10 +8,10 @@ use crate::{
     },
     error::VdrResult,
     types::{
-        Address, MethodStringParam, Transaction, TransactionBuilder,
-        TransactionEndorsingDataBuilder, TransactionParser, TransactionType,
+        Address, Transaction, TransactionBuilder, TransactionEndorsingDataBuilder,
+        TransactionParser, TransactionType,
     },
-    SignatureData, TransactionEndorsingData, VdrError,
+    TransactionEndorsingData, VdrError,
 };
 
 const CONTRACT_NAME: &str = "SchemaRegistry";
@@ -19,15 +19,15 @@ const METHOD_CREATE_SCHEMA: &str = "createSchema";
 const METHOD_CREATE_SCHEMA_SIGNED: &str = "createSchemaSigned";
 const METHOD_RESOLVE_SCHEMA: &str = "resolveSchema";
 
-/// Build transaction to execute SchemaRegistry.createSchema contract method to create a new Schema
+/// Build a transaction to create a new Schema (SchemaRegistry.createSchema contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `from` transaction sender account address
-/// - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `from`: [Address] - transaction sender account address
+/// - `schema`: [Schema] - object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:schema>`
 ///
 /// # Returns
-/// Write transaction to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_schema_transaction(
@@ -50,14 +50,14 @@ pub async fn build_create_schema_transaction(
         .await
 }
 
-/// Prepared data for execution of SchemaRegistry.createSchema contract method to endorse a new Schema
+/// Prepared data for endorsing creation of a new Schema (SchemaRegistry.createSchemaSigned contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `schema`: [Schema] - object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:schema>`
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_create_schema_endorsing_data(
@@ -65,12 +65,11 @@ pub async fn build_create_schema_endorsing_data(
     schema: &Schema,
 ) -> VdrResult<TransactionEndorsingData> {
     schema.validate()?;
-    let identity = Address::try_from(&schema.issuer_id)?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
-        .set_identity(&identity)
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_CREATE_SCHEMA))?
+        .set_identity(&Address::try_from(&schema.issuer_id)?)
+        .set_method(METHOD_CREATE_SCHEMA)
+        .set_endorsing_method(METHOD_CREATE_SCHEMA_SIGNED)
         .add_param(&schema.id().without_network()?)?
         .add_param(&schema.issuer_id.without_network()?)?
         .add_param(schema)?
@@ -78,51 +77,15 @@ pub async fn build_create_schema_endorsing_data(
         .await
 }
 
-/// Build transaction to execute SchemaRegistry.createSchemaSigned contract method to
-///   endorse a new Schema
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `schema` Schema object matching to the specification - https://hyperledger.github.io/anoncreds-spec/#term:schema
-///  - `signature` signature of schema issuer
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_create_schema_signed_transaction(
-    client: &LedgerClient,
-    sender: &Address,
-    schema: &Schema,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    schema.validate()?;
-    let identity = Address::try_from(&schema.issuer_id)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_CREATE_SCHEMA_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(&schema.id().without_network()?)?
-        .add_param(&schema.issuer_id.without_network()?)?
-        .add_param(schema)?
-        .set_type(TransactionType::Write)
-        .set_from(sender)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute SchemaRegistry.resolveSchema contract method to retrieve an existing Schema by the given id
+/// Build a transaction to resolve an existing Schema record by the given id
+///  (SchemaRegistry.resolveSchema contract method)
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `id` id of Schema to resolve
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `id`: [SchemaId] - id of Schema to resolve
 ///
 /// # Returns
-/// Read transaction to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_resolve_schema_transaction(
@@ -141,11 +104,11 @@ pub async fn build_resolve_schema_transaction(
 /// Parse the result of execution SchemaRegistry.resolveSchema contract method to receive a Schema associated with the id
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-/// parsed Schema
+///   record: [SchemaRecord] - parsed Schema Record
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<SchemaRecord> {
@@ -158,11 +121,11 @@ pub fn parse_resolve_schema_result(client: &LedgerClient, bytes: &[u8]) -> VdrRe
 /// Single step function to resolve a Schema for the given ID
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `id` id of schema to resolve
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `id`: [SchemaId] - id of schema to resolve
 ///
 /// # Returns
-///   Resolved Schema object
+///   schema: [Schema] - Resolved Schema object
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn resolve_schema(client: &LedgerClient, id: &SchemaId) -> VdrResult<Schema> {
@@ -212,7 +175,6 @@ pub mod test {
             did::types::{did::DID, did_doc::test::TEST_ETHR_DID},
         },
     };
-    use std::sync::RwLock;
 
     mod build_create_schema_transaction {
         use super::*;
@@ -255,7 +217,7 @@ pub mod test {
                     58, 91, 34, 70, 105, 114, 115, 116, 32, 78, 97, 109, 101, 34, 93, 125, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -305,7 +267,7 @@ pub mod test {
                     148, 81, 176, 246, 13, 62, 210, 245, 196, 121, 156, 18, 158, 90, 17, 4, 158,
                     115, 117, 188,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);

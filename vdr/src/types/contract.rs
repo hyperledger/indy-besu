@@ -242,11 +242,11 @@ impl TryFrom<&MethodUintBytesParam> for ContractParam {
 }
 
 #[derive(Debug)]
-pub(crate) struct MethodStringParam(&'static str);
+pub(crate) struct MethodStringParam(String);
 
-impl From<&'static str> for MethodStringParam {
-    fn from(value: &'static str) -> Self {
-        MethodStringParam(value)
+impl From<&str> for MethodStringParam {
+    fn from(value: &str) -> Self {
+        MethodStringParam(value.to_string())
     }
 }
 

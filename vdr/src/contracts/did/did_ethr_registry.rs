@@ -8,11 +8,11 @@ use crate::{
     },
     error::VdrResult,
     types::{
-        Address, EventLog, EventParser, EventQuery, EventQueryBuilder, MethodStringParam,
-        MethodUintBytesParam, Transaction, TransactionBuilder, TransactionEndorsingDataBuilder,
-        TransactionParser, TransactionType,
+        Address, EventLog, EventParser, EventQuery, EventQueryBuilder, MethodUintBytesParam,
+        Transaction, TransactionBuilder, TransactionEndorsingDataBuilder, TransactionParser,
+        TransactionType,
     },
-    Block, Nonce, SignatureData, TransactionEndorsingData, VdrError, DID,
+    Block, Nonce, TransactionEndorsingData, VdrError, DID,
 };
 
 const CONTRACT_NAME: &str = "EthereumExtDidRegistry";
@@ -37,20 +37,16 @@ const EVENT_DID_OWNER_CHANGED: &str = "DIDOwnerChanged";
 
 pub const ETHR_DID_METHOD: &str = "ethr";
 
-// TODO: In current implementation all methods accept DID but contract API accept identity account address
-//  Should we change it?
-
-/// Build transaction to execute EthereumExtDidRegistry.changeOwner contract method to
-///   change the owner of ether DID
+/// Build a transaction to change the owner of a DID (EthereumExtDidRegistry.changeOwner contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address (Must be DID owner)
-///  - `did` DID to change ownership
-///  - `new_owner` account address of new owner
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `sender`: [Address] - sender account address (Must be DID owner)
+///  - `did`: [DID] - DID to change ownership
+///  - `new_owner`: [Address] - account address of new owner
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_change_owner_transaction(
@@ -71,15 +67,15 @@ pub async fn build_did_change_owner_transaction(
         .await
 }
 
-/// Prepared data for endorsing EthereumExtDidRegistry.changeOwner contract method
+/// Prepared data for endorsing a change of a DID owner (EthereumExtDidRegistry.changeOwnerSigned contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` DID to change ownership
-///  - `new_owner` account address of new owner
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - DID to change ownership
+///  - `new_owner`: [Address] - account address of new owner
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_change_owner_endorsing_data(
@@ -92,64 +88,27 @@ pub async fn build_did_change_owner_endorsing_data(
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
-        .add_param(&nonce)?
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_CHANGE_OWNER))?
+        .set_nonce(&nonce)
+        .set_method(METHOD_CHANGE_OWNER)
+        .set_endorsing_method(METHOD_CHANGE_OWNER_SIGNED)
         .add_param(new_owner)?
         .build(client)
         .await
 }
 
-/// Build transaction to execute EthereumExtDidRegistry.changeOwnerSigned contract method to
-///   change the owner of ether DID
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address
-///  - `did` DID to change ownership
-///  - `new_owner` account address of new owner
-///  - `signature` signature of DID identity owner
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_did_change_owner_signed_transaction(
-    client: &LedgerClient,
-    sender: &Address,
-    did: &DID,
-    new_owner: &Address,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_CHANGE_OWNER_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(new_owner)?
-        .set_type(TransactionType::Write)
-        .set_from(sender)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute EthereumExtDidRegistry.addDelegate contract method to add a delegate.
+/// Build a transaction to add a DID delegate (EthereumExtDidRegistry.addDelegate contract method)
 /// An identity can assign multiple delegates to manage signing on their behalf for specific purposes.
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address (Must be DID owner)
-///  - `did` DID to add a delegate
-///  - `delegate_type` type of delegation (`veriKey` or `sigAuth`)
-///  - `delegate` account address of delegate
-///  - `validity` delegate validity time
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `sender`: [Address] - sender account address (Must be DID owner)
+///  - `did`: [DID] - DID to add a delegate
+///  - `delegate_type`: [DelegateType] - type of delegation (`veriKey` or `sigAuth`)
+///  - `delegate`: [Address] - account address of delegate
+///  - `validity`: [Validity] - delegate validity time
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_add_delegate_transaction(
@@ -174,17 +133,18 @@ pub async fn build_did_add_delegate_transaction(
         .await
 }
 
-/// Prepared data for endorsing EthereumExtDidRegistry.addDelegate contract method
+/// Prepared data for endorsing adding of a DID delegate (EthereumExtDidRegistry.addDelegateSigned contract method)
+/// An identity can assign multiple delegates to manage signing on their behalf for specific purposes.
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` DID to add a delegate
-///  - `delegate_type` type of delegation (`veriKey` or `sigAuth`)
-///  - `delegate` account address of delegate
-///  - `validity` delegate validity time
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - DID to add a delegate
+///  - `delegate_type`: [DelegateType] - type of delegation (`veriKey` or `sigAuth`)
+///  - `delegate`: [Address] - account address of delegate
+///  - `validity`: [Validity] - delegate validity time
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_add_delegate_endorsing_data(
@@ -199,9 +159,9 @@ pub async fn build_did_add_delegate_endorsing_data(
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
-        .add_param(&nonce)?
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_ADD_DELEGATE))?
+        .set_nonce(&nonce)
+        .set_method(METHOD_ADD_DELEGATE)
+        .set_endorsing_method(METHOD_ADD_DELEGATE_SIGNED)
         .add_param(delegate_type)?
         .add_param(delegate)?
         .add_param(&MethodUintBytesParam::from(validity.0))?
@@ -209,62 +169,18 @@ pub async fn build_did_add_delegate_endorsing_data(
         .await
 }
 
-/// Build transaction to execute EthereumExtDidRegistry.addDelegateSigned contract method to add a delegate.
-/// An identity can assign multiple delegates to manage signing on their behalf for specific purposes.
-///
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address
-///  - `did` DID to add a delegate
-///  - `delegate_type` type of delegation (`veriKey` or `sigAuth`)
-///  - `delegate` account address of delegate
-///  - `validity` delegate validity time
-///  - `signature` signature of DID identity owner
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_did_add_delegate_signed_transaction(
-    client: &LedgerClient,
-    sender: &Address,
-    did: &DID,
-    delegate_type: &DelegateType,
-    delegate: &Address,
-    validity: &Validity,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_ADD_DELEGATE_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(delegate_type)?
-        .add_param(delegate)?
-        .add_param(validity)?
-        .set_type(TransactionType::Write)
-        .set_from(sender)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute EthereumExtDidRegistry.revokeDelegate contract method to revoke a delegate.
+/// Build a transaction to revoke a DID delegate (EthereumExtDidRegistry.revokeDelegate contract method)
 /// An identity can assign multiple delegates to manage signing on their behalf for specific purposes.
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address (Must be DID owner)
-///  - `did` DID to revoke a delegate
-///  - `delegate_type` type of delegation (`veriKey` or `sigAuth`)
-///  - `delegate` account address of delegate
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `sender`: [Address] - sender account address (Must be DID owner)
+///  - `did`: [DID] - DID to revoke a delegate
+///  - `delegate_type`: [DelegateType] - type of delegation (`veriKey` or `sigAuth`)
+///  - `delegate`: [Address] - account address of delegate
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_revoke_delegate_transaction(
@@ -287,16 +203,16 @@ pub async fn build_did_revoke_delegate_transaction(
         .await
 }
 
-/// Prepared data for endorsing EthereumExtDidRegistry.revokeDelegate contract method
+/// Prepared data for endorsing revocation of a DID delegate (EthereumExtDidRegistry.revokeDelegateSigned contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` DID to add a delegate
-///  - `delegate_type` type of delegation (`veriKey` or `sigAuth`)
-///  - `delegate` account address of delegate
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - DID to add a delegate
+///  - `delegate_type`: [DelegateType] - type of delegation (`veriKey` or `sigAuth`)
+///  - `delegate`: [Address] - account address of delegate
 ///
 /// #Returns
-///   data: TransactionEndorsingData - transaction endorsement data to sign
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_revoke_delegate_endorsing_data(
@@ -310,70 +226,28 @@ pub async fn build_did_revoke_delegate_endorsing_data(
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
-        .add_param(&nonce)?
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_REVOKE_DELEGATE))?
+        .set_nonce(&nonce)
+        .set_method(METHOD_REVOKE_DELEGATE)
+        .set_endorsing_method(METHOD_REVOKE_DELEGATE_SIGNED)
         .add_param(delegate_type)?
         .add_param(delegate)?
         .build(client)
         .await
 }
 
-/// Build transaction to execute EthereumExtDidRegistry.revokeDelegateSigned contract method to revoke a delegate.
-/// An identity can assign multiple delegates to manage signing on their behalf for specific purposes.
-///
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address
-///  - `did` DID to revoke a delegate
-///  - `delegate_type` type of delegation (`veriKey` or `sigAuth`)
-///  - `delegate` account address of delegate
-///  - `signature` signature of DID identity owner
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_did_revoke_delegate_signed_transaction(
-    client: &LedgerClient,
-    sender: &Address,
-    did: &DID,
-    delegate_type: &DelegateType,
-    delegate: &Address,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_REVOKE_DELEGATE_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(delegate_type)?
-        .add_param(delegate)?
-        .set_type(TransactionType::Write)
-        .set_from(sender)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute EthereumExtDidRegistry.setAttribute contract method to add
-///   a non ledger DID associated attribute.
+/// Build a transaction to add a non ledger DID associated attribute (EthereumExtDidRegistry.setAttribute contract method)
 /// An identity may need to publish some information that is only needed off-chain but
 ///   still requires the security benefits of using a blockchain.
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address (Must be DID owner)
-///  - `did` DID to add an attribute
-///  - `attribute` attribute to add
-///  - `validity` attribute validity time
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `sender`: [Address] - sender account address (Must be DID owner)
+///  - `did`: [DID] - DID to add an attribute
+///  - `attribute`: [DidDocAttribute] - attribute to add
+///  - `validity`: [Validity] - attribute validity time
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_set_attribute_transaction(
@@ -397,16 +271,18 @@ pub async fn build_did_set_attribute_transaction(
         .await
 }
 
-/// Prepared data for endorsing EthereumExtDidRegistry.setAttribute contract method
+/// Prepared data for endorsing adding of a non ledger DID associated attribute (EthereumExtDidRegistry.setAttributeSigned contract method)
+/// An identity may need to publish some information that is only needed off-chain but
+///   still requires the security benefits of using a blockchain.
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` DID to add an attribute
-///  - `attribute` attribute to add
-///  - `validity` attribute validity time
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - DID to add an attribute
+///  - `attribute`: [DidDocAttribute] - attribute to add
+///  - `validity`: [Validity] - attribute validity time
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_set_attribute_endorsing_data(
@@ -420,73 +296,29 @@ pub async fn build_did_set_attribute_endorsing_data(
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
-        .add_param(&nonce)?
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_SET_ATTRIBUTE))?
-        .add_param(&attribute.name()?)?
-        .add_param(&attribute.value()?)?
-        .add_param(&MethodUintBytesParam::from(validity.0))?
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute EthereumExtDidRegistry.setAttributeSigned contract method to add
-///   a non ledger DID associated attribute.
-/// An identity may need to publish some information that is only needed off-chain but
-///   still requires the security benefits of using a blockchain.
-///
-/// Endorsing version of the method - sender is not identity owner
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address
-///  - `did` DID to add an attribute
-///  - `attribute` attribute to add
-///  - `validity` attribute validity time
-///  - `signature` signature of DID identity owner
-///
-/// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_did_set_attribute_signed_transaction(
-    client: &LedgerClient,
-    sender: &Address,
-    did: &DID,
-    attribute: &DidDocAttribute,
-    validity: &Validity,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_SET_ATTRIBUTE_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
+        .set_nonce(&nonce)
+        .set_method(METHOD_SET_ATTRIBUTE)
+        .set_endorsing_method(METHOD_SET_ATTRIBUTE_SIGNED)
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
         .add_param(validity)?
-        .set_type(TransactionType::Write)
-        .set_from(sender)
         .build(client)
         .await
 }
 
-/// Build transaction to execute EthereumExtDidRegistry.revokeAttribute contract method to revoke
+/// Build a transaction to revoke a non ledger DID associated attribute (EthereumExtDidRegistry.revokeAttribute contract method)
 ///   a non ledger DID associated attribute.
 /// An identity may need to publish some information that is only needed off-chain but
 ///   still requires the security benefits of using a blockchain.
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address (Must be DID owner)
-///  - `did` DID to revoke an attribute
-///  - `attribute` attribute to add
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `sender`: [Address] - sender account address (Must be DID owner)
+///  - `did`: [DID] - DID to revoke an attribute
+///  - `attribute`: [DidDocAttribute] - attribute to revoke
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_revoke_attribute_transaction(
@@ -508,15 +340,15 @@ pub async fn build_did_revoke_attribute_transaction(
         .await
 }
 
-/// Prepared data for endorsing EthereumExtDidRegistry.revokeAttribute contract method
+/// Prepared data for endorsing revocation of a non ledger DID associated attribute (EthereumExtDidRegistry.revokeAttributeSigned contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` DID to add an attribute
-///  - `attribute` attribute to add
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - DID to add an attribute
+///  - `attribute`: [DidDocAttribute] - attribute to revoke
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
+///   transaction: [Transaction] - prepared write transaction object to sign and submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_did_revoke_attribute_endorsing_data(
@@ -529,65 +361,23 @@ pub async fn build_did_revoke_attribute_endorsing_data(
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&identity)
-        .add_param(&nonce)?
-        .add_param(&identity)?
-        .add_param(&MethodStringParam::from(METHOD_REVOKE_ATTRIBUTE))?
+        .set_nonce(&nonce)
+        .set_method(METHOD_REVOKE_ATTRIBUTE)
+        .set_endorsing_method(METHOD_REVOKE_ATTRIBUTE_SIGNED)
         .add_param(&attribute.name()?)?
         .add_param(&attribute.value()?)?
         .build(client)
         .await
 }
 
-/// Build transaction to execute EthereumExtDidRegistry.revokeAttributeSigned contract method to revoke
-///   a non ledger DID associated attribute.
-/// An identity may need to publish some information that is only needed off-chain but
-///   still requires the security benefits of using a blockchain.
-///
-/// Endorsing version of the method - sender is not identity owner
+/// Build a transaction to get an account address owning the DID (EthereumExtDidRegistry.owners contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `sender` sender account address
-///  - `did` DID to revoke an attribute
-///  - `attribute` attribute to add
-///  - `signature` signature of DID identity owner
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - target DID
 ///
 /// #Returns
-///   transaction: Transaction - prepared write transaction object to sign and submit
-#[logfn(Info)]
-#[logfn_inputs(Debug)]
-pub async fn build_did_revoke_attribute_signed_transaction(
-    client: &LedgerClient,
-    sender: &Address,
-    did: &DID,
-    attribute: &DidDocAttribute,
-    signature: &SignatureData,
-) -> VdrResult<Transaction> {
-    let identity = Address::try_from(did)?;
-    TransactionBuilder::new()
-        .set_contract(CONTRACT_NAME)
-        .set_method(METHOD_REVOKE_ATTRIBUTE_SIGNED)
-        .add_param(&identity)?
-        .add_param(&signature.v())?
-        .add_param(&signature.r())?
-        .add_param(&signature.s())?
-        .add_param(&attribute.name()?)?
-        .add_param(&attribute.value()?)?
-        .set_type(TransactionType::Write)
-        .set_from(sender)
-        .build(client)
-        .await
-}
-
-/// Build transaction to execute EthereumExtDidRegistry.owners contract method to get
-///   an account address owning the DID.
-///
-/// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` target DID
-///
-/// #Returns
-///   transaction: Transaction - prepared read transaction object to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_get_did_owner_transaction(
@@ -604,15 +394,14 @@ pub async fn build_get_did_owner_transaction(
         .await
 }
 
-/// Build transaction to execute EthereumExtDidRegistry.changed contract method to get
-///   block number when DID was changed last time
+/// Build a transaction to get block number when DID was changed last time (EthereumExtDidRegistry.changed contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` target DID
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - target DID
 ///
 /// #Returns
-///   transaction: Transaction - prepared read transaction object to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_get_did_changed_transaction(
@@ -629,15 +418,14 @@ pub async fn build_get_did_changed_transaction(
         .await
 }
 
-/// Build transaction to execute EthereumExtDidRegistry.nonce contract method to get signing
-///   nonce needed for endorsement
+/// Build a transaction to get signing nonce needed for endorsement (EthereumExtDidRegistry.nonce contract method)
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` target DID
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - target DID
 ///
 /// #Returns
-///   transaction: Transaction - prepared read transaction object to submit
+///   transaction: [Transaction] - prepared read transaction object to submit
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_get_identity_nonce_transaction(
@@ -656,13 +444,13 @@ pub async fn build_get_identity_nonce_transaction(
 /// Build event query to obtain log DID associated events from the ledger
 ///
 /// #Params
-///  - `client` client connected to the network where contract will be executed
-///  - `did` target DID
-///  - `from_block` start block
-///  - `to_block` finish block
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+///  - `did`: [DID] - target DID
+///  - `from_block`: [Block] - start block
+///  - `to_block`: [Block] - finish block
 ///
 /// #Returns
-///   query: EventQuery - prepared event query to send
+///   query: [EventQuery] - prepared event query to send
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub async fn build_get_did_events_query(
@@ -684,11 +472,11 @@ pub async fn build_get_did_events_query(
 ///   a block number when DID was changed last time
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-///   Block number
+///   block: [Block] Block number
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_did_changed_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Block> {
@@ -702,11 +490,11 @@ pub fn parse_did_changed_result(client: &LedgerClient, bytes: &[u8]) -> VdrResul
 ///   an account address owning the DID.
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-///   Owner account address
+///   owner: [Address] Owner account address
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_did_owner_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Address> {
@@ -720,11 +508,11 @@ pub fn parse_did_owner_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<
 ///   a signing nonce needed for endorsement
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-///   Nonce to use for endorsing
+///   nonce: [Nonce] Nonce to use for endorsing
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_did_nonce_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<Nonce> {
@@ -737,11 +525,11 @@ pub fn parse_did_nonce_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<
 /// Parse DidAttributeChangedEvent from the event log.
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-///   Parsed DidAttributeChanged event object
+///   event: [DidAttributeChanged] - Parsed DidAttributeChanged event object
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_did_attribute_changed_event_response(
@@ -757,11 +545,11 @@ pub fn parse_did_attribute_changed_event_response(
 /// Parse DidDelegateChangedEvent from the event log.
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-///   Parsed DidDelegateChanged event object
+///   event: [DidDelegateChanged] Parsed DidDelegateChanged event object
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_did_delegate_changed_event_response(
@@ -777,11 +565,11 @@ pub fn parse_did_delegate_changed_event_response(
 /// Parse DidOwnerChangedEvent from the event log.
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-///   Parsed DidOwnerChanged event object
+///   event: [DidOwnerChanged] Parsed DidOwnerChanged event object
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_did_owner_changed_event_response(
@@ -797,11 +585,11 @@ pub fn parse_did_owner_changed_event_response(
 /// Parse DID associated event from the event log (it can be one of: DidAttributeChanged, DidDelegateChanged, DidOwnerChanged).
 ///
 /// # Params
-/// - `client` client connected to the network where contract will be executed
-/// - `bytes` result bytes returned from the ledger
+/// - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `bytes`: [Vec] - result bytes returned from the ledger
 ///
 /// # Returns
-///   Parsed DID event object
+///   event: [DidEvents] Parsed DID event object
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_did_event_response(client: &LedgerClient, event: &EventLog) -> VdrResult<DidEvents> {
@@ -839,7 +627,7 @@ pub fn parse_did_event_response(client: &LedgerClient, event: &EventLog) -> VdrR
 
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
-pub async fn resolve_identity_nonce(client: &LedgerClient, identity: &Address) -> VdrResult<Nonce> {
+async fn resolve_identity_nonce(client: &LedgerClient, identity: &Address) -> VdrResult<Nonce> {
     let transaction = build_get_identity_nonce_transaction(client, identity).await?;
     let response = client.submit_transaction(&transaction).await?;
     parse_did_nonce_result(client, &response)
@@ -861,7 +649,6 @@ pub mod test {
             ServiceEndpoint,
         },
     };
-    use std::sync::RwLock;
 
     fn did() -> DID {
         DID::from(format!("did:ethr:{}", TEST_ACCOUNT.as_ref()).as_str())
@@ -935,7 +722,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141, 198, 198, 129, 187, 93,
                     106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -973,7 +760,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 3, 232,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -1008,7 +795,7 @@ pub mod test {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108,
                     141, 198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -1047,7 +834,7 @@ pub mod test {
                     0, 0, 0, 18, 104, 116, 116, 112, 58, 47, 47, 101, 120, 97, 109, 112, 108, 101,
                     46, 99, 111, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -1083,7 +870,7 @@ pub mod test {
                     20, 103, 236, 224, 41, 108, 66, 163, 228, 133, 29, 248, 18, 225, 230, 17, 163,
                     84, 230, 43,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);
@@ -1116,7 +903,7 @@ pub mod test {
                     116, 112, 58, 47, 47, 101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                signature: RwLock::new(None),
+                signature: None,
                 hash: None,
             };
             assert_eq!(expected_transaction, transaction);

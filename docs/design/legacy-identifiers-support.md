@@ -31,7 +31,7 @@ So that legacy DID can be associated with a new `did:ethr` and we can only use `
             bytes32 sigS,
             string calldata identifier,
             bytes32 ed25519Key,
-            bytes calldata ed25518Signature
+            bytes calldata ed25519Signature
         )
             // check signatures
             didMapping[identifier] = identity;

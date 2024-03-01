@@ -4,6 +4,7 @@ use crate::contracts::types::did::ParsedDid;
 use serde_derive::{Deserialize, Serialize};
 use sha3::Digest;
 
+/// Wrapper structure for AnonCreds Credential Definition ID
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct CredentialDefinitionId(String);
 

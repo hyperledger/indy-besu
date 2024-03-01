@@ -1,6 +1,7 @@
 pub mod anoncreds;
 pub mod auth;
 pub mod did;
+pub mod endorsing;
 pub mod migration;
 pub mod network;
 

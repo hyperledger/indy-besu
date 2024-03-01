@@ -1,8 +1,7 @@
 use indy_besu_vdr::{
     legacy_mapping_registry, Address, Ed25519Signature, LegacyDid, LegacyVerkey,
-    ResourceIdentifier, SignatureData, DID,
+    ResourceIdentifier, DID,
 };
-use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -30,7 +29,7 @@ impl LegacyMappingRegistry {
         let legacy_did = LegacyDid::from(legacy_did);
         let legacy_verkey = LegacyVerkey::from(legacy_verkey);
         let ed25519_signature = Ed25519Signature::from(ed25519_signature);
-        let transaction = legacy_mapping_registry::build_create_did_mapping_transaction(
+        legacy_mapping_registry::build_create_did_mapping_transaction(
             &client.0,
             &from,
             &did,
@@ -39,8 +38,9 @@ impl LegacyMappingRegistry {
             &ed25519_signature,
         )
         .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        .as_js()
+        .map(TransactionWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildCreateDidMappingEndorsingData)]
@@ -55,7 +55,7 @@ impl LegacyMappingRegistry {
         let legacy_did = LegacyDid::from(legacy_did);
         let legacy_verkey = LegacyVerkey::from(legacy_verkey);
         let ed25519_signature = Ed25519Signature::from(ed25519_signature);
-        let data = legacy_mapping_registry::build_create_did_mapping_endorsing_data(
+        legacy_mapping_registry::build_create_did_mapping_endorsing_data(
             &client.0,
             &did,
             &legacy_did,
@@ -63,38 +63,9 @@ impl LegacyMappingRegistry {
             &ed25519_signature,
         )
         .await
-        .as_js()?;
-        Ok(TransactionEndorsingDataWrapper(Rc::new(data)))
-    }
-
-    #[wasm_bindgen(js_name = buildCreateDidMappingSignedTransaction)]
-    pub async fn build_create_did_mapping_signed_transaction(
-        client: &LedgerClientWrapper,
-        from: &str,
-        did: &str,
-        legacy_did: &str,
-        legacy_verkey: &str,
-        ed25519_signature: &[u8],
-        signature_data: JsValue,
-    ) -> Result<TransactionWrapper> {
-        let address = Address::from(from);
-        let did = DID::from(did);
-        let legacy_did = LegacyDid::from(legacy_did);
-        let legacy_verkey = LegacyVerkey::from(legacy_verkey);
-        let ed25519_signature = Ed25519Signature::from(ed25519_signature);
-        let signature_data: SignatureData = serde_wasm_bindgen::from_value(signature_data)?;
-        let transaction = legacy_mapping_registry::build_create_did_mapping_signed_transaction(
-            &client.0,
-            &address,
-            &did,
-            &legacy_did,
-            &legacy_verkey,
-            &ed25519_signature,
-            &signature_data,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        .as_js()
+        .map(TransactionEndorsingDataWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildGetDidMappingTransaction)]
@@ -103,13 +74,11 @@ impl LegacyMappingRegistry {
         legacy_identifier: &str,
     ) -> Result<TransactionWrapper> {
         let legacy_identifier = LegacyDid::from(legacy_identifier);
-        let transaction = legacy_mapping_registry::build_get_did_mapping_transaction(
-            &client.0,
-            &legacy_identifier,
-        )
-        .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        legacy_mapping_registry::build_get_did_mapping_transaction(&client.0, &legacy_identifier)
+            .await
+            .as_js()
+            .map(TransactionWrapper::from)
+            .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = parseDidMappingResult)]
@@ -135,7 +104,7 @@ impl LegacyMappingRegistry {
         let legacy_issuer_identifier = LegacyDid::from(legacy_issuer_identifier);
         let legacy_identifier = ResourceIdentifier::from(legacy_identifier);
         let new_identifier = ResourceIdentifier::from(new_identifier);
-        let transaction = legacy_mapping_registry::build_create_resource_mapping_transaction(
+        legacy_mapping_registry::build_create_resource_mapping_transaction(
             &client.0,
             &from,
             &did,
@@ -144,8 +113,9 @@ impl LegacyMappingRegistry {
             &new_identifier,
         )
         .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        .as_js()
+        .map(TransactionWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildCreateResourceMappingEndorsingData)]
@@ -160,7 +130,7 @@ impl LegacyMappingRegistry {
         let legacy_issuer_identifier = LegacyDid::from(legacy_issuer_identifier);
         let legacy_identifier = ResourceIdentifier::from(legacy_identifier);
         let new_identifier = ResourceIdentifier::from(new_identifier);
-        let data = legacy_mapping_registry::build_create_resource_mapping_endorsing_data(
+        legacy_mapping_registry::build_create_resource_mapping_endorsing_data(
             &client.0,
             &did,
             &legacy_issuer_identifier,
@@ -168,39 +138,9 @@ impl LegacyMappingRegistry {
             &new_identifier,
         )
         .await
-        .as_js()?;
-        Ok(TransactionEndorsingDataWrapper(Rc::new(data)))
-    }
-
-    #[wasm_bindgen(js_name = buildCreateResourceMappingSignedTransaction)]
-    pub async fn build_create_resource_mapping_signed_transaction(
-        client: &LedgerClientWrapper,
-        from: &str,
-        did: &str,
-        legacy_issuer_identifier: &str,
-        legacy_identifier: &str,
-        new_identifier: &str,
-        signature_data: JsValue,
-    ) -> Result<TransactionWrapper> {
-        let from = Address::from(from);
-        let did = DID::from(did);
-        let legacy_issuer_identifier = LegacyDid::from(legacy_issuer_identifier);
-        let legacy_identifier = ResourceIdentifier::from(legacy_identifier);
-        let new_identifier = ResourceIdentifier::from(new_identifier);
-        let signature_data: SignatureData = serde_wasm_bindgen::from_value(signature_data)?;
-        let transaction =
-            legacy_mapping_registry::build_create_resource_mapping_signed_transaction(
-                &client.0,
-                &from,
-                &did,
-                &legacy_issuer_identifier,
-                &legacy_identifier,
-                &new_identifier,
-                &signature_data,
-            )
-            .await
-            .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        .as_js()
+        .map(TransactionEndorsingDataWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = buildGetResourceMappingTransaction)]
@@ -209,13 +149,14 @@ impl LegacyMappingRegistry {
         legacy_identifier: &str,
     ) -> Result<TransactionWrapper> {
         let legacy_identifier = ResourceIdentifier::from(legacy_identifier);
-        let transaction = legacy_mapping_registry::build_get_resource_mapping_transaction(
+        legacy_mapping_registry::build_get_resource_mapping_transaction(
             &client.0,
             &legacy_identifier,
         )
         .await
-        .as_js()?;
-        Ok(TransactionWrapper(Rc::new(transaction)))
+        .as_js()
+        .map(TransactionWrapper::from)
+        .map_err(JsValue::from)
     }
 
     #[wasm_bindgen(js_name = parseResourceMappingResult)]

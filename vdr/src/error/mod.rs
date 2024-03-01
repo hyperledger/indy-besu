@@ -16,6 +16,9 @@ pub enum VdrError {
     #[error("Ledger Client: Invalid transaction: {}", _0)]
     ClientInvalidTransaction(String),
 
+    #[error("Ledger Client: Invalid endorsement dara: {}", _0)]
+    ClientInvalidEndorsementData(String),
+
     #[error("Ledger Client: Got invalid response: {}", _0)]
     ClientInvalidResponse(String),
 

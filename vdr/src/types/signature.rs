@@ -1,6 +1,7 @@
 use crate::{types::ContractParam, VdrError};
 use serde_derive::{Deserialize, Serialize};
 
+/// Definition of recoverable ECDSA signature
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SignatureData {
     /// recovery ID using for public key recovery

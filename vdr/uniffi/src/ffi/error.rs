@@ -8,6 +8,9 @@ pub enum VdrError {
     #[error("Ledger Client: Invalid transaction: {}", msg)]
     ClientInvalidTransaction { msg: String },
 
+    #[error("Ledger Client: Invalid endorsement data: {}", msg)]
+    ClientInvalidEndorsementData { msg: String },
+
     #[error("Ledger Client: Got invalid response: {}", msg)]
     ClientInvalidResponse { msg: String },
 
@@ -67,6 +70,9 @@ impl From<VdrError_> for VdrError {
         match error {
             VdrError_::ClientNodeUnreachable => VdrError::ClientNodeUnreachable,
             VdrError_::ClientInvalidTransaction(msg) => VdrError::ClientInvalidTransaction { msg },
+            VdrError_::ClientInvalidEndorsementData(msg) => {
+                VdrError::ClientInvalidEndorsementData { msg }
+            }
             VdrError_::ClientInvalidResponse(msg) => VdrError::ClientInvalidResponse { msg },
             VdrError_::ClientTransactionReverted(msg) => {
                 VdrError::ClientTransactionReverted { msg }

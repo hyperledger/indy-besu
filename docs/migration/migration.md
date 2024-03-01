@@ -105,11 +105,11 @@ Issuer need to run migration tool manually (on the machine containing Indy Walle
     * `contracts` - specifications for contracts deployed on the network
     * `signer` - transactions signer
 2. DID ownership moving to Besu Ledger:
-    1. Issuer create Ed25518 key (with seed) in the Besu wallet
+    1. Issuer create Ed25519 key (with seed) in the Besu wallet
     2. Issuer create a new Secp256k1 keypair in Besu wallet
     3. Issuer publish Secp256k1 key to Indy ledger using ATTRIB transaction: `{ "besu": { "key": secp256k1_key } }`
         * Now Besu Secp256k1 key is associated with the Issuer DID which is published on the Indy Ledger.
-        * ATTRIB transaction is signed with Ed25518 key. No signature request for `secp256k1_key`.
+        * ATTRIB transaction is signed with Ed25519 key. No signature request for `secp256k1_key`.
 3. Issuer build DID Document which will include:
     * DID - fully qualified form should be used: `did:besu:network:<did_value>` of DID which was published as NYM transaction to Indy Ledger
     * Two Verification Methods must be included:
