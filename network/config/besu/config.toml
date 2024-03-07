@@ -5,6 +5,7 @@ logging="INFO"
 data-path="/opt/besu/data"
 host-allowlist=["*"]
 min-gas-price=0
+revert-reason-enabled=true
 
 # rpc
 rpc-http-enabled=true
