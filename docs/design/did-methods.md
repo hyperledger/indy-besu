@@ -135,6 +135,296 @@ remaining in the DID URL for a Cred Def in future versions of the `did:indybesu`
 
 //todo
 
+## DID Operations
+
+Described in [Indy Besu DID Registry document.](https://github.com/hyperledger/indy-besu/blob/main/docs/design/indybesu-did-registry.md)
+
+### Storage format
+
+* DID Records collection:
+    * Description: Mapping holding the list of DID's to their DID Document and metadata.
+    * Format:
+        ```
+        mapping(address identity => DidRecord didRecord);
+  
+        struct DidDocStorage {
+             bytes document;
+             DidMetadata metadata;
+        }
+  
+        struct DidMetadata {
+            address owner;
+            uint256 created;
+            uint256 updated;
+            uint256 versionId;
+            bool deactivated;
+        }
+        ```
+    * Example:
+      ```
+      {
+          "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266": {
+              document: bytes("
+                  {
+                      "@context": [
+                          "https://www.w3.org/ns/did/v1",
+                           "https://w3id.org/security/suites/ed25519-2020/v1"
+                      ],
+                      "id": "did:indybesu:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+                      "verificationMethod": [{
+                          "id": "did:indybesu:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266#key-1",
+                          "type": "Ed25519VerificationKey2020",
+                          "controller": "did:indybesu:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+                          "publicKeyMultibase": "zH3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+                      }],
+                      "authentication": ["did:indybesu:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266#key-1"],
+                  }
+              "), 
+              metadata: {
+                  owner: 0x93917cadbace5dfce132b991732c6cda9bcc5b8a,
+                  created: 1234,
+                  updated: 1234,
+                  versionId: 1234,
+                  deactivated: false
+              }, 
+          },
+          ...
+      }
+      ```
+
+### Types definition
+
+#### DidDocument
+
+DID Document must match to the [specification](https://www.w3.org/TR/did-core/).
+
+#### DID Document metadata
+
+Each DID Document MUST have a metadata section when a representation is produced. It can have the following properties:
+
+* owner (address): An address of DID owner
+* created (timestamp): Time of a block ordered a transaction for DID Doc creation
+* updated (timestamp): The updated field is null if an Update operation has never been performed on the DID document
+  Time of a block ordered a transaction changed a DID Doc last time
+* versionId (number): Block number when DID was created or updated
+* deactivated (string): If DID has been deactivated, DID document metadata MUST include this property with the boolean
+  value true. By default, this is set to false.
+
+### DIDDoc Validation
+
+There is now specific validation of DID Document on the ledger side. It is implemented in Indy Besy VDR code.
+
+### Transactions (Smart Contract's methods)
+
+Contract name: **IndyDidRegistry**
+
+#### Create DID
+
+* Method: `createDid`
+    * Description: Transaction to create a new DID record (DID Document and corresponding DID Metadata)
+    * Parameters:
+        * `identity` - Address of DID owner
+        * `document` - DID Document JSON as bytes
+    * Restrictions:
+        * DID must not exist
+        * Valid DID must be provided
+        * Sender must be equal to identity
+        * Sender must have either TRUSTEE or ENDORSER or STEWARD role assigned 
+    * Format:
+        ```
+        IndyDidRegistry.createDid(
+          address identity, 
+          bytes document
+        )
+        ```
+    * Example:
+        ```
+        IndyDidRegistry.createDid(
+          "0xa9b7df62c953c4c49deebea05d3c8fee1f47c1f6",
+          "{ did document as json bytes }" 
+        )
+        ```
+    * Raised Event:
+        * `DIDCreated(identity)`
+
+#### Update DID
+
+* Method: `updateDid`
+    * Description: Transaction to update an existing DidDocStorage entry
+    * Parameters:
+        * `identity` - Address of DID owner
+        * `document` - DID Document JSON as bytes
+    * Restrictions:
+        * DID must exist
+        * DID must be active
+        * Sender must be equal to identity
+        * Sender must be either identity owner or have a TRUSTEE role assigned
+    * Format:
+        ```
+        IndyDidRegistry.updateDid(
+          address identity, 
+          bytes calldata document
+        )
+        ```
+    * Example:
+        ```
+        IndyDidRegistry.updatedDid(
+          "0xa9b7df62c953c4c49deebea05d3c8fee1f47c1f6"
+          "{ did document as json bytes }" 
+        )
+        ```
+    * Raised Event:
+        * `DIDUpdated(identity)`
+
+#### Deactivate DID
+
+* Method: `deactivateDid`
+    * Description: Transaction to deactivate an existing DID
+    * Parameters:
+        * `identity` - Address of DID owner
+    * Restrictions:
+        * DID must exist
+        * DID must be active
+        * Sender must be equal to identity
+        * Sender must be either identity owner or have a TRUSTEE role assigned
+    * Format:
+        ```
+        IndyDidRegistry.deactivateDid( 
+          address identity
+        )
+        ```
+    * Example:
+        ```
+        IndyDidRegistry.deactivateDid(
+          "0xa9b7df62c953c4c49deebea05d3c8fee1f47c1f6"
+        )
+        ```
+    * Raised Event:
+        * `DIDDeactivated(identity)`
+
+#### Resolve DID Document with Meta
+
+* Method: `resolveDid`
+    * Description: Transaction to resolve DidDocStorage entry (DID Document and corresponding DID Doc Metadata)
+    * Parameters:
+        * `identity` - Address of the DID identity to be resolved
+    * Restrictions:
+        * DID must exist
+    * Format:
+        ```
+        IndyDidRegistry.resolveDid(
+          address identity,
+        ) returns (DidRecord didRecord)
+        ```
+    * Example:
+        ```
+        IndyDidRegistry.resolveDid(
+          "0xa9b7df62c953c4c49deebea05d3c8fee1f47c1f6"
+        )
+        ```
+    * Raised Event: `None`
+ 
+## Compatibility with other identifiers
+
+Used [Legacy identifiers support document.](https://github.com/hyperledger/indy-besu/blob/main/docs/design/legacy-identifiers-support.md)
+
+The idea is using of a basic mapping between other DIDs identifiers and ethereum accounts instead of introducing a new
+`did:indybesu` DID method.  
+
+* Create a new `LegacyMappingRegistry` smart contract which will be holding mapping of legacy identifiers to ethereum accounts/new ids:
+    ```
+    contract LegacyMappingRegistry {
+        // Mapping storing indy/sov DID identifiers to the corresponding account address
+        mapping(bytes16 legacyIdentifier => address account) public didMapping;
+  
+        // Mapping storing indy/sov formatted identifiers of schema/credential-definition to the corresponding new form
+        mapping(string legacyId => string newId) public resourceMapping;
+    
+        function createDidMapping(
+            address identity,
+            string calldata identifier,
+            bytes32 ed25519Key,
+            bytes calldata ed25519Signature
+        )
+            // check signature
+            // check legacyDid is derived from key
+            didMapping[identifier] = msg.sender;
+        }
+    
+        function createDidMappingSigned(
+            address identity,
+            uint8 sigV,
+            bytes32 sigR,
+            bytes32 sigS,
+            string calldata identifier,
+            bytes32 ed25519Key,
+            bytes calldata ed25519Signature
+        )
+            // check signatures
+            didMapping[identifier] = identity;
+        }
+    
+        // resolve mapping done through `didMapping(bytes16 identifier)` function available after contract compilation
+    
+        function createResourceMapping(
+            address identity,
+            string calldata legacyIssuerIdentifier,
+            string calldata legacyIdentifier,
+            string calldata newIdentifier
+        )
+            // fetch issuer did from legacy schema/credDef id 
+            // check issuer did is derived from key
+            // check msg.sender is owner of issuer did
+            // check identity is owner of schema / cred def
+            // check signature
+            resourceMapping[legacyIdentifier] = newIdentifier;
+        }
+    
+        function createResourceMappingSigned(
+            address identity,
+            uint8 sigV,
+            bytes32 sigR,
+            bytes32 sigS,
+            string calldata legacyIssuerIdentifier,
+            string calldata legacyIdentifier,
+            string calldata newIdentifier
+        )
+            // fetch issuer did from legacy schema/credDef id 
+            // check issuer did is derived from key
+            // check identity is owner of issuer did
+            // check identity is owner of schema / cred def
+            // check signatures
+            resourceMapping[legacyIdentifier] = newIdentifier;
+        }
+    
+        // resolve mapping done through `resourceMapping(string legacyIdentifier)` function available after contract compilation
+    }
+    ```
+    * Note, that user must pass signature over identifier to prove ownership
+* On migration, DID owners willing to preserve resolving of legacy formatted DIDs and id's must do:
+    * add mapping between legacy
+      identifier and ethereum account identifier by
+      executing `LegacyMappingRegistry.createDidMapping(...)` method where he must pass:
+        * DID identifier itself
+        * Associated public key
+        * Ed25519 signature owner identifier proving ownership
+            * Signature must be done over `legacyDid` bytes
+    * add mapping between legacy schema/credDef id's and new ones executing `LegacyMappingRegistry.createResourceMapping()` method he must pass:
+        * Legacy DID
+        * Legacy schema/credDef id
+        * New id of corresponding schema/credDef
+* After migration, clients in order to resolve legacy identifiers:
+    * for DID document firstly must resolve ethereum account
+      using `LegacyMappingRegistry.didMapping(legacyIdentifier)`, and next resolve DID ether document as it described in the
+      corresponding specification.
+    * for Schema/Credential Definition firstly must resolve new identifier
+      using `LegacyMappingRegistry.resourceMapping(legacyIdentifier)`, and next resolve Schema/Credential Definition as it described in the
+      corresponding specification.
+
+## Migration from Indy Ledger
+
+[Description is here.](https://github.com/hyperledger/indy-besu/blob/main/docs/migration/migration.md)
+
 ## Security Considerations
 
 Hyperledger Indy is a public, permissioned distributed ledger that uses QBFT to establish a consensus between upfront well-authenticated nodes. The security mechanisms by Hyperledger Indy Besu and Hyperledger Besu guarantee the correct processing of requests and transactions according to the rules, which are themselves part of the consensus on the ledger. In particular, this enables the creation and update of schemas, credential definitions and DIDs by their owners by authenticating with the corresponding public keys stored on the ledger.
