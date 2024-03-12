@@ -3,6 +3,7 @@ use std::{
     fmt::{Debug, Formatter},
 };
 
+use ethabi::AbiError;
 use log::warn;
 use log_derive::{logfn, logfn_inputs};
 
@@ -24,6 +25,7 @@ pub struct LedgerClient {
     chain_id: u64,
     client: Box<dyn Client>,
     contracts: HashMap<String, Box<dyn Contract>>,
+    errors: HashMap<[u8; 4], AbiError>,
     network: Option<String>,
     quorum_handler: Option<QuorumHandler>,
 }
@@ -52,6 +54,7 @@ impl LedgerClient {
         let client = Box::new(Web3Client::new(rpc_node)?);
 
         let contracts = Self::init_contracts(&client, contract_configs)?;
+        let errors = Self::build_error_map(&contracts);
 
         let quorum_handler = match quorum_config {
             Some(quorum_config) => Some(QuorumHandler::new(quorum_config.clone())?),
@@ -62,6 +65,7 @@ impl LedgerClient {
             chain_id,
             client,
             contracts,
+            errors,
             network: network.map(String::from),
             quorum_handler,
         };
@@ -100,13 +104,23 @@ impl LedgerClient {
                     .await
             }
             TransactionType::Write => self.client.submit_transaction(&transaction.encode()?).await,
-        }?;
-
-        if let Some(quorum_handler) = &self.quorum_handler {
-            quorum_handler.check(transaction, &result).await?;
         };
 
-        Ok(result)
+        let data = match result {
+            Ok(data) => data,
+            Err(VdrError::ClientTransactionReverted(revert_reason)) => {
+                let decoded_reason = self.decode_revert_reason(&revert_reason)?;
+
+                return Err(VdrError::ClientTransactionReverted(decoded_reason));
+            }
+            Err(error) => return Err(error),
+        };
+
+        if let Some(quorum_handler) = &self.quorum_handler {
+            quorum_handler.check(transaction, &data).await?;
+        };
+
+        Ok(data)
     }
 
     /// Submit prepared events query to the ledger
@@ -202,6 +216,61 @@ impl LedgerClient {
         }
 
         Ok(contracts)
+    }
+
+    fn build_error_map(
+        contracts: &HashMap<String, Box<dyn Contract>>,
+    ) -> HashMap<[u8; 4], AbiError> {
+        contracts
+            .values()
+            .map(|contract| contract.errors())
+            .flatten()
+            .map(|error| {
+                let short_signature: [u8; 4] =
+                    error.signature().as_bytes()[0..4].try_into().unwrap();
+
+                (short_signature, error.clone())
+            })
+            .collect()
+    }
+
+    fn decode_revert_reason(&self, revert_reason: &str) -> VdrResult<String> {
+        let error_data = hex::decode(revert_reason.trim_start_matches("0x")).map_err(|_| {
+            VdrError::ContractInvalidResponseData(
+                format!(
+                    "Unable to parse the revert reason: Incorrect hex string {}",
+                    revert_reason
+                )
+                .to_string(),
+            )
+        })?;
+
+        if error_data.len() < 4 {
+            return Ok(String::from("Transaction reverted silently"));
+        }
+
+        let signature: &[u8; 4] = error_data[0..4].try_into().unwrap();
+        let arguments: &[u8] = &error_data[4..];
+
+        let error = self.errors.get(signature).ok_or_else( || {
+            VdrError::ContractInvalidResponseData(
+                format!(
+                    "Unable to parse the revert reason: Cannot match the error selector with registered errors {}", 
+                    revert_reason
+                ).to_string()
+            )
+        })?;
+
+        let decoded_args = error.decode(&arguments)?;
+
+        let inputs_str: Vec<String> = error.inputs.iter().enumerate().map(|(i, input)| {
+            format!("{}: {}", input.name, decoded_args[i].to_string())
+        }).collect();
+        
+        let inputs_joined = inputs_str.join(", ");
+        let decoded_str = format!("{}({})", error.name, inputs_joined);
+
+        Ok(decoded_str)
     }
 
     #[logfn(Info)]

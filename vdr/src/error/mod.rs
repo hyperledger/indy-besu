@@ -1,9 +1,12 @@
-use serde_json::json;
+use serde_json::{json, Value};
 
+use jsonrpc_core::types::error::Error as RpcError;
 #[cfg(not(feature = "wasm"))]
 use web3::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 #[cfg(feature = "wasm")]
 use web3_wasm::{ethabi::Error as Web3EthabiError, Error as Web3Error};
+
+const EXECUTION_REVERTED_CODE: i64 = -32000;
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum VdrError {
@@ -16,7 +19,7 @@ pub enum VdrError {
     #[error("Ledger Client: Invalid transaction: {}", _0)]
     ClientInvalidTransaction(String),
 
-    #[error("Ledger Client: Invalid endorsement dara: {}", _0)]
+    #[error("Ledger Client: Invalid endorsement data: {}", _0)]
     ClientInvalidEndorsementData(String),
 
     #[error("Ledger Client: Got invalid response: {}", _0)]
@@ -75,8 +78,21 @@ impl From<Web3Error> for VdrError {
         match value {
             Web3Error::Unreachable => VdrError::ClientNodeUnreachable,
             Web3Error::InvalidResponse(err) => VdrError::ClientInvalidResponse(err),
-            Web3Error::Rpc(err) => VdrError::ClientTransactionReverted(json!(err).to_string()),
+            Web3Error::Rpc(err) => err.into(),
             _ => VdrError::ClientUnexpectedError(value.to_string()),
+        }
+    }
+}
+
+impl From<RpcError> for VdrError {
+    fn from(value: RpcError) -> Self {
+        match value {
+            RpcError {
+                code: jsonrpc_core::ErrorCode::ServerError(EXECUTION_REVERTED_CODE),
+                data: Some(Value::String(error_str)),
+                ..
+            } => VdrError::ClientTransactionReverted(error_str),
+            _ => VdrError::ClientUnexpectedError(json!(value).to_string()),
         }
     }
 }
