@@ -105,7 +105,7 @@ impl Client for Web3Client {
                 return Err(VdrError::ClientTransactionReverted(revert_reason));
             }
 
-            return Err(VdrError::ClientTransactionReverted(String::from("")));
+            return Err(VdrError::ClientTransactionReverted("".to_string()));
         }
 
         trace!("Web3Client::submit_transaction() -> {:?}", receipt);

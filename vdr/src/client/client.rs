@@ -3,7 +3,7 @@ use std::{
     fmt::{Debug, Formatter},
 };
 
-use ethabi::AbiError;
+use ethabi::{ AbiError, Param, ParamType };
 use log::warn;
 use log_derive::{logfn, logfn_inputs};
 
@@ -221,10 +221,33 @@ impl LedgerClient {
     fn build_error_map(
         contracts: &HashMap<String, Box<dyn Contract>>,
     ) -> HashMap<[u8; 4], AbiError> {
+        let regular_error = AbiError {
+            name: "Error".to_string(),
+            inputs: vec![
+                Param {
+                    name: "message".to_string(),
+                    kind: ParamType::String,
+                    internal_type: None,
+                }
+            ]
+        };
+
+        let panic_error = AbiError {
+            name: "Panic".to_string(),
+            inputs: vec![
+                Param {
+                    name: "code".to_string(),
+                    kind: ParamType::Uint(256),
+                    internal_type: None,
+                }
+            ]
+        };
+
         contracts
             .values()
             .map(|contract| contract.errors())
             .flatten()
+            .chain([regular_error, panic_error].iter())
             .map(|error| {
                 let short_signature: [u8; 4] =
                     error.signature().as_bytes()[0..4].try_into().unwrap();
@@ -246,7 +269,13 @@ impl LedgerClient {
         })?;
 
         if error_data.len() < 4 {
-            return Ok(String::from("Transaction reverted silently"));
+            return Err(VdrError::ContractInvalidResponseData(
+                format!(
+                    "Unable to parse the revert reason: Incorrect data {}",
+                    revert_reason
+                )
+                .to_string(),
+            ))
         }
 
         let signature: &[u8; 4] = error_data[0..4].try_into().unwrap();
@@ -460,7 +489,10 @@ pub mod test {
     }
 
     mod create {
-        use crate::validator_control::test::VALIDATOR_CONTROL_NAME;
+        use crate::{
+            transaction::test::write_transaction, 
+            validator_control::test::VALIDATOR_CONTROL_NAME, SignatureData,
+        };
         use mockall::predicate::eq;
         use rstest::rstest;
         use serde_json::Value;
@@ -551,6 +583,50 @@ pub mod test {
             let error = client.submit_transaction(&transaction).await.unwrap_err();
 
             assert_eq!(error, expected_error);
+        }
+
+        #[rstest]
+        #[case::regular_error(
+            "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a4e6f7420656e6f7567682045746865722070726f76696465642e000000000000", 
+            "Error(message: Not enough Ether provided.)",
+        )]
+        #[case::panic_error(
+            "0x4e487b710000000000000000000000000000000000000000000000000000000000000011", 
+            "Panic(code: 11)",
+        )]
+        #[case::custom_error(
+            "0x863b93fe000000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5", 
+            "DidNotFound(identity: f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5)"
+        )]
+        async fn handle_transaction_reverts(
+            #[case] encoded_error: &'static str,
+            #[case] decoded_error: &str,
+        ) {
+            let mut transaction = Transaction {
+                to: CONFIG.contracts.ethereum_did_registry.address.clone(),
+                ..write_transaction()
+            };
+            let fake_signature = SignatureData { 
+                recovery_id: 1, 
+                signature: vec![1; 64] 
+            };
+            transaction.set_signature(fake_signature);
+
+            let mut client_mock = MockClient::new();
+            client_mock
+                .expect_submit_transaction()
+                .with(eq(transaction.encode().unwrap()))
+                .returning(move |_| {
+                    Err(VdrError::ClientTransactionReverted(
+                        encoded_error.to_string(),
+                    ))
+                });
+
+            let client = mock_custom_client(Box::new(client_mock));
+
+            let error = client.submit_transaction(&transaction).await.unwrap_err();
+
+            assert_eq!(error, VdrError::ClientTransactionReverted(decoded_error.to_string()));
         }
 
         #[async_std::test]

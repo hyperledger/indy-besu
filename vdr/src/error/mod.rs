@@ -1,12 +1,14 @@
-use serde_json::{json, Value};
+use std::ops::RangeInclusive;
 
-use jsonrpc_core::types::error::Error as RpcError;
+use serde_json::json;
+
+use jsonrpc_core::types::error::{ Error as RpcError, ErrorCode };
 #[cfg(not(feature = "wasm"))]
 use web3::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 #[cfg(feature = "wasm")]
 use web3_wasm::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 
-const EXECUTION_REVERTED_CODE: i64 = -32000;
+const RPC_SERVER_ERROR_RANGE: RangeInclusive<i64> = -32099..=-32000;
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum VdrError {
@@ -86,13 +88,22 @@ impl From<Web3Error> for VdrError {
 
 impl From<RpcError> for VdrError {
     fn from(value: RpcError) -> Self {
-        match value {
-            RpcError {
-                code: jsonrpc_core::ErrorCode::ServerError(EXECUTION_REVERTED_CODE),
-                data: Some(Value::String(error_str)),
-                ..
-            } => VdrError::ClientTransactionReverted(error_str),
-            _ => VdrError::ClientUnexpectedError(json!(value).to_string()),
+        let create_unexpected_error = || VdrError::ClientUnexpectedError(json!(value).to_string());
+
+        match value.code {
+            ErrorCode::ServerError(code) if RPC_SERVER_ERROR_RANGE.contains(&code) => {
+                value.data.as_ref().and_then(|data| data.as_str()).map_or_else(
+                    create_unexpected_error,
+                    |data| {
+                        if data.starts_with("0x") {
+                            VdrError::ClientTransactionReverted(data.to_string())
+                        } else {
+                            create_unexpected_error()
+                        }
+                    },
+                )
+            }
+            _ => create_unexpected_error(),
         }
     }
 }
