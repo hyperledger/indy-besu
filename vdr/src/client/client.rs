@@ -282,16 +282,18 @@ impl LedgerClient {
                 format!(
                     "Unable to parse the revert reason '{}': Cannot match the error selector with registered errors",
                     revert_reason
-                ).to_string()
+                )
+                .to_string()
             )
         })?;
 
-        let decoded_args = error.decode(&arguments).map_err( |_| {
+        let decoded_args = error.decode(&arguments).map_err(|_| {
             VdrError::ContractInvalidResponseData(
                 format!(
                     "Unable to parse the revert reason '{}': Failed to decode the arguments",
                     revert_reason
-                ).to_string()
+                )
+                .to_string(),
             )
         })?;
 
