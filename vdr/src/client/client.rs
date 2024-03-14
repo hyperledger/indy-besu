@@ -54,7 +54,7 @@ impl LedgerClient {
         let client = Box::new(Web3Client::new(rpc_node)?);
 
         let contracts = Self::init_contracts(&client, contract_configs)?;
-        let errors = Self::build_error_map(&contracts);
+        let errors = Self::build_error_map(&contracts)?;
 
         let quorum_handler = match quorum_config {
             Some(quorum_config) => Some(QuorumHandler::new(quorum_config.clone())?),
@@ -220,7 +220,7 @@ impl LedgerClient {
 
     fn build_error_map(
         contracts: &HashMap<String, Box<dyn Contract>>,
-    ) -> HashMap<[u8; 4], AbiError> {
+    ) -> VdrResult<HashMap<[u8; 4], AbiError>> {
         let regular_error = AbiError {
             name: "Error".to_string(),
             inputs: vec![Param {
@@ -246,9 +246,13 @@ impl LedgerClient {
             .chain([regular_error, panic_error].iter())
             .map(|error| {
                 let short_signature: [u8; 4] =
-                    error.signature().as_bytes()[0..4].try_into().unwrap();
+                    error.signature().as_bytes()[0..4].try_into().map_err(|_| {
+                        VdrError::ClientUnexpectedError(
+                            "Cannot convert a slice into an array of 4 bytes".to_string(),
+                        )
+                    })?;
 
-                (short_signature, error.clone())
+                Ok((short_signature, error.clone()))
             })
             .collect()
     }
@@ -274,7 +278,11 @@ impl LedgerClient {
             ));
         }
 
-        let signature: &[u8; 4] = error_data[0..4].try_into().unwrap();
+        let signature: &[u8; 4] = error_data[0..4].try_into().map_err(|_| {
+            VdrError::ClientUnexpectedError(
+                "Cannot convert a slice into an array of 4 bytes".to_string(),
+            )
+        })?;
         let arguments: &[u8] = &error_data[4..];
 
         let error = self.errors.get(signature).ok_or_else( || {
