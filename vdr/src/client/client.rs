@@ -286,7 +286,14 @@ impl LedgerClient {
             )
         })?;
 
-        let decoded_args = error.decode(&arguments)?;
+        let decoded_args = error.decode(&arguments).map_err( |_| {
+            VdrError::ContractInvalidResponseData(
+                format!(
+                    "Unable to parse the revert reason '{}': Failed to decode the arguments",
+                    revert_reason
+                ).to_string()
+            )
+        })?;
 
         let inputs_str: Vec<String> = error
             .inputs
@@ -596,6 +603,14 @@ pub mod test {
         #[case::custom_error(
             "0x863b93fe000000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5",
             VdrError::ClientTransactionReverted("DidNotFound(identity: f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5)".to_string()),
+        )]
+        #[case::error_without_required_argument(
+            "0x863b93fe",
+            VdrError::ContractInvalidResponseData("Unable to parse the revert reason '0x863b93fe': Failed to decode the arguments".to_string()),
+        )]
+        #[case::error_with_extra_argument(
+            "0x4e487b71000000000000000000000000000000000000000000000000000000000000001100000000000000000000000000000000000000000000000000000000000011",
+            VdrError::ClientTransactionReverted("Panic(code: 11)".to_string()),
         )]
         #[case::incorrect_error_selector(
             "0x9999999e000000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5", 
