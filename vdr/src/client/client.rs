@@ -3,7 +3,7 @@ use std::{
     fmt::{Debug, Formatter},
 };
 
-use ethabi::{ AbiError, Param, ParamType };
+use ethabi::{AbiError, Param, ParamType};
 use log::warn;
 use log_derive::{logfn, logfn_inputs};
 
@@ -223,24 +223,20 @@ impl LedgerClient {
     ) -> HashMap<[u8; 4], AbiError> {
         let regular_error = AbiError {
             name: "Error".to_string(),
-            inputs: vec![
-                Param {
-                    name: "message".to_string(),
-                    kind: ParamType::String,
-                    internal_type: None,
-                }
-            ]
+            inputs: vec![Param {
+                name: "message".to_string(),
+                kind: ParamType::String,
+                internal_type: None,
+            }],
         };
 
         let panic_error = AbiError {
             name: "Panic".to_string(),
-            inputs: vec![
-                Param {
-                    name: "code".to_string(),
-                    kind: ParamType::Uint(256),
-                    internal_type: None,
-                }
-            ]
+            inputs: vec![Param {
+                name: "code".to_string(),
+                kind: ParamType::Uint(256),
+                internal_type: None,
+            }],
         };
 
         contracts
@@ -261,7 +257,7 @@ impl LedgerClient {
         let error_data = hex::decode(revert_reason.trim_start_matches("0x")).map_err(|_| {
             VdrError::ContractInvalidResponseData(
                 format!(
-                    "Unable to parse the revert reason: Incorrect hex string {}",
+                    "Unable to parse the revert reason '{}': Incorrect hex string",
                     revert_reason
                 )
                 .to_string(),
@@ -271,11 +267,11 @@ impl LedgerClient {
         if error_data.len() < 4 {
             return Err(VdrError::ContractInvalidResponseData(
                 format!(
-                    "Unable to parse the revert reason: Incorrect data {}",
+                    "Unable to parse the revert reason '{}': Incorrect data",
                     revert_reason
                 )
                 .to_string(),
-            ))
+            ));
         }
 
         let signature: &[u8; 4] = error_data[0..4].try_into().unwrap();
@@ -284,7 +280,7 @@ impl LedgerClient {
         let error = self.errors.get(signature).ok_or_else( || {
             VdrError::ContractInvalidResponseData(
                 format!(
-                    "Unable to parse the revert reason: Cannot match the error selector with registered errors {}", 
+                    "Unable to parse the revert reason '{}': Cannot match the error selector with registered errors",
                     revert_reason
                 ).to_string()
             )
@@ -292,10 +288,13 @@ impl LedgerClient {
 
         let decoded_args = error.decode(&arguments)?;
 
-        let inputs_str: Vec<String> = error.inputs.iter().enumerate().map(|(i, input)| {
-            format!("{}: {}", input.name, decoded_args[i].to_string())
-        }).collect();
-        
+        let inputs_str: Vec<String> = error
+            .inputs
+            .iter()
+            .enumerate()
+            .map(|(i, input)| format!("{}: {}", input.name, decoded_args[i].to_string()))
+            .collect();
+
         let inputs_joined = inputs_str.join(", ");
         let decoded_str = format!("{}({})", error.name, inputs_joined);
 
@@ -490,8 +489,8 @@ pub mod test {
 
     mod create {
         use crate::{
-            transaction::test::write_transaction, 
-            validator_control::test::VALIDATOR_CONTROL_NAME, SignatureData,
+            transaction::test::write_transaction, validator_control::test::VALIDATOR_CONTROL_NAME,
+            SignatureData,
         };
         use mockall::predicate::eq;
         use rstest::rstest;
@@ -588,27 +587,43 @@ pub mod test {
         #[rstest]
         #[case::regular_error(
             "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a4e6f7420656e6f7567682045746865722070726f76696465642e000000000000", 
-            "Error(message: Not enough Ether provided.)",
+            VdrError::ClientTransactionReverted("Error(message: Not enough Ether provided.)".to_string()),
         )]
         #[case::panic_error(
-            "0x4e487b710000000000000000000000000000000000000000000000000000000000000011", 
-            "Panic(code: 11)",
+            "0x4e487b710000000000000000000000000000000000000000000000000000000000000011",
+            VdrError::ClientTransactionReverted("Panic(code: 11)".to_string()),
         )]
         #[case::custom_error(
-            "0x863b93fe000000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5", 
-            "DidNotFound(identity: f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5)"
+            "0x863b93fe000000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5",
+            VdrError::ClientTransactionReverted("DidNotFound(identity: f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5)".to_string()),
+        )]
+        #[case::incorrect_error_selector(
+            "0x9999999e000000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5", 
+            VdrError::ContractInvalidResponseData("Unable to parse the revert reason '0x9999999e000000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5': Cannot match the error selector with registered errors".to_string())
+        )]
+        #[case::incorrect_hex(
+            "0xQQ123456e00000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5", 
+            VdrError::ContractInvalidResponseData("Unable to parse the revert reason '0xQQ123456e00000000000000000000000f0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5': Incorrect hex string".to_string())
+        )]
+        #[case::empty_data(
+            "", 
+            VdrError::ContractInvalidResponseData("Unable to parse the revert reason '': Incorrect data".to_string())
+        )]
+        #[case::incorrect_data(
+            "0x9999", 
+            VdrError::ContractInvalidResponseData("Unable to parse the revert reason '0x9999': Incorrect data".to_string())
         )]
         async fn handle_transaction_reverts(
-            #[case] encoded_error: &'static str,
-            #[case] decoded_error: &str,
+            #[case] encoded_error_message: &'static str,
+            #[case] expected_error: VdrError,
         ) {
             let mut transaction = Transaction {
                 to: CONFIG.contracts.ethereum_did_registry.address.clone(),
                 ..write_transaction()
             };
-            let fake_signature = SignatureData { 
-                recovery_id: 1, 
-                signature: vec![1; 64] 
+            let fake_signature = SignatureData {
+                recovery_id: 1,
+                signature: vec![1; 64],
             };
             transaction.set_signature(fake_signature);
 
@@ -618,15 +633,15 @@ pub mod test {
                 .with(eq(transaction.encode().unwrap()))
                 .returning(move |_| {
                     Err(VdrError::ClientTransactionReverted(
-                        encoded_error.to_string(),
+                        encoded_error_message.to_string(),
                     ))
                 });
 
             let client = mock_custom_client(Box::new(client_mock));
 
-            let error = client.submit_transaction(&transaction).await.unwrap_err();
+            let actual_error = client.submit_transaction(&transaction).await.unwrap_err();
 
-            assert_eq!(error, VdrError::ClientTransactionReverted(decoded_error.to_string()));
+            assert_eq!(actual_error, expected_error);
         }
 
         #[async_std::test]
