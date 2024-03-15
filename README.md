@@ -1,4 +1,4 @@
-# Indy ledger
+# Indy Besu ledger
 
 ## Goals and ideas
 
