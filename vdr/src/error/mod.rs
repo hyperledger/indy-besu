@@ -1,9 +1,14 @@
+use std::ops::RangeInclusive;
+
 use serde_json::json;
 
+use jsonrpc_core::types::error::{Error as RpcError, ErrorCode};
 #[cfg(not(feature = "wasm"))]
 use web3::{ethabi::Error as Web3EthabiError, Error as Web3Error};
 #[cfg(feature = "wasm")]
 use web3_wasm::{ethabi::Error as Web3EthabiError, Error as Web3Error};
+
+const RPC_SERVER_ERROR_RANGE: RangeInclusive<i64> = -32099..=-32000;
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum VdrError {
@@ -16,7 +21,7 @@ pub enum VdrError {
     #[error("Ledger Client: Invalid transaction: {}", _0)]
     ClientInvalidTransaction(String),
 
-    #[error("Ledger Client: Invalid endorsement dara: {}", _0)]
+    #[error("Ledger Client: Invalid endorsement data: {}", _0)]
     ClientInvalidEndorsementData(String),
 
     #[error("Ledger Client: Got invalid response: {}", _0)]
@@ -75,8 +80,29 @@ impl From<Web3Error> for VdrError {
         match value {
             Web3Error::Unreachable => VdrError::ClientNodeUnreachable,
             Web3Error::InvalidResponse(err) => VdrError::ClientInvalidResponse(err),
-            Web3Error::Rpc(err) => VdrError::ClientTransactionReverted(json!(err).to_string()),
+            Web3Error::Rpc(err) => err.into(),
             _ => VdrError::ClientUnexpectedError(value.to_string()),
+        }
+    }
+}
+
+impl From<RpcError> for VdrError {
+    fn from(value: RpcError) -> Self {
+        let create_unexpected_error = || VdrError::ClientUnexpectedError(json!(value).to_string());
+
+        match value.code {
+            ErrorCode::ServerError(code) if RPC_SERVER_ERROR_RANGE.contains(&code) => value
+                .data
+                .as_ref()
+                .and_then(|data| data.as_str())
+                .map_or_else(create_unexpected_error, |data| {
+                    if data.starts_with("0x") {
+                        VdrError::ClientTransactionReverted(data.to_string())
+                    } else {
+                        create_unexpected_error()
+                    }
+                }),
+            _ => create_unexpected_error(),
         }
     }
 }
@@ -98,5 +124,45 @@ impl From<secp256k1::Error> for VdrError {
             secp256k1::Error::InvalidMessage => VdrError::SignerInvalidMessage,
             err => VdrError::SignerUnexpectedError(err.to_string()),
         }
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use super::*;
+    use jsonrpc_core::{
+        types::error::{Error as RpcError, ErrorCode},
+        Value,
+    };
+    use rstest::rstest;
+
+    #[rstest]
+    #[case::rpc_error_with_hex_string_data(
+        RpcError { code:  ErrorCode::ServerError(-32000), message: "transaction reverted".to_string(), data: Option::Some(Value::String("0x4e487b710000000000000000000000000000000000000000000000000000000000000011".to_string()))}, 
+        VdrError::ClientTransactionReverted("0x4e487b710000000000000000000000000000000000000000000000000000000000000011".to_string()),
+    )]
+    #[case::rpc_error_without_data(
+        RpcError { code:  ErrorCode::ServerError(-32000), message: "transaction reverted".to_string(), data: Option::None}, 
+        VdrError::ClientUnexpectedError("{\"code\":-32000,\"message\":\"transaction reverted\"}".to_string()),
+    )]
+    #[case::rpc_error_with_text_data(
+        RpcError { code:  ErrorCode::ServerError(-32000), message: "transaction reverted".to_string(), data: Option::Some(Value::String("Error(message: Not enough Ether provided.)".to_string()))}, 
+        VdrError::ClientUnexpectedError("{\"code\":-32000,\"data\":\"Error(message: Not enough Ether provided.)\",\"message\":\"transaction reverted\"}".to_string()),
+    )]
+    #[case::rpc_error_with_boolean_data(
+        RpcError { code:  ErrorCode::ServerError(-32000), message: "Invalid request".to_string(), data: Option::Some(Value::Bool(true))}, 
+        VdrError::ClientUnexpectedError("{\"code\":-32000,\"data\":true,\"message\":\"Invalid request\"}".to_string()),
+    )]
+    #[case::rpc_error_with_invalid_request_code(
+        RpcError { code:  ErrorCode::InvalidRequest, message: "Invalid request".to_string(), data: Option::None}, 
+        VdrError::ClientUnexpectedError("{\"code\":-32600,\"message\":\"Invalid request\"}".to_string()),
+    )]
+    fn convert_rpc_error_to_vdr_error_test(
+        #[case] rpc_error: RpcError,
+        #[case] expected_vdr_error: VdrError,
+    ) {
+        let actual_vdr_error: VdrError = rpc_error.into();
+
+        assert_eq!(actual_vdr_error, expected_vdr_error);
     }
 }

@@ -5,7 +5,7 @@ pub mod quorum;
 
 use crate::{error::VdrResult, types::Address, BlockDetails, Transaction};
 use async_trait::async_trait;
-use ethabi::{Event, Function};
+use ethabi::{AbiError, Event, Function};
 use std::fmt::Debug;
 
 pub use client::LedgerClient;
@@ -105,4 +105,10 @@ pub trait Contract: Sync + Send + Debug {
     /// # Returns
     /// Contract event
     fn event(&self, name: &str) -> VdrResult<&Event>;
+
+    /// Get the contract errors
+    ///
+    /// # Returns
+    /// Contract errors
+    fn errors(&self) -> Vec<&AbiError>;
 }
