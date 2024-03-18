@@ -656,7 +656,7 @@ pub mod test {
             client_mock
                 .expect_submit_transaction()
                 .with(eq(transaction.encode().unwrap()))
-                .returning(move |_| {
+                .returning(|_| {
                     Err(VdrError::ClientTransactionReverted(
                         encoded_error_message.to_string(),
                     ))
