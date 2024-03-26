@@ -43,6 +43,7 @@ pub async fn build_create_did_transaction(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
+    did_doc.validate()?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_CREATE_DID)
@@ -70,6 +71,7 @@ pub async fn build_create_did_endorsing_data(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<TransactionEndorsingData> {
+    did_doc.validate()?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&Address::try_from(did)?)
@@ -98,6 +100,7 @@ pub async fn build_update_did_transaction(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<Transaction> {
+    did_doc.validate()?;
     TransactionBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_UPDATE_DID)
@@ -125,6 +128,7 @@ pub async fn build_update_did_endorsing_data(
     did: &DID,
     did_doc: &DidDocument,
 ) -> VdrResult<TransactionEndorsingData> {
+    did_doc.validate()?;
     TransactionEndorsingDataBuilder::new()
         .set_contract(CONTRACT_NAME)
         .set_identity(&Address::try_from(did)?)
@@ -220,10 +224,14 @@ pub async fn build_resolve_did_transaction(
 #[logfn(Info)]
 #[logfn_inputs(Debug)]
 pub fn parse_resolve_did_result(client: &LedgerClient, bytes: &[u8]) -> VdrResult<DidRecord> {
-    TransactionParser::new()
+    let did_record = TransactionParser::new()
         .set_contract(CONTRACT_NAME)
         .set_method(METHOD_RESOLVE_DID)
-        .parse::<DidRecord>(client, bytes)
+        .parse::<DidRecord>(client, bytes)?;
+
+    did_record.document.validate()?;
+
+    Ok(did_record)
 }
 
 #[cfg(test)]

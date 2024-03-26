@@ -61,6 +61,9 @@ pub enum VdrError {
     #[error("Could not get transaction: {}", _0)]
     GetTransactionError(String),
 
+    #[error("Invalid DID document: {}", _0)]
+    InvalidDidDocument(String),
+
     #[error("Invalid schema: {}", _0)]
     InvalidSchema(String),
 

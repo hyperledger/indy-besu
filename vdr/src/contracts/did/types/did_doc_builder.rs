@@ -66,6 +66,7 @@ impl DidDocumentBuilder {
             None,
             None,
             None,
+            None,
         );
         did_doc_builder.add_authentication_reference(kid)?;
         did_doc_builder.add_assertion_method_reference(kid)?;
@@ -105,6 +106,7 @@ impl DidDocumentBuilder {
         public_key_hex: Option<&str>,
         public_key_base58: Option<&str>,
         public_key_base64: Option<&str>,
+        public_key_jwk: Option<&str>,
     ) {
         let verification_method = VerificationMethod {
             id: id.to_string(),
@@ -115,6 +117,7 @@ impl DidDocumentBuilder {
             public_key_hex: public_key_hex.map(String::from),
             public_key_base58: public_key_base58.map(String::from),
             public_key_base64: public_key_base64.map(String::from),
+            public_key_jwk: public_key_jwk.map(String::from),
         };
         self.verification_method
             .push((key.to_string(), verification_method));
@@ -131,6 +134,7 @@ impl DidDocumentBuilder {
         public_key_hex: Option<&str>,
         public_key_base58: Option<&str>,
         public_key_base64: Option<&str>,
+        public_key_jwk: Option<&str>,
     ) {
         self.key_index += 1;
         let id = format!("{}#delegate-{}", self.id.as_ref(), self.key_index);
@@ -143,6 +147,7 @@ impl DidDocumentBuilder {
             public_key_hex: public_key_hex.map(String::from),
             public_key_base58: public_key_base58.map(String::from),
             public_key_base64: public_key_base64.map(String::from),
+            public_key_jwk: public_key_jwk.map(String::from),
         };
         self.verification_method
             .push((key.to_string(), verification_method));
@@ -426,6 +431,7 @@ pub mod test {
             None,
             None,
             None,
+            None,
         );
         builder.add_delegate_key(
             KEY_2_INDEX,
@@ -435,6 +441,7 @@ pub mod test {
             None,
             Some("FbQWLPRhTH95MCkQUeFYdiSoQt8zMwetqfWoxqPgaq7x"),
             None,
+            None,
         );
         builder.add_delegate_key(
             KEY_3_INDEX,
@@ -442,6 +449,7 @@ pub mod test {
             None,
             None,
             Some("02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71"),
+            None,
             None,
             None,
         );

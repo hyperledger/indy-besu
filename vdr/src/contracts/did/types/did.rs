@@ -1,7 +1,12 @@
 use crate::{types::ContractOutput, ContractParam, VdrError, VdrResult};
+use once_cell::sync::Lazy;
+use regex_lite::Regex;
 use serde_derive::{Deserialize, Serialize};
 
 pub const DID_PREFIX: &str = "did";
+
+static DID_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"/^did:(indybesu|ethr):([a-zA-Z0-9]+:)*0x[a-fA-F0-9]{40}$").unwrap());
 
 /// Wrapper structure for DID
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -18,6 +23,23 @@ impl DID {
 
     pub fn without_network(&self) -> VdrResult<DID> {
         Ok(ParsedDid::try_from(self)?.as_short_did())
+    }
+
+    pub fn get_method_specefic_id(&self) -> &str {
+        let (_, id) = self.0.rsplit_once(':').unwrap_or_default();
+
+        id
+    }
+
+    pub(crate) fn validate(&self) -> VdrResult<()> {
+        if !DID_REGEX.is_match(&self.0) {
+            return Err(VdrError::InvalidDidDocument(format!(
+                "Incorrect DID syntax {:?}",
+                &self.0
+            )));
+        };
+
+        Ok(())
     }
 }
 
