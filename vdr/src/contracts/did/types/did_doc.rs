@@ -308,7 +308,7 @@ impl VerificationMethodOrReference {
 pub struct Service {
     pub id: String,
     #[serde(rename = "type")]
-    pub type_: String, //TODO Convert into enum
+    pub type_: ServiceType,
     pub service_endpoint: ServiceEndpoint,
 }
 
@@ -321,13 +321,54 @@ impl Service {
             )));
         }
 
-        if self.type_.is_empty() {
-            return Err(VdrError::InvalidDidDocument(
-                "Service type is not provided".to_string(),
-            ));
-        }
-
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum ServiceType {
+    LinkedDomains,
+    DIDCommMessaging,
+    CredentialRegistry,
+    OID4VCI,
+    OID4VP,
+}
+
+impl ToString for ServiceType {
+    fn to_string(&self) -> String {
+        match self {
+            ServiceType::LinkedDomains => "LinkedDomains".to_string(),
+            ServiceType::DIDCommMessaging => "DIDCommMessaging".to_string(),
+            ServiceType::CredentialRegistry => "CredentialRegistry".to_string(),
+            ServiceType::OID4VCI => "OID4VCI".to_string(),
+            ServiceType::OID4VP => "OID4VP".to_string(),
+        }
+    }
+}
+
+impl TryFrom<&str> for ServiceType {
+    type Error = VdrError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "LinkedDomains" => Ok(ServiceType::LinkedDomains),
+            "DIDCommMessaging" => Ok(ServiceType::DIDCommMessaging),
+            "CredentialRegistry" => Ok(ServiceType::CredentialRegistry),
+            "OID4VCI" => Ok(ServiceType::OID4VCI),
+            "OID4VP" => Ok(ServiceType::OID4VP),
+            _type => Err({
+                let vdr_error =
+                    VdrError::CommonInvalidData(format!("Unexpected service type {}", _type));
+
+                warn!(
+                    "Error: {} during converting ServiceType from String: {} ",
+                    vdr_error, value
+                );
+
+                vdr_error
+            }),
+        }
     }
 }
 
@@ -461,15 +502,14 @@ pub mod test {
     pub const TEST_ETHR_DID_WITHOUT_NETWORK: &str =
         "did:ethr:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const SERVICE_ENDPOINT: &str = "http://example.com";
-    pub const SERVICE_TYPE: &str = "Service";
     pub const MULTIBASE_KEY: &'static str = "zAKJP3f7BD6W4iWEQ9jwndVTCBq8ua2Utt8EEjJ6Vxsf";
     pub const BASE58_KEY: &'static str = "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV";
     pub const KEY_1: &'static str = "KEY-1";
 
-    pub fn _service(id: &str) -> Service {
+    pub fn service(id: &str) -> Service {
         Service {
             id: id.to_string(),
-            type_: SERVICE_TYPE.to_string(),
+            type_: ServiceType::LinkedDomains,
             service_endpoint: ServiceEndpoint::String(SERVICE_ENDPOINT.to_string()),
         }
     }
@@ -486,14 +526,6 @@ pub mod test {
             public_key_base58: None,
             public_key_base64: None,
             public_key_jwk: None,
-        }
-    }
-
-    pub fn service(id: &str) -> Service {
-        Service {
-            id: id.to_string(),
-            type_: "LinkedDomains".to_string(),
-            service_endpoint: ServiceEndpoint::String("https://.example.com".to_string()),
         }
     }
 
@@ -673,23 +705,6 @@ pub mod test {
 
             let expected_error =
                 VdrError::InvalidDidDocument("Invalid service ID: test".to_string());
-
-            let actual_error = did_document.validate().unwrap_err();
-
-            assert_eq!(actual_error, expected_error);
-        }
-
-        #[test]
-        fn empty_service_type() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
-
-            let service_id = format!("{}#{}", TEST_INDYBESU_DID, "service");
-            let mut service_with_empty_type = service(&service_id);
-            service_with_empty_type.type_ = "".to_string();
-            did_document.service = vec![service_with_empty_type];
-
-            let expected_error =
-                VdrError::InvalidDidDocument("Service type is not provided".to_string());
 
             let actual_error = did_document.validate().unwrap_err();
 

@@ -5,7 +5,7 @@ use crate::{
     contracts::{
         did::{
             types::did_doc::{
-                Service, ServiceEndpoint, StringOrVector, VerificationMethod,
+                Service, ServiceEndpoint, ServiceType, StringOrVector, VerificationMethod,
                 VerificationMethodOrReference, BASE_CONTEXT,
             },
             KEYS_CONTEXT, SECPK_CONTEXT,
@@ -287,7 +287,7 @@ impl DidDocumentBuilder {
         &mut self,
         key: &str,
         id: Option<&str>,
-        type_: &str,
+        type_: &ServiceType,
         endpoint: &ServiceEndpoint,
     ) {
         self.service_index += 1;
@@ -296,7 +296,7 @@ impl DidDocumentBuilder {
             .unwrap_or_else(|| format!("{}#service-{}", self.id.as_ref(), self.service_index));
         let service = Service {
             id,
-            type_: type_.to_string(),
+            type_: type_.clone(),
             service_endpoint: endpoint.clone(),
         };
         self.service.push((key.to_string(), service));
@@ -396,11 +396,15 @@ impl DidDocumentBuilder {
 #[cfg(test)]
 pub mod test {
     use super::*;
+
     use crate::{
         client::client::test::TEST_ACCOUNT,
-        contracts::types::did_doc::test::{
-            default_ethr_did_document, SERVICE_ENDPOINT, SERVICE_TYPE, TEST_ETHR_DID,
-            TEST_ETHR_DID_WITHOUT_NETWORK,
+        contracts::{
+            types::did_doc::test::{
+                default_ethr_did_document, SERVICE_ENDPOINT, TEST_ETHR_DID,
+                TEST_ETHR_DID_WITHOUT_NETWORK,
+            },
+            ServiceType,
         },
     };
 
@@ -461,7 +465,7 @@ pub mod test {
         builder.add_service(
             SERVICE_1_INDEX,
             None,
-            SERVICE_TYPE,
+            &ServiceType::LinkedDomains,
             &ServiceEndpoint::String(SERVICE_ENDPOINT.to_string()),
         );
         let did_document = builder.build();

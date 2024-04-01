@@ -1,6 +1,9 @@
 use crate::{
     contracts::{
-        did::types::did_events::{DidAttributeChanged, DidEvents},
+        did::types::{
+            did_doc::ServiceType,
+            did_events::{DidAttributeChanged, DidEvents},
+        },
         ServiceEndpoint,
     },
     types::ContractParam,
@@ -213,7 +216,7 @@ impl From<PublicKeyType> for VerificationKeyType {
 #[serde(rename_all = "camelCase")]
 pub struct ServiceAttribute {
     #[serde(rename = "type")]
-    pub type_: String,
+    pub type_: ServiceType,
     pub service_endpoint: ServiceEndpoint,
 }
 
@@ -237,9 +240,10 @@ impl DidDocAttribute {
                     key_encoding
                 )))
             }
-            DidDocAttribute::Service(service) => {
-                Ok(DidDocAttributeName(format!("did/svc/{}", service.type_)))
-            }
+            DidDocAttribute::Service(service) => Ok(DidDocAttributeName(format!(
+                "did/svc/{}",
+                service.type_.to_string()
+            ))),
         }
     }
 
@@ -350,7 +354,7 @@ impl TryFrom<&DidAttributeChanged> for DidDocAttribute {
                 };
 
                 Ok(DidDocAttribute::Service(ServiceAttribute {
-                    type_: type_.to_string(),
+                    type_: ServiceType::try_from(*type_)?,
                     service_endpoint,
                 }))
             }
