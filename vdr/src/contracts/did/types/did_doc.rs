@@ -4,7 +4,7 @@ use crate::{
     Address, Block,
 };
 
-use crate::contracts::did::types::did::DID;
+use crate::contracts::did::types::did::{DID, DID_URL_REGEX};
 use log::warn;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -147,7 +147,6 @@ pub struct VerificationMethod {
 
 impl VerificationMethod {
     fn validate(&self, did: &DID) -> VdrResult<()> {
-        // FIXME: Check that the ID matches DID URL syntax: https://www.w3.org/TR/did-core/#did-url-syntax 
         if !(self.id.starts_with(did.as_ref()) || self.id.starts_with("#")) {
             return Err(VdrError::InvalidDidDocument(format!(
                 "Invalid verefication method ID: {}",
@@ -178,14 +177,14 @@ impl VerificationMethod {
 
         if key_materials_count == 0 {
             return Err(VdrError::InvalidDidDocument(format!(
-                "No public key found in the verification method with ID {}",
+                "No public key was found for the verification method with ID: {}",
                 self.id
             )));
         }
 
         if key_materials_count > 1 {
             return Err(VdrError::InvalidDidDocument(format!(
-                "Multiple public keys detected in the verification method with ID {}",
+                "Multiple public keys detected in the verification method with ID: {}",
                 self.id
             )));
         }
@@ -281,17 +280,21 @@ impl VerificationMethodOrReference {
                 verification_method.validate(did)?;
             }
             VerificationMethodOrReference::String(id) => {
+                if !DID_URL_REGEX.is_match(id.as_ref()) {
+                    return Err(VdrError::InvalidDidDocument(format!(
+                        "Invalid verification reference ID: {id}"
+                    )));
+                }
+
                 if id.starts_with(did.as_ref()) {
-                    let is_id_defined = verification_methods.iter().any(|vm| &vm.id == id);
-                    if !is_id_defined {
+                    let exist = verification_methods
+                        .iter()
+                        .any(|vm| &vm.id == id || &format!("{}{}", did.as_ref(), &vm.id) == id);
+                    if !exist {
                         return Err(VdrError::InvalidDidDocument(format!(
-                            "Unable to find verification method for reference ID: {id}",
+                            "Verification method not found for reference ID: {id}",
                         )));
                     }
-                } else {
-                    DID::from(id.as_ref()).validate().map_err(|_| {
-                        VdrError::InvalidDidDocument(format!("Invalid verification reference ID: {id}"))
-                    })?;
                 }
             }
         };
@@ -453,8 +456,7 @@ pub mod test {
     use super::*;
     use crate::{contracts::ETHR_DID_METHOD, did_indy_registry::INDYBESU_DID_METHOD};
 
-    pub const TEST_INDYBESU_DID: &str =
-        "did:indybesu:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
+    pub const TEST_INDYBESU_DID: &str = "did:indybesu:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const TEST_ETHR_DID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const TEST_ETHR_DID_WITHOUT_NETWORK: &str =
         "did:ethr:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
@@ -488,9 +490,9 @@ pub mod test {
     }
 
     pub fn service(id: &str) -> Service {
-        Service { 
-            id: id.to_string(), 
-            type_: "LinkedDomains".to_string(), 
+        Service {
+            id: id.to_string(),
+            type_: "LinkedDomains".to_string(),
             service_endpoint: ServiceEndpoint::String("https://.example.com".to_string()),
         }
     }
@@ -559,9 +561,9 @@ pub mod test {
         use super::*;
 
         #[test]
-        fn incorrect_did_syntax() {
-            let did_document = did_doc("invalid");
-            
+        fn invalid_did_syntax() {
+            let did_document = did_doc("did:test:example");
+
             let expected_error = VdrError::InvalidDidDocument(format!(
                 "Incorrect DID: {}",
                 did_document.id.as_ref()
@@ -573,12 +575,12 @@ pub mod test {
         }
 
         #[test]
-        fn incorrect_verification_method_id() {
+        fn invalid_verification_method_id() {
             let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
-            did_document.verification_method[0].id = "invalid".to_string();
-            
+            did_document.verification_method[0].id = "did:test:example#test".to_string();
+
             let expected_error = VdrError::InvalidDidDocument(format!(
-                "Invalid verefication method ID: invalid",
+                "Invalid verefication method ID: did:test:example#test",
             ));
 
             let actual_error = did_document.validate().unwrap_err();
@@ -587,9 +589,9 @@ pub mod test {
         }
 
         #[test]
-        fn verification_method_with_incorrect_controller_syntax() {
+        fn invalid_verification_method_controller_syntax() {
             let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
-            did_document.verification_method[0].controller = "invalid".to_string();
+            did_document.verification_method[0].controller = "test".to_string();
 
             let expected_error = VdrError::InvalidDidDocument(format!(
                 "Invalid controller syntax in the verification method: {}",
@@ -602,14 +604,14 @@ pub mod test {
         }
 
         #[test]
-        fn incorrect_verification_reference() {
+        fn invalid_verification_reference() {
             let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
             did_document
                 .authentication
-                .push(verification_relationship("#test"));
+                .push(verification_relationship("did:test:example#test"));
 
             let expected_error = VdrError::InvalidDidDocument(format!(
-                "Invalid verification reference ID: #test",
+                "Invalid verification reference ID: did:test:example#test",
             ));
 
             let actual_error = did_document.validate().unwrap_err();
@@ -618,22 +620,7 @@ pub mod test {
         }
 
         #[test]
-        fn verification_method_without_key_matarial() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
-            did_document.verification_method[0].public_key_multibase = None;
-
-            let expected_error = VdrError::InvalidDidDocument(format!(
-                "No public key found in the verification method with ID: {}",
-                &did_document.verification_method[0].id
-            ));
-
-            let actual_error = did_document.validate().unwrap_err();
-
-            assert_eq!(actual_error, expected_error);
-        }
-
-        #[test]
-        fn verification_method_is_not_defined() {
+        fn nonexistent_verification_method() {
             let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
             let key_id = format!("{}#{}", TEST_INDYBESU_DID, "key-2");
             did_document
@@ -641,7 +628,7 @@ pub mod test {
                 .push(verification_relationship(&key_id));
 
             let expected_error = VdrError::InvalidDidDocument(format!(
-                "Unable to find verification method for reference ID: {key_id}"
+                "Verification method not found for reference ID: {key_id}"
             ));
 
             let actual_error = did_document.validate().unwrap_err();
@@ -650,12 +637,12 @@ pub mod test {
         }
 
         #[test]
-        fn verification_method_with_two_key_materials() {
+        fn verification_method_without_key_material() {
             let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
-            did_document.verification_method[0].public_key_base58 = Some(BASE58_KEY.to_string());
+            did_document.verification_method[0].public_key_multibase = None;
 
             let expected_error = VdrError::InvalidDidDocument(format!(
-                "Multiple public keys detected in the verification method with ID {}",
+                "No public key was found for the verification method with ID: {}",
                 &did_document.verification_method[0].id
             ));
 
@@ -665,11 +652,27 @@ pub mod test {
         }
 
         #[test]
-        fn invlid_service_id() {
+        fn verification_method_with_multiple_key_materials() {
             let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
-            did_document.service = vec![service("#test")];
+            did_document.verification_method[0].public_key_base58 = Some(BASE58_KEY.to_string());
 
-            let expected_error = VdrError::InvalidDidDocument("Invalid service ID: #test".to_string());
+            let expected_error = VdrError::InvalidDidDocument(format!(
+                "Multiple public keys detected in the verification method with ID: {}",
+                &did_document.verification_method[0].id
+            ));
+
+            let actual_error = did_document.validate().unwrap_err();
+
+            assert_eq!(actual_error, expected_error);
+        }
+
+        #[test]
+        fn invalid_service_id() {
+            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            did_document.service = vec![service("test")];
+
+            let expected_error =
+                VdrError::InvalidDidDocument("Invalid service ID: test".to_string());
 
             let actual_error = did_document.validate().unwrap_err();
 
@@ -685,7 +688,8 @@ pub mod test {
             service_with_empty_type.type_ = "".to_string();
             did_document.service = vec![service_with_empty_type];
 
-            let expected_error = VdrError::InvalidDidDocument("Service type is not provided".to_string());
+            let expected_error =
+                VdrError::InvalidDidDocument("Service type is not provided".to_string());
 
             let actual_error = did_document.validate().unwrap_err();
 
@@ -693,7 +697,7 @@ pub mod test {
         }
 
         #[test]
-        fn valid_did_doc() {
+        fn valid_did_document() {
             let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
             let service_id = format!("{}#{}", TEST_INDYBESU_DID, "service");
             did_document.service = vec![service(&service_id)];

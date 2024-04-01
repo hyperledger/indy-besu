@@ -5,11 +5,16 @@ use serde_derive::{Deserialize, Serialize};
 
 pub const DID_PREFIX: &str = "did";
 
+const DID_SYNTAX: &str = r"did:(?:indybesu|ethr):(?:[a-zA-Z0-9]+:)*0x[a-fA-F0-9]{40}";
+const PATH: &str = r"(?:\/[^#?]*)?";
+const QUERY: &str = r"(?:[?][^#]*)?";
+const FRAGMENT: &str = r"(?:[#].*)?";
 
+static DID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&format!("^{DID_SYNTAX}$")).unwrap());
 
-static DID_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^did:(?:indybesu|ethr):(?:[a-zA-Z0-9]+:)*0x[a-fA-F0-9]{40}$").unwrap());
-    
+pub static DID_URL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(&format!("^{DID_SYNTAX}{PATH}{QUERY}{FRAGMENT}$")).unwrap());
+
 /// Wrapper structure for DID
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct DID(String);
@@ -35,7 +40,10 @@ impl DID {
 
     pub(crate) fn validate(&self) -> VdrResult<()> {
         if !DID_REGEX.is_match(&self.0) {
-            return Err(VdrError::InvalidDidDocument(format!("Incorrect DID: {}", &self.0)));
+            return Err(VdrError::InvalidDidDocument(format!(
+                "Incorrect DID: {}",
+                &self.0
+            )));
         };
 
         Ok(())
