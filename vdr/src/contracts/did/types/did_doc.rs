@@ -1,10 +1,11 @@
 use crate::{
+    contracts::did::types::did::{DID, DID_URL_REGEX},
     error::{VdrError, VdrResult},
     types::{ContractOutput, ContractParam},
+    utils::is_unique,
     Address, Block,
 };
 
-use crate::contracts::did::types::did::{DID, DID_URL_REGEX};
 use log::warn;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -75,20 +76,55 @@ impl DidDocument {
     pub(crate) fn validate(&self) -> VdrResult<()> {
         self.id.validate()?;
 
-        for verification_method in self.verification_method.iter() {
-            verification_method.validate(&self.id)?
+        // Validate verification methods
+        for verification_method in &self.verification_method {
+            verification_method.validate(&self.id)?;
         }
 
-        self.assertion_method
+        let verification_relationships = self
+            .assertion_method
             .iter()
             .chain(self.authentication.iter())
             .chain(self.capability_delegation.iter())
             .chain(self.capability_invocation.iter())
             .chain(self.key_agreement.iter())
+            .collect::<Vec<_>>();
+
+        // Validate verification relationships
+        verification_relationships
+            .iter()
             .try_for_each(|relationship| {
                 relationship.validate(&self.id, &self.verification_method)
             })?;
 
+        // Check for unique verification method IDs
+        let verification_method_ids = verification_relationships
+            .iter()
+            .filter_map(|relationship| {
+                if let VerificationMethodOrReference::VerificationMethod(vm) = relationship {
+                    Some(vm)
+                } else {
+                    None
+                }
+            })
+            .chain(self.verification_method.iter())
+            .map(|vm| &vm.id);
+
+        if !is_unique(verification_method_ids) {
+            return Err(VdrError::InvalidDidDocument(
+                "Verification method ID must be unique".to_string(),
+            ));
+        }
+
+        // Check for unique service IDs
+        let service_ids = self.service.iter().map(|value| &value.id);
+        if !is_unique(service_ids) {
+            return Err(VdrError::InvalidDidDocument(
+                "Service ID must be unique".to_string(),
+            ));
+        }
+
+        // Validate services
         for service in self.service.iter() {
             service.validate(&self.id)?;
         }
@@ -147,7 +183,7 @@ pub struct VerificationMethod {
 
 impl VerificationMethod {
     fn validate(&self, did: &DID) -> VdrResult<()> {
-        if !(self.id.starts_with(did.as_ref()) || self.id.starts_with("#")) {
+        if !self.id.starts_with(did.as_ref()) {
             return Err(VdrError::InvalidDidDocument(format!(
                 "Invalid verefication method ID: {}",
                 self.id
@@ -287,9 +323,7 @@ impl VerificationMethodOrReference {
                 }
 
                 if id.starts_with(did.as_ref()) {
-                    let exist = verification_methods
-                        .iter()
-                        .any(|vm| &vm.id == id || &format!("{}{}", did.as_ref(), &vm.id) == id);
+                    let exist = verification_methods.iter().any(|vm| &vm.id == id);
                     if !exist {
                         return Err(VdrError::InvalidDidDocument(format!(
                             "Verification method not found for reference ID: {id}",
@@ -497,6 +531,7 @@ pub mod test {
     use super::*;
     use crate::{contracts::ETHR_DID_METHOD, did_indy_registry::INDYBESU_DID_METHOD};
 
+    pub const TEST_IDENTITY: &str = "0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const TEST_INDYBESU_DID: &str = "did:indybesu:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const TEST_ETHR_DID: &str = "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5";
     pub const TEST_ETHR_DID_WITHOUT_NETWORK: &str =
@@ -586,7 +621,7 @@ pub mod test {
     }
 
     fn did_doc_param() -> ContractParam {
-        ContractParam::Bytes(serde_json::to_vec(&did_doc(TEST_ETHR_DID)).unwrap())
+        ContractParam::Bytes(serde_json::to_vec(&did_doc(TEST_IDENTITY)).unwrap())
     }
 
     mod validate_did_doc {
@@ -608,7 +643,7 @@ pub mod test {
 
         #[test]
         fn invalid_verification_method_id() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             did_document.verification_method[0].id = "did:test:example#test".to_string();
 
             let expected_error = VdrError::InvalidDidDocument(format!(
@@ -622,7 +657,7 @@ pub mod test {
 
         #[test]
         fn invalid_verification_method_controller_syntax() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             did_document.verification_method[0].controller = "test".to_string();
 
             let expected_error = VdrError::InvalidDidDocument(format!(
@@ -637,7 +672,7 @@ pub mod test {
 
         #[test]
         fn invalid_verification_reference() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             did_document
                 .authentication
                 .push(verification_relationship("did:test:example#test"));
@@ -653,7 +688,7 @@ pub mod test {
 
         #[test]
         fn nonexistent_verification_method() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             let key_id = format!("{}#{}", TEST_INDYBESU_DID, "key-2");
             did_document
                 .authentication
@@ -669,8 +704,25 @@ pub mod test {
         }
 
         #[test]
+        fn duplicate_verification_method_id() {
+            let mut did_document = did_doc(TEST_IDENTITY);
+            did_document
+                .authentication
+                .push(VerificationMethodOrReference::VerificationMethod(
+                    verification_method(&did_document.verification_method[0].id),
+                ));
+
+            let expected_error =
+                VdrError::InvalidDidDocument("Verification method ID must be unique".to_string());
+
+            let actual_error = did_document.validate().unwrap_err();
+
+            assert_eq!(actual_error, expected_error);
+        }
+
+        #[test]
         fn verification_method_without_key_material() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             did_document.verification_method[0].public_key_multibase = None;
 
             let expected_error = VdrError::InvalidDidDocument(format!(
@@ -685,7 +737,7 @@ pub mod test {
 
         #[test]
         fn verification_method_with_multiple_key_materials() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             did_document.verification_method[0].public_key_base58 = Some(BASE58_KEY.to_string());
 
             let expected_error = VdrError::InvalidDidDocument(format!(
@@ -700,7 +752,7 @@ pub mod test {
 
         #[test]
         fn invalid_service_id() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             did_document.service = vec![service("test")];
 
             let expected_error =
@@ -712,8 +764,22 @@ pub mod test {
         }
 
         #[test]
+        fn duplicate_service_id() {
+            let mut did_document = did_doc(TEST_IDENTITY);
+            let service_id = format!("{}#{}", TEST_INDYBESU_DID, "service");
+            did_document.service = vec![service(&service_id), service(&service_id)];
+
+            let expected_error =
+                VdrError::InvalidDidDocument("Service ID must be unique".to_string());
+
+            let actual_error = did_document.validate().unwrap_err();
+
+            assert_eq!(actual_error, expected_error);
+        }
+
+        #[test]
         fn valid_did_document() {
-            let mut did_document = did_doc("0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5");
+            let mut did_document = did_doc(TEST_IDENTITY);
             let service_id = format!("{}#{}", TEST_INDYBESU_DID, "service");
             did_document.service = vec![service(&service_id)];
 
@@ -728,7 +794,7 @@ pub mod test {
 
         #[test]
         fn convert_did_doc_into_contract_param_test() {
-            let param: ContractParam = (&did_doc(TEST_ETHR_DID)).try_into().unwrap();
+            let param: ContractParam = (&did_doc(TEST_IDENTITY)).try_into().unwrap();
             assert_eq!(did_doc_param(), param);
         }
     }
@@ -740,7 +806,7 @@ pub mod test {
         fn convert_contract_output_into_did_doc() {
             let data = ContractOutput::new(vec![did_doc_param()]);
             let converted = DidDocument::try_from(&data).unwrap();
-            assert_eq!(did_doc(TEST_ETHR_DID), converted);
+            assert_eq!(did_doc(TEST_IDENTITY), converted);
         }
     }
 }
