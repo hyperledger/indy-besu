@@ -380,7 +380,6 @@ impl Service {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(untagged)]
 pub enum ServiceType {
     LinkedDomains,
     DIDCommMessaging,
