@@ -1,5 +1,5 @@
 use crate::{
-    contracts::did::types::did::{DID, DID_URL_REGEX},
+    contracts::did::types::did::{DID, DID_URL_REGEX, RELATIVE_DID_URL_REGEX},
     error::{VdrError, VdrResult},
     types::{ContractOutput, ContractParam},
     utils::is_unique,
@@ -315,23 +315,43 @@ impl VerificationMethodOrReference {
             VerificationMethodOrReference::VerificationMethod(verification_method) => {
                 verification_method.validate(did)?;
             }
-            VerificationMethodOrReference::String(id) => {
-                if !DID_URL_REGEX.is_match(id.as_ref()) {
-                    return Err(VdrError::InvalidDidDocument(format!(
-                        "Invalid verification reference ID: {id}"
-                    )));
-                }
-
-                if id.starts_with(did.as_ref()) {
-                    let exist = verification_methods.iter().any(|vm| &vm.id == id);
-                    if !exist {
-                        return Err(VdrError::InvalidDidDocument(format!(
-                            "Verification method not found for reference ID: {id}",
-                        )));
-                    }
-                }
+            VerificationMethodOrReference::String(verification_reference) => {
+                Self::validate_verification_reference(
+                    did.as_ref(),
+                    verification_reference,
+                    verification_methods,
+                )?;
             }
         };
+
+        Ok(())
+    }
+
+    fn validate_verification_reference(
+        did: &str,
+        verification_reference: &str,
+        verification_methods: &[VerificationMethod],
+    ) -> VdrResult<()> {
+        let full_reference = if RELATIVE_DID_URL_REGEX.is_match(verification_reference) {
+            format!("{}{}", did, verification_reference)
+        } else {
+            verification_reference.to_string()
+        };
+
+        if full_reference.starts_with(did) {
+            let exist = verification_methods
+                .iter()
+                .any(|vm| vm.id == full_reference);
+            if !exist {
+                return Err(VdrError::InvalidDidDocument(format!(
+                    "Verification method not found for reference ID: {verification_reference}",
+                )));
+            }
+        } else if !DID_URL_REGEX.is_match(verification_reference.as_ref()) {
+            return Err(VdrError::InvalidDidDocument(format!(
+                "Invalid verification reference ID: {verification_reference}"
+            )));
+        }
 
         Ok(())
     }
@@ -780,6 +800,9 @@ pub mod test {
         #[test]
         fn valid_did_document() {
             let mut did_document = did_doc(TEST_IDENTITY);
+            let kid = format!("#{}", KEY_1);
+            did_document.assertion_method = vec![verification_relationship(&kid)];
+
             let service_id = format!("{}#{}", TEST_INDYBESU_DID, "service");
             did_document.service = vec![service(&service_id)];
 

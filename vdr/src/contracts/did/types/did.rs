@@ -6,14 +6,21 @@ use serde_derive::{Deserialize, Serialize};
 pub const DID_PREFIX: &str = "did";
 
 const DID_SYNTAX: &str = r"did:(?:indybesu|ethr):(?:[a-zA-Z0-9]+:)*0x[a-fA-F0-9]{40}";
-const PATH: &str = r"(?:\/[^#?]*)?";
-const QUERY: &str = r"(?:[?][^#]*)?";
-const FRAGMENT: &str = r"(?:[#].*)?";
+const PATH: &str = r"\/[^#?]*";
+const QUERY: &str = r"[?][^#]*";
+const FRAGMENT: &str = r"[#].*";
 
 static DID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&format!("^{DID_SYNTAX}$")).unwrap());
 
-pub static DID_URL_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(&format!("^{DID_SYNTAX}{PATH}{QUERY}{FRAGMENT}$")).unwrap());
+pub static DID_URL_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(&format!(
+        "^{DID_SYNTAX}(?:{PATH})?(?:{QUERY})?(?:{FRAGMENT})?$"
+    ))
+    .unwrap()
+});
+
+pub static RELATIVE_DID_URL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(&format!("^(?:{PATH})?(?:{QUERY})?(?:{FRAGMENT})?$")).unwrap());
 
 /// Wrapper structure for DID
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
