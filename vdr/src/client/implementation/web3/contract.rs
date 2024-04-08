@@ -6,7 +6,7 @@ use crate::{
 };
 use std::fmt::{Debug, Formatter};
 
-use ethabi::Event;
+use ethabi::{AbiError, Event};
 use log::warn;
 use log_derive::{logfn, logfn_inputs};
 use std::str::FromStr;
@@ -96,12 +96,18 @@ impl Contract for Web3Contract {
             let vdr_error = VdrError::from(err);
 
             warn!(
-                "Error: {:?} during getting smart contract function: {}",
+                "Error: {:?} during getting smart contract event: {}",
                 vdr_error, name
             );
 
             vdr_error
         })
+    }
+
+    #[logfn(Trace)]
+    #[logfn_inputs(Trace)]
+    fn errors(&self) -> Vec<&AbiError> {
+        self.contract.abi().errors().collect()
     }
 }
 
