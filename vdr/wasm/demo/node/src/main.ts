@@ -51,7 +51,7 @@ async function demo() {
 
     console.log('2. Publish and Modify DID')
     const did = 'did:ethr:' + identity.address
-    const serviceAttribute = {"serviceEndpoint":"http://10.0.0.2","type":"TestService"}
+    const serviceAttribute = {"serviceEndpoint":"http://10.0.0.2","type":"LinkedDomains"}
     const validity = BigInt(1000)
     let endorsingData = await EthrDidRegistry.buildDidSetAttributeEndorsingData(client, did, serviceAttribute, validity)
     let authorSignature = sign(endorsingData.getSigningBytes(), identity.secret)

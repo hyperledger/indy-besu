@@ -297,6 +297,7 @@ mod ethr {
                 None,
                 None,
                 None,
+                None,
             );
 
             match delegate_type {
@@ -343,6 +344,7 @@ mod ethr {
                         key.public_key_hex.as_deref(),
                         key.public_key_base58.as_deref(),
                         key.public_key_base64.as_deref(),
+                        None,
                     );
 
                     match key.purpose {

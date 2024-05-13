@@ -5,7 +5,7 @@ use crate::{
     contracts::{
         did::{
             types::did_doc::{
-                Service, ServiceEndpoint, StringOrVector, VerificationMethod,
+                Service, ServiceEndpoint, ServiceType, StringOrVector, VerificationMethod,
                 VerificationMethodOrReference, BASE_CONTEXT,
             },
             KEYS_CONTEXT, SECPK_CONTEXT,
@@ -66,6 +66,7 @@ impl DidDocumentBuilder {
             None,
             None,
             None,
+            None,
         );
         did_doc_builder.add_authentication_reference(kid)?;
         did_doc_builder.add_assertion_method_reference(kid)?;
@@ -105,6 +106,7 @@ impl DidDocumentBuilder {
         public_key_hex: Option<&str>,
         public_key_base58: Option<&str>,
         public_key_base64: Option<&str>,
+        public_key_jwk: Option<&str>,
     ) {
         let verification_method = VerificationMethod {
             id: id.to_string(),
@@ -115,6 +117,7 @@ impl DidDocumentBuilder {
             public_key_hex: public_key_hex.map(String::from),
             public_key_base58: public_key_base58.map(String::from),
             public_key_base64: public_key_base64.map(String::from),
+            public_key_jwk: public_key_jwk.map(String::from),
         };
         self.verification_method
             .push((key.to_string(), verification_method));
@@ -131,6 +134,7 @@ impl DidDocumentBuilder {
         public_key_hex: Option<&str>,
         public_key_base58: Option<&str>,
         public_key_base64: Option<&str>,
+        public_key_jwk: Option<&str>,
     ) {
         self.key_index += 1;
         let id = format!("{}#delegate-{}", self.id.as_ref(), self.key_index);
@@ -143,6 +147,7 @@ impl DidDocumentBuilder {
             public_key_hex: public_key_hex.map(String::from),
             public_key_base58: public_key_base58.map(String::from),
             public_key_base64: public_key_base64.map(String::from),
+            public_key_jwk: public_key_jwk.map(String::from),
         };
         self.verification_method
             .push((key.to_string(), verification_method));
@@ -282,7 +287,7 @@ impl DidDocumentBuilder {
         &mut self,
         key: &str,
         id: Option<&str>,
-        type_: &str,
+        type_: &ServiceType,
         endpoint: &ServiceEndpoint,
     ) {
         self.service_index += 1;
@@ -291,7 +296,7 @@ impl DidDocumentBuilder {
             .unwrap_or_else(|| format!("{}#service-{}", self.id.as_ref(), self.service_index));
         let service = Service {
             id,
-            type_: type_.to_string(),
+            type_: type_.clone(),
             service_endpoint: endpoint.clone(),
         };
         self.service.push((key.to_string(), service));
@@ -391,11 +396,15 @@ impl DidDocumentBuilder {
 #[cfg(test)]
 pub mod test {
     use super::*;
+
     use crate::{
         client::client::test::TEST_ACCOUNT,
-        contracts::types::did_doc::test::{
-            default_ethr_did_document, SERVICE_ENDPOINT, SERVICE_TYPE, TEST_ETHR_DID,
-            TEST_ETHR_DID_WITHOUT_NETWORK,
+        contracts::{
+            types::did_doc::test::{
+                default_ethr_did_document, SERVICE_ENDPOINT, TEST_ETHR_DID,
+                TEST_ETHR_DID_WITHOUT_NETWORK,
+            },
+            ServiceType,
         },
     };
 
@@ -426,6 +435,7 @@ pub mod test {
             None,
             None,
             None,
+            None,
         );
         builder.add_delegate_key(
             KEY_2_INDEX,
@@ -435,6 +445,7 @@ pub mod test {
             None,
             Some("FbQWLPRhTH95MCkQUeFYdiSoQt8zMwetqfWoxqPgaq7x"),
             None,
+            None,
         );
         builder.add_delegate_key(
             KEY_3_INDEX,
@@ -442,6 +453,7 @@ pub mod test {
             None,
             None,
             Some("02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71"),
+            None,
             None,
             None,
         );
@@ -453,7 +465,7 @@ pub mod test {
         builder.add_service(
             SERVICE_1_INDEX,
             None,
-            SERVICE_TYPE,
+            &ServiceType::LinkedDomains,
             &ServiceEndpoint::String(SERVICE_ENDPOINT.to_string()),
         );
         let did_document = builder.build();

@@ -1,6 +1,7 @@
 mod common;
 
 use log_derive::{logfn, logfn_inputs};
+use std::{collections::HashSet, hash::Hash};
 
 use crate::{VdrError, VdrResult};
 #[cfg(test)]
@@ -51,4 +52,13 @@ pub fn parse_bytes32_string(bytes: &[u8]) -> VdrResult<&str> {
             err
         ))
     })
+}
+
+pub fn is_unique<T>(iter: T) -> bool
+where
+    T: IntoIterator,
+    T::Item: Eq + Hash,
+{
+    let mut unique = HashSet::new();
+    iter.into_iter().all(|item| unique.insert(item))
 }
