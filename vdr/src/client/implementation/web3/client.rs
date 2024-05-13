@@ -98,13 +98,21 @@ impl Client for Web3Client {
                 Duration::from_millis(POLL_INTERVAL),
                 NUMBER_TX_CONFIRMATIONS,
             )
-            .await?
-            .transaction_hash
-            .0
-            .to_vec();
+            .await?;
+
+        if receipt.is_txn_reverted() {
+            if let Some(revert_reason) = receipt.revert_reason {
+                return Err(VdrError::ClientTransactionReverted(revert_reason));
+            }
+
+            return Err(VdrError::ClientTransactionReverted("".to_string()));
+        }
 
         trace!("Web3Client::submit_transaction() -> {:?}", receipt);
-        Ok(receipt)
+
+        let transaction_hash = receipt.transaction_hash.0.to_vec();
+
+        Ok(transaction_hash)
     }
 
     async fn call_transaction(&self, to: &str, transaction: &[u8]) -> VdrResult<Vec<u8>> {
@@ -236,7 +244,7 @@ impl Client for Web3Client {
             })
             .map(|receipt| json!(receipt).to_string())?;
 
-        trace!("Web3Client::query_events() -> {:?}", receipt);
+        trace!("Web3Client::get_receipt() -> {:?}", receipt);
         Ok(receipt)
     }
 
