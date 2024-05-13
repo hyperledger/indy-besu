@@ -39,12 +39,6 @@ impl DID {
         Ok(ParsedDid::try_from(self)?.as_short_did())
     }
 
-    pub fn get_method_specefic_id(&self) -> &str {
-        let (_, id) = self.0.rsplit_once(':').unwrap_or_default();
-
-        id
-    }
-
     pub(crate) fn validate(&self) -> VdrResult<()> {
         if !DID_REGEX.is_match(&self.0) {
             return Err(VdrError::InvalidDidDocument(format!(
