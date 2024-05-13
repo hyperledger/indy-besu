@@ -200,7 +200,6 @@ impl VerificationMethod {
             })?;
 
         let key_materials = [
-            &self.public_key_base58,
             &self.blockchain_account_id,
             &self.public_key_multibase,
             &self.public_key_hex,
