@@ -32,7 +32,7 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
 ## Phase 1: MVP
 
 * Network identity implementation:
-    * Deprecate Indy2 method in favor of using `did:ethr` contract and specification
+    * Deprecate Indy2 method in favor of using `did:indy:besu` Indy DID withod extention
     * Anoncreds Registry: implement event approach matching to `did:ethr` design
     * Endorsement support for DID Documents and Anoncreds entities
 * Network Permission implementation:
@@ -56,7 +56,7 @@ Note: Right now we have finished PoC implementation. Roadmap tasks and their pri
         * How to set up schemas, cred defs etc.
         * How to issue and verify credentials
 * VDR:
-    * Support `did:ethr` DID method
+    * Support `did:indy:besu` DID method
     * Support endorsement flow
     * Implement additional validations to replace checks removed from contracts.
     * Wrappers for foreign languages: Python + JavaScript
