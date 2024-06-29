@@ -57,11 +57,12 @@ interface IndyDidRegistryInterface {
      */
     function createDidSigned(
         address identity,
+        bytes32 hash,
         uint8 sigV,
         bytes32 sigR,
         bytes32 sigS,
         bytes calldata document
-    ) external;
+    ) external returns (address);
 
     /**
      * @dev Updates an existing DID record.
@@ -101,6 +102,7 @@ interface IndyDidRegistryInterface {
      */
     function updateDidSigned(
         address identity,
+        bytes32 hash,
         uint8 sigV,
         bytes32 sigR,
         bytes32 sigS,
@@ -140,7 +142,7 @@ interface IndyDidRegistryInterface {
      * @param sigR      Part of EcDSA signature.
      * @param sigS      Part of EcDSA signature.
      */
-    function deactivateDidSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS) external;
+    function deactivateDidSigned(address identity, bytes32 hash, uint8 sigV, bytes32 sigR, bytes32 sigS) external;
 
     /**
      * @dev Function to resolve DID Document for the given DID.

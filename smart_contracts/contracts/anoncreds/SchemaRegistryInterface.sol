@@ -58,6 +58,7 @@ interface SchemaRegistryInterface {
      */
     function createSchemaSigned(
         address identity,
+        bytes32 hash,
         uint8 sigV,
         bytes32 sigR,
         bytes32 sigS,
