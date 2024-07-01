@@ -37,7 +37,7 @@
     "@openzeppelin/contracts": "^5.0.2",
     "async-promise-pool": "^1.0.6",
     "base58-solidity": "^1.0.2",
-    "ethers": "6.8.0",
+    "ethers": "6.8.1",
     "ethr-did-registry": "^1.2.0",
     "fs-extra": "^10.0.0",
     "hardhat-gas-reporter": "^1.0.9",
