@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
-
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { CredentialDefinitionRecord } from "./CredentialDefinitionTypes.sol";
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
 import { CredentialDefinitionAlreadyExist, CredentialDefinitionNotFound } from "./AnoncredsErrors.sol";
@@ -76,6 +76,7 @@ contract CredentialDefinitionRegistry is
     /// @inheritdoc CredentialDefinitionRegistryInterface
     function createCredentialDefinitionSigned(
         address identity,
+        bytes32 hash,
         uint8 sigV,
         bytes32 sigR,
         bytes32 sigS,
@@ -84,20 +85,7 @@ contract CredentialDefinitionRegistry is
         bytes32 schemaId,
         bytes calldata credDef
     ) public virtual {
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                bytes1(0x19),
-                bytes1(0),
-                address(this),
-                identity,
-                "createCredentialDefinition",
-                id,
-                issuerId,
-                schemaId,
-                credDef
-            )
-        );
-        _createCredentialDefinition(identity, ecrecover(hash, sigV, sigR, sigS), id, issuerId, schemaId, credDef);
+        _createCredentialDefinition(identity, ECDSA.recover(hash, sigV, sigR, sigS), id, issuerId, schemaId, credDef);
     }
 
     /// @inheritdoc CredentialDefinitionRegistryInterface

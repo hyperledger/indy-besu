@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import { UniversalDidResolverInterface } from "../did/UniversalDidResolverInterface.sol";
 import { ControlledUpgradeable } from "../upgrade/ControlledUpgradeable.sol";
-
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { SchemaAlreadyExist, SchemaNotFound } from "./AnoncredsErrors.sol";
 import { SchemaRegistryInterface } from "./SchemaRegistryInterface.sol";
 import { SchemaRecord } from "./SchemaTypes.sol";
@@ -55,6 +55,7 @@ contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, Anonc
     /// @inheritdoc SchemaRegistryInterface
     function createSchemaSigned(
         address identity,
+        bytes32 hash,
         uint8 sigV,
         bytes32 sigR,
         bytes32 sigS,
@@ -62,10 +63,7 @@ contract SchemaRegistry is SchemaRegistryInterface, ControlledUpgradeable, Anonc
         string calldata issuerId,
         bytes calldata schema
     ) public virtual {
-        bytes32 hash = keccak256(
-            abi.encodePacked(bytes1(0x19), bytes1(0), address(this), identity, "createSchema", id, issuerId, schema)
-        );
-        _createSchema(identity, ecrecover(hash, sigV, sigR, sigS), id, issuerId, schema);
+        _createSchema(identity, ECDSA.recover(hash, sigV, sigR, sigS), id, issuerId, schema);
     }
 
     /// @inheritdoc SchemaRegistryInterface
