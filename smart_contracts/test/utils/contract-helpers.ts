@@ -4,12 +4,14 @@ import {
   EthereumExtDidRegistry,
   IndyDidRegistry,
   LegacyMappingRegistry,
+  RevocationRegistry,
   RoleControl,
   SchemaRegistry,
   UniversalDidResolver,
   UpgradeControl,
   ValidatorControl,
 } from '../../contracts-ts'
+import { indyDidRegistry, schemaRegistry } from '../../scripts/genesis/contracts'
 import { Contract, createBaseDidDocument, createSchemaObject } from '../../utils'
 import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 
@@ -43,6 +45,8 @@ export class TestableUpgradeControl extends testableContractMixin(UpgradeControl
 export class TestableUniversalDidResolver extends testableContractMixin(UniversalDidResolver) {}
 
 export class TestableLegacyMappingRegistry extends testableContractMixin(LegacyMappingRegistry) {}
+
+export class TestableRevocationRegistry extends testableContractMixin(RevocationRegistry) {}
 
 export async function deployRoleControl() {
   const roleControl = await new TestableRoleControl().deployProxy({ params: [ZERO_ADDRESS] })
@@ -143,5 +147,29 @@ function testableContractMixin<T extends new (...args: any[]) => Contract>(Base:
     public get baseInstance() {
       return this.instance
     }
+  }
+}
+
+export async function deployRevocationRegistry() {
+  const {
+    roleControl,
+    universalDidResolver,
+    indyDidRegistry,
+    schemaRegistry,
+    testAccounts,
+    credentialDefinitionRegistry,
+  } = await deployCredentialDefinitionRegistry()
+  const revocationRegistry = await new TestableRevocationRegistry().deployProxy({
+    params: [ZERO_ADDRESS, credentialDefinitionRegistry.address, roleControl.address],
+  })
+
+  return {
+    roleControl,
+    credentialDefinitionRegistry,
+    universalDidResolver,
+    indyDidRegistry,
+    schemaRegistry,
+    testAccounts,
+    revocationRegistry,
   }
 }
