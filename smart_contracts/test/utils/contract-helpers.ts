@@ -11,8 +11,8 @@ import {
   UpgradeControl,
   ValidatorControl,
 } from '../../contracts-ts'
-import { indyDidRegistry, schemaRegistry } from '../../scripts/genesis/contracts'
-import { Contract, createBaseDidDocument, createSchemaObject } from '../../utils'
+
+import { Contract, createBaseDidDocument, createCredentialDefinitionObject, createSchemaObject } from '../../utils'
 import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 
 export const testActorAddress = '0x2036C6CD85692F0Fb2C26E6c6B2ECed9e4478Dfd'
@@ -172,4 +172,15 @@ export async function deployRevocationRegistry() {
     testAccounts,
     revocationRegistry,
   }
+}
+
+export async function createCredentialDefinition(
+  CredentialDefinition: CredentialDefinitionRegistry,
+  identity: string,
+  issuerId: string,
+  schemaId: string,
+) {
+  const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
+  await CredentialDefinition.createCredentialDefinition(identity, id, issuerId, schemaId, credDef)
+  return { id, credDef }
 }

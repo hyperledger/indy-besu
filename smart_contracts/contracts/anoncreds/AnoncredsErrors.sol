@@ -64,6 +64,12 @@ error RevocationNotFound(bytes32 id);
 error RevocationAlreadyExist(bytes32 id);
 
 /**
+ * @notice Error that occurs when trying to revoke a credential without being listed in the Revocation registry.
+ * @param id    Keccak hash of Revocation ID.
+ */
+error RevocationDoesntExist(bytes32 id);
+
+/**
  * @notice Error that occurs when attempting to perform an operation on a revocation that is not active.
  * @param id    Keccak hash of Revocation ID.
  */

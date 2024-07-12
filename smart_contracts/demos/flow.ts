@@ -73,12 +73,7 @@ async function demo() {
     schemaId: schemaId,
     credDefId: credentialDefinitionId,
   })
-  receipt = await faber.revocationRegistry.createRevocationRegistry(
-    faber.address,
-    revRegId,
-    faber.did,
-    revReg
-  )
+  receipt = await faber.revocationRegistry.createRevocationRegistry(faber.address, revRegId, faber.did, revReg)
   console.log(`Revocation Registry created for id ${revRegId}. Receipt: ${JSON.stringify(receipt)}`)
 
   console.log('11. Alice resolve o Registro de Revogação')

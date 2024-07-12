@@ -3,6 +3,7 @@ import { RevocationMetadataStruct } from '../typechain-types/contracts/revoke/Re
 import { Contract } from '../utils/contract'
 
 export type RevocationRecord = {
+  revocationRecord: any
   revocation: string
   metadata: RevocationMetadataStruct
 }
@@ -12,19 +13,26 @@ export class RevocationRegistry extends Contract {
     super(RevocationRegistry.name, sender)
   }
 
-  public async createRevocationRegistry(identity: string, id: string, revocation: string) {
+  public async createRevocationRegistry(
+    identity: string,
+    CredDefId: string,
+    revocationRegistryId: string,
+    revocationDocumente: string,
+  ) {
     const tx = await this.instance.createRevocationRegistry(
       identity,
-      keccak256(toUtf8Bytes(id)),
-      toUtf8Bytes(revocation),
+      keccak256(toUtf8Bytes(CredDefId)),
+      keccak256(toUtf8Bytes(revocationRegistryId)),
+      toUtf8Bytes(revocationDocumente),
     )
     return tx.wait()
   }
 
   public async createCredentialDefinitionSigned(
     identity: string,
-    id: string,
-    revocation: string,
+    CredDefId: string,
+    revocationRegistryId: string,
+    revocationDocumente: string,
     signature: Signature,
   ) {
     const tx = await this.instance.createRevocationRegistrySigned(
@@ -32,23 +40,16 @@ export class RevocationRegistry extends Contract {
       signature.v,
       signature.r,
       signature.s,
-      keccak256(toUtf8Bytes(id)),
-      toUtf8Bytes(revocation),
+      keccak256(toUtf8Bytes(CredDefId)),
+      keccak256(toUtf8Bytes(revocationRegistryId)),
+      toUtf8Bytes(revocationDocumente),
     )
     return tx.wait()
   }
 
   public async resolveRevocation(id: string): Promise<RevocationRecord> {
     const record = await this.instance.resolveRevocation(keccak256(toUtf8Bytes(id)))
-    return {
-      revocation: toUtf8String(getBytes(record.credDef)),
-      metadata: {
-        created: record.metadata.created,
-        creator: record.metadata.creator,
-        updated: record.metadata.updated,
-        status: record.metadata.status,
-      },
-    }
+    return record.metadata.status
   }
 
   public signCreateRevocationWithEndorsementData(

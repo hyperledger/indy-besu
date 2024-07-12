@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import { RevocationRecord } from "./RevocationRegistryTypes.sol";
 
 interface RevocationRegistryInterface {
-
     /**
      * @dev Event emitted when a revocation is created
      * @param sender Address of the sender
@@ -36,8 +35,8 @@ interface RevocationRegistryInterface {
     /**
      * @notice Function to revoke a credential
      * @param identity The address of the identity
-     * @param id The ID of the credential to be revoked
-     */
+     * @param id The id of revogation
+     *      */
     function revokeCredential(address identity, bytes32 id) external;
 
     /**
@@ -46,20 +45,15 @@ interface RevocationRegistryInterface {
      * @param sigV The V part of the signature
      * @param sigR The R part of the signature
      * @param sigS The S part of the signature
-     * @param id The ID of the credential to be revoked
+     * @param id The id of revogation
      */
-    function revokeCredentialSigned(
-        address identity,
-        uint8 sigV,
-        bytes32 sigR,
-        bytes32 sigS,
-        bytes32 id
-    ) external;
+    function revokeCredentialSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, bytes32 id) external;
 
     /**
      * @notice Function to suspend a credential
      * @param identity The address of the identity
-     * @param id The ID of the credential to be suspended
+     * @param id The id of revogation
+     * d
      */
     function suspendCredential(address identity, bytes32 id) external;
 
@@ -69,20 +63,16 @@ interface RevocationRegistryInterface {
      * @param sigV The V part of the signature
      * @param sigR The R part of the signature
      * @param sigS The S part of the signature
-     * @param id The ID of the credential to be suspended
+     * @param id The id of revogation
+     * d
      */
-    function suspendCredentialSigned(
-        address identity,
-        uint8 sigV,
-        bytes32 sigR,
-        bytes32 sigS,
-        bytes32 id
-    ) external;
+    function suspendCredentialSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, bytes32 id) external;
 
     /**
      * @notice Function to unrevoke a credential
      * @param identity The address of the identity
-     * @param id The ID of the credential to be unrevoked
+     * @param id The id of revogation
+     * d
      */
     function unrevokeCredential(address identity, bytes32 id) external;
 
@@ -92,25 +82,22 @@ interface RevocationRegistryInterface {
      * @param sigV The V part of the signature
      * @param sigR The R part of the signature
      * @param sigS The S part of the signature
-     * @param id The ID of the credential to be unrevoked
+     * @param id The id of revogation
+     * d
      */
-    function unrevokeCredentialSigned(
-        address identity,
-        uint8 sigV,
-        bytes32 sigR,
-        bytes32 sigS,
-        bytes32 id
-    ) external;
+    function unrevokeCredentialSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, bytes32 id) external;
 
     /**
      * @notice Function to create a revocation registry
      * @param identity The address of the identity
-     * @param id The ID of the revocation registry to be created
+     * @param CredDefId The ID of the credential registry
+     * @param RevicationId The ID of the revocation registry to be created
      * @param revokeDocument The document of the revocation
      */
     function createRevocationRegistry(
         address identity,
-        bytes32 id,
+        bytes32 CredDefId,
+        bytes32 RevicationId,
         bytes calldata revokeDocument
     ) external;
 
@@ -120,7 +107,8 @@ interface RevocationRegistryInterface {
      * @param sigV The V part of the signature
      * @param sigR The R part of the signature
      * @param sigS The S part of the signature
-     * @param id The ID of the revocation registry to be created
+     * @param CredDefId The ID of the credential registry
+     * @param RevicationId The ID of the revocation registry to be created
      * @param revokeDocument The document of the revocation
      */
     function createRevocationRegistrySigned(
@@ -128,7 +116,8 @@ interface RevocationRegistryInterface {
         uint8 sigV,
         bytes32 sigR,
         bytes32 sigS,
-        bytes32 id,
+        bytes32 CredDefId,
+        bytes32 RevicationId,
         bytes calldata revokeDocument
     ) external;
 

@@ -69,4 +69,5 @@ export namespace AnoncredsErrors {
   export const RevocationIsNotRevoked = 'RevocationIsNotRevoked'
   export const CredentialIsAlreadyRevoked = 'CredentialIsAlreadyRevoked'
   export const InvalidIssuer = 'InvalidIssuer'
+  export const RevocationDoesntExist = 'RevocationDoesntExist'
 }
