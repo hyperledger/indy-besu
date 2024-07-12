@@ -65,28 +65,38 @@ async function demo() {
     `Credential Definition resolved for ${credentialDefinitionId}. Credential Definition: ${testCredentialDefinition.credDef}`,
   )
 
-  // Adicionando operações de revogação
+  // Revocations
 
-  console.log('10. Faber cria o Registro de Revogação')
+  console.log('10. Faber creates Test Revocation Registry')
   const { revRegId, revReg } = createRevocationRegistryObject({
     issuerId: faber.did,
-    schemaId: schemaId,
-    credDefId: credentialDefinitionId,
   })
-  receipt = await faber.revocationRegistry.createRevocationRegistry(faber.address, revRegId, faber.did, revReg)
+
+  receipt = await faber.revocationRegistry.createRevocationRegistry(
+    faber.address,
+    credentialDefinitionId,
+    revRegId,
+    revReg,
+  )
   console.log(`Revocation Registry created for id ${revRegId}. Receipt: ${JSON.stringify(receipt)}`)
 
-  console.log('11. Alice resolve o Registro de Revogação')
-  const resolvedRevocationRegistry = await alice.revocationRegistry.resolveRevocationRegistry(revRegId)
-  console.log(`Revocation Registry resolved for ${revRegId}. Revocation Registry: ${resolvedRevocationRegistry.revReg}`)
+  console.log('11. Alice resolves the Revocation Registry')
+  const resolvedRevocationRegistry = await alice.revocationRegistry.resolveRevocation(revRegId)
+  console.log(
+    `Revocation Registry resolved for ${revRegId}. Revocation Registry: ${JSON.stringify(resolvedRevocationRegistry)}`,
+  )
 
-  console.log('12. Faber revoga uma credencial')
-  receipt = await faber.revocationRegistry.revokeCredential(faber.address, revRegId, 'credentialId')
+  console.log('12. Faber revokes a credential')
+  receipt = await faber.revocationRegistry.resolveRevocation(revRegId)
   console.log(`Credential revoked. Receipt: ${JSON.stringify(receipt)}`)
 
-  console.log('13. Alice verifica se a credencial foi revogada')
-  const isRevoked = await alice.revocationRegistry.isCredentialRevoked(revRegId, 'credentialId')
-  console.log(`Credential is revoked: ${isRevoked}`)
+  console.log('13. Alice checks if the credential is revoked')
+  const isRevoked = await alice.revocationRegistry.resolveRevocation(revRegId)
+  if (isRevoked.metadata.status == 2) {
+    console.log(`Credential is revoked!`)
+  } else {
+    console.log(`Credential is not revoked!`)
+  }
 }
 
 if (require.main === module) {
