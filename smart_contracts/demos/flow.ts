@@ -1,10 +1,11 @@
 import environment from '../environment'
 import { Actor } from './utils/actor'
 import { ROLES } from '../contracts-ts'
-import { createCredentialDefinitionObject, createSchemaObject, createRevocationRegistryObject } from '../utils'
+import { createCredentialDefinitionObject, createRevocationRegistryObject, createSchemaObject } from '../utils'
 
 async function demo() {
   let receipt: any
+  let verify: any
 
   const trustee = await new Actor(environment.accounts.account1).init()
   const faber = await new Actor().init()
@@ -14,13 +15,16 @@ async function demo() {
   receipt = await trustee.roleControl.assignRole(ROLES.ENDORSER, faber.address)
   console.log(`Role ${ROLES.ENDORSER} assigned to account ${faber.address}. Receipt: ${JSON.stringify(receipt)}`)
 
+  const issuerAddress = faber.address
+  const issuerId = `did:indybesu:mainnet:${issuerAddress}`
+
   console.log('2. Faber creates DID Document')
-  receipt = await faber.didRegistry.createDid(faber.address, faber.didDocument)
-  console.log(`Did Document created for DID ${faber.did}. Receipt: ${JSON.stringify(receipt)}`)
+  receipt = await faber.didRegistry.createDid(issuerAddress, faber.didDocument)
+  console.log(`Did Document created for DID ${issuerId}. Receipt: ${JSON.stringify(receipt)}`)
 
   console.log('3. Faber creates Test Schema')
-  const { id: schemaId, schema } = createSchemaObject({ issuerId: faber.did })
-  receipt = await faber.schemaRegistry.createSchema(faber.address, schemaId, faber.did, schema)
+  const { id: schemaId, schema } = createSchemaObject({ issuerId })
+  receipt = await faber.schemaRegistry.createSchema(issuerAddress, schemaId, issuerId, schema)
   console.log(`Schema created for id ${schemaId}. Receipt: ${JSON.stringify(receipt)}`)
 
   console.log('4. Faber resolves Test Schema to ensure its written')
@@ -29,13 +33,13 @@ async function demo() {
 
   console.log('5. Faber create Test Credential Definition')
   const { id: credentialDefinitionId, credDef: credentialDefinition } = createCredentialDefinitionObject({
-    issuerId: faber.did,
-    schemaId: schemaId,
+    issuerId,
+    schemaId,
   })
   receipt = await faber.credentialDefinitionRegistry.createCredentialDefinition(
-    faber.address,
+    issuerAddress,
     credentialDefinitionId,
-    faber.did,
+    issuerId,
     schemaId,
     credentialDefinition,
   )
@@ -49,9 +53,9 @@ async function demo() {
     `Credential Definition resolved for ${credentialDefinitionId}. Credential Definition: ${resolvedCredentialDefinition.credDef}`,
   )
 
-  console.log("7. Alice resolves Faber's Did Document")
-  const faberDidDocument = await alice.didRegistry.resolveDid(faber.address)
-  console.log(`Did Document resolved for ${faber.did}. DID Document: ${faberDidDocument?.document}`)
+  console.log("7. ALice resolves Faber's Did Document")
+  const faberDidDocument = await alice.didRegistry.resolveDid(issuerAddress)
+  console.log(`Did Document resolved for ${issuerId}. DID Document: ${faberDidDocument?.document}`)
 
   console.log('8. Alice resolves Test Schema')
   const testSchema = await alice.schemaRegistry.resolveSchema(schemaId)
@@ -69,11 +73,11 @@ async function demo() {
 
   console.log('10. Faber creates Test Revocation Registry')
   const { revRegId, revReg } = createRevocationRegistryObject({
-    issuerId: faber.did,
+    issuerId,
   })
 
   receipt = await faber.revocationRegistry.createRevocationRegistry(
-    faber.address,
+    issuerAddress,
     credentialDefinitionId,
     revRegId,
     revReg,
@@ -82,17 +86,23 @@ async function demo() {
 
   console.log('11. Alice resolves the Revocation Registry')
   const resolvedRevocationRegistry = await alice.revocationRegistry.resolveRevocation(revRegId)
-  console.log(
-    `Revocation Registry resolved for ${revRegId}. Revocation Registry: ${JSON.stringify(resolvedRevocationRegistry)}`,
-  )
+  const replacer = (key, value) => (typeof value === 'bigint' ? value.toString() : value)
+  verify = JSON.stringify(resolvedRevocationRegistry, replacer, 2)
+  if (verify === '"0"') {
+    verify = 'Revocation Registry actived'
+  } else {
+    verify = 'Revocation Registry is Not actived'
+  }
+  console.log(`Revocation Registry resolved for ${revRegId}. Revocation Registry: ${verify}`)
 
   console.log('12. Faber revokes a credential')
-  receipt = await faber.revocationRegistry.resolveRevocation(revRegId)
-  console.log(`Credential revoked. Receipt: ${JSON.stringify(receipt)}`)
+  receipt = await faber.revocationRegistry.revokeCredential(issuerAddress, revRegId)
+  console.log(`Credential revoked. Receipt: ${receipt}`)
 
-  console.log('13. Alice checks if the credential is revoked')
+  console.log('12. Alice checks if the credential is revoked')
   const isRevoked = await alice.revocationRegistry.resolveRevocation(revRegId)
-  if (isRevoked.metadata.status == 2) {
+  verify = JSON.stringify(isRevoked, replacer, 2)
+  if (verify === '"2"') {
     console.log(`Credential is revoked!`)
   } else {
     console.log(`Credential is not revoked!`)
