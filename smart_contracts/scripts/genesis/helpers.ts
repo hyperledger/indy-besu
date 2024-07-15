@@ -258,8 +258,8 @@ export function prepareConfig(): ContractsConfigs {
       address: contracts.revocationRegistry.address,
       description: 'Smart contract to manage revocation of credential definitions',
       data: {
-        upgradeControlAddress: contracts.upgradeControl.address,
         credDefRegistryAddress: contracts.credDefRegistry.address,
+        upgradeControlAddress: contracts.upgradeControl.address,
         roleControlContractAddress: contracts.roleControl.address,
       },
     },

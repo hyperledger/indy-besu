@@ -4,8 +4,8 @@ import { buildProxySection, slots } from '../helpers'
 
 export interface RevocationConfig extends ContractConfig {
   data: {
-    upgradeControlAddress: string
     credDefRegistryAddress: string
+    upgradeControlAddress: string
     roleControlContractAddress: string
   }
 }
