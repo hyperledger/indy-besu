@@ -119,7 +119,16 @@ describe('RevocationRegistry', function () {
       expect(status).to.equal(2)
     })
   })
-  describe('Revoke/Suspend/Unrevoke Credential fail', function () {
+  describe('Create/Revoke/Suspend/Unrevoke Credential fail', function () {
+    it('should fail if trying to create a revocation registry and the revocation registry already exists', async function () {
+      const { revRegId, revReg } = createRevocationRegistryObject({ issuerId })
+
+      await revocationRegistry.createRevocationRegistry(issuerAddress, credDefId, revRegId, revReg)
+
+      await expect(revocationRegistry.createRevocationRegistry(issuerAddress, credDefId, revRegId, revReg))
+        .to.be.revertedWithCustomError(revocationRegistry.baseInstance, AnoncredsErrors.RevocationAlreadyExist)
+        .withArgs(keccak256(toUtf8Bytes(revRegId)))
+    })
     it('Should fail if trying to revoke an already revoked Credential', async function () {
       const { revRegId, revReg } = createRevocationRegistryObject({ issuerId })
 
