@@ -19,7 +19,7 @@ hash docker 2>/dev/null || {
 }
 
 # checks docker compose installed
-docker-compose version &>/dev/null
+docker compose version &>/dev/null
 if [ "$?" -eq "1" ];then
   echo >&2 "This script requires Docker compose but it's not installed."
   echo >&2 "Refer to documentation to fulfill requirements."
