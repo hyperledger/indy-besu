@@ -175,7 +175,11 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         bytes32 CreDefid,
         bytes32 RevokId,
         bytes calldata revokeDocument
-    ) public _revocationExist(RevokId) _senderIsTrusteeOrEndorserOrSteward _credDefExist(CreDefid) {
+    ) public
+     _revocationExist(RevokId)
+     _senderIsTrusteeOrEndorserOrSteward
+     _credDefExist(CreDefid) 
+       {
         _createRevocation(identity, msg.sender, RevokId, revokeDocument);
     }
 
@@ -287,14 +291,6 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         return _revReg[RevokId];
     }
 
-    string private name;
+    
 
-    function changeName(string memory _name) public returns (string memory) {
-        name = _name;
-        return name;
-    }
-
-    function seeName() public view returns (string memory) {
-        return name;
-    }
 }

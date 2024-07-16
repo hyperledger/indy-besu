@@ -100,7 +100,7 @@ export function createRevocationRegistryObject({
   tag = 'BasicIdentity',
   revRegDefType = 'CL_ACCUM',
   schemaId = `${issuerId}/anoncreds/v0/SCHEMA/${tag}/${version}`,
-  revRegId = `${issuerId}/anoncreds/v0/REV_REG/${schemaId}/auth_cred-def-este4:${revRegDefType}:0`,
+  revRegId = `${issuerId}/anoncreds/v0/REV_REG_DEF/${schemaId}/auth_cred-def-este4:${revRegDefType}:0`,
   credDefId = `${issuerId}/anoncreds/v0/CLAIM_DEF/${schemaId}/${tag}`,
   issuanceType = 0,
   tailsHash = 'AAAAA',

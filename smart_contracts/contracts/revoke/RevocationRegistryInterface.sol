@@ -128,16 +128,5 @@ interface RevocationRegistryInterface {
      */
     function resolveRevocation(bytes32 id) external view returns (RevocationRecord memory);
 
-    /**
-     * @notice Function to change the name
-     * @param _name The new name
-     * @return The changed name
-     */
-    function changeName(string memory _name) external returns (string memory);
-
-    /**
-     * @notice Function to see the name
-     * @return The current name
-     */
-    function seeName() external view returns (string memory);
+    
 }
