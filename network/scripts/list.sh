@@ -33,7 +33,7 @@ echo "JSON-RPC WebSocket service endpoint            : ws://${HOST}:8546"
 if [ ! -z `docker-compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG ps -a -q proxy` ]; then
 echo "Blockscout address                             : http://${HOST}:26000/"
 fi
-if [ ! -z `docker-compose -f docker-compose.yml ps -q prometheus 2> /dev/null` ]; then
+if [ ! -z `docker compose -f docker-compose.yml ps -q prometheus 2> /dev/null` ]; then
 echo "Prometheus address                             : http://${HOST}:9090/graph"
 fi
 grafana_url="http://${HOST}:3000/d/a1lVy7ycin9Yv/goquorum-overview?orgId=1&refresh=10s&from=now-30m&to=now&var-system=All"
