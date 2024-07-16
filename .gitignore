@@ -12,3 +12,4 @@ network/config/nodes/validator5/key
 blockscout-db-data
 redis-data
 stats-db-data
+
