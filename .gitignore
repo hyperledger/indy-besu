@@ -12,12 +12,3 @@ network/config/nodes/validator5/key
 blockscout-db-data
 redis-data
 stats-db-data
-
-network/config/nodes/validator5/key
-network/scripts/list.sh
-network/scripts/remove.sh
-network/scripts/run.sh
-network/scripts/stop.sh
-
-smart_contracts/contracts/upgrade/ControlledUpgradeable.sol
-smart_contracts/test/upgrade/UpgradeControl.spec.ts
