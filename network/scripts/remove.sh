@@ -27,8 +27,8 @@ echo "Localnet"
 echo "*************************************"
 echo "Stop and remove network..."
 
-docker-compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services down -v
-docker-compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services rm -sfv
+docker compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services down -v
+docker compose -f docker-compose.yml -f $BLOCKSCOUT_DOCKER_CONFIG --profile services rm -sfv
 
 rm -rf $BLOCKSCOUT_CONFIGS_DIR/services/blockscout-db-data
 rm -rf $BLOCKSCOUT_CONFIGS_DIR/services/redis-data
