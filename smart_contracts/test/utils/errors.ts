@@ -51,3 +51,23 @@ export namespace MigrationErrors {
   export const InvalidEd25519Key = 'InvalidEd25519Key'
   export const DidMappingDoesNotExist = 'DidMappingDoesNotExist'
 }
+
+export namespace AnoncredsErrors {
+  // Schema errors
+  export const SchemaAlreadyExist = 'SchemaAlreadyExist'
+  export const SchemaNotFound = 'SchemaNotFound'
+
+  // CredDef errors
+  export const CredentialDefinitionAlreadyExist = 'CredentialDefinitionAlreadyExist'
+  export const CredentialDefinitionNotFound = 'CredentialDefinitionNotFound'
+
+  // Revocation erros
+  export const RevocationNotFound = 'RevocationNotFound'
+  export const RevocationAlreadyExist = 'RevocationAlreadyExist'
+  export const RevocationIsNotActived = 'RevocationIsNotActived'
+  export const RevocationIsNotsuspended = 'RevocationIsNotsuspended'
+  export const RevocationIsNotRevoked = 'RevocationIsNotRevoked'
+  export const CredentialIsAlreadyRevoked = 'CredentialIsAlreadyRevoked'
+  export const InvalidIssuer = 'InvalidIssuer'
+  export const RevocationDoesntExist = 'RevocationDoesntExist'
+}
