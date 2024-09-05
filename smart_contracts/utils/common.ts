@@ -25,6 +25,7 @@ export interface ContractsConfigs {
   ethereumDidRegistry: ContractConfig
   indyDidRegistry: ContractConfig
   universalDidResolver: ContractConfig
+  revocationRegistry: ContractConfig
 }
 
 export interface BesuConfig {

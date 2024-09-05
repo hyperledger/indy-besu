@@ -5,6 +5,7 @@ import {
   ethereumDidRegistry,
   indyDidRegistry,
   legacyMappingRegistry,
+  revocationRegistry,
   roleControl,
   schemaRegistry,
   universalDidResolver,
@@ -27,6 +28,7 @@ function main() {
     ...schemaRegistry(config.schemaRegistry),
     ...credentialDefinitionRegistry(config.credentialDefinitionRegistry),
     ...legacyMappingRegistry(config.legacyMapping),
+    ...revocationRegistry(config.revocationRegistry),
   }
   writeJson(contracts, 'ContractsGenesis.json')
 }

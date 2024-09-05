@@ -4,13 +4,15 @@ import {
   EthereumExtDidRegistry,
   IndyDidRegistry,
   LegacyMappingRegistry,
+  RevocationRegistry,
   RoleControl,
   SchemaRegistry,
   UniversalDidResolver,
   UpgradeControl,
   ValidatorControl,
 } from '../../contracts-ts'
-import { Contract, createBaseDidDocument, createSchemaObject } from '../../utils'
+
+import { Contract, createBaseDidDocument, createCredentialDefinitionObject, createSchemaObject } from '../../utils'
 import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 
 export const testActorAddress = '0x2036C6CD85692F0Fb2C26E6c6B2ECed9e4478Dfd'
@@ -43,6 +45,8 @@ export class TestableUpgradeControl extends testableContractMixin(UpgradeControl
 export class TestableUniversalDidResolver extends testableContractMixin(UniversalDidResolver) {}
 
 export class TestableLegacyMappingRegistry extends testableContractMixin(LegacyMappingRegistry) {}
+
+export class TestableRevocationRegistry extends testableContractMixin(RevocationRegistry) {}
 
 export async function deployRoleControl() {
   const roleControl = await new TestableRoleControl().deployProxy({ params: [ZERO_ADDRESS] })
@@ -144,4 +148,39 @@ function testableContractMixin<T extends new (...args: any[]) => Contract>(Base:
       return this.instance
     }
   }
+}
+
+export async function deployRevocationRegistry() {
+  const {
+    roleControl,
+    universalDidResolver,
+    indyDidRegistry,
+    schemaRegistry,
+    testAccounts,
+    credentialDefinitionRegistry,
+  } = await deployCredentialDefinitionRegistry()
+  const revocationRegistry = await new TestableRevocationRegistry().deployProxy({
+    params: [ZERO_ADDRESS, credentialDefinitionRegistry.address, roleControl.address],
+  })
+
+  return {
+    roleControl,
+    credentialDefinitionRegistry,
+    universalDidResolver,
+    indyDidRegistry,
+    schemaRegistry,
+    testAccounts,
+    revocationRegistry,
+  }
+}
+
+export async function createCredentialDefinition(
+  CredentialDefinition: CredentialDefinitionRegistry,
+  identity: string,
+  issuerId: string,
+  schemaId: string,
+) {
+  const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
+  await CredentialDefinition.createCredentialDefinition(identity, id, issuerId, schemaId, credDef)
+  return { id, credDef }
 }
