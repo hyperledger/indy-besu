@@ -1,3 +1,7 @@
+// Copyright (c) 2024 DSR Corporation, Denver, Colorado.
+// https://www.dsr-corporation.com
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{JsonValue, SignatureData, VdrError, VdrResult};
 use indy_besu_vdr::{
     Address, Nonce, SignatureData as SignatureData_,

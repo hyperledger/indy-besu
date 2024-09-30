@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2024 DSR Corporation, Denver, Colorado.
+ * https://www.dsr-corporation.com
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export function createBaseDidDocument(did: string, key?: any) {
   const kid = `${did}#KEY-1`
   return JSON.stringify({
