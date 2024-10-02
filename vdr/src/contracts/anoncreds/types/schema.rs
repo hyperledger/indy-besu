@@ -149,6 +149,8 @@ pub mod test {
 
     pub const SCHEMA_ID: &str =
         "did:ethr:testnet:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0";
+    pub const SCHEMA_ID_WITHOUT_NETWORK: &str =
+        "did:ethr:0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5/anoncreds/v0/SCHEMA/F1DClaFEzi3t/1.0.0";
     pub const SCHEMA_NAME: &str = "F1DClaFEzi3t";
     pub const SCHEMA_VERSION: &str = "1.0.0";
     pub const SCHEMA_ATTRIBUTE_FIRST_NAME: &str = "First Name";
