@@ -15,6 +15,7 @@ import {
   EthereumDidRegistryConfig,
   IndyDidRegistryConfig,
   LegacyMappingRegistryConfig,
+  RevocationConfig,
   RolesConfig,
   SchemasConfig,
   UniversalDidResolverConfig,
@@ -114,6 +115,7 @@ export interface ContractsConfigs {
   upgradeControl: UpgradeControlConfig
   validatorControl: ValidatorsConfig
   legacyMapping: LegacyMappingRegistryConfig
+  revocationRegistry: RevocationConfig
 }
 
 export function prepareConfig(): ContractsConfigs {
@@ -253,6 +255,16 @@ export function prepareConfig(): ContractsConfigs {
       description: 'Smart contract to store mapping of legacy identifiers to new one',
       data: {
         universalDidResolver: contracts.universalDidResolver.address,
+        upgradeControlAddress: contracts.upgradeControl.address,
+        roleControlContractAddress: contracts.roleControl.address,
+      },
+    },
+    revocationRegistry: {
+      name: 'RevocationRegistry',
+      address: contracts.revocationRegistry.address,
+      description: 'Smart contract to manage revocation of credential definitions',
+      data: {
+        credDefRegistryAddress: contracts.credDefRegistry.address,
         upgradeControlAddress: contracts.upgradeControl.address,
         roleControlContractAddress: contracts.roleControl.address,
       },

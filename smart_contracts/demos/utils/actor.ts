@@ -13,6 +13,7 @@ import {
   ValidatorControl,
   UpgradeControl,
   EthereumExtDidRegistry,
+  RevocationRegistry,
 } from '../../contracts-ts'
 import { Account, AccountInfo } from '../../utils'
 
@@ -25,6 +26,7 @@ export class Actor {
   public schemaRegistry!: SchemaRegistry
   public credentialDefinitionRegistry!: CredentialDefinitionRegistry
   public upgradeControl!: UpgradeControl
+  public revocationRegistry!: RevocationRegistry
 
   constructor(accountInfo?: AccountInfo) {
     this.account = accountInfo ? new Account(accountInfo) : new Account()
@@ -45,6 +47,9 @@ export class Actor {
       contracts.credDefRegistry.address,
     )
     this.upgradeControl = await new UpgradeControl(this.account).getInstance(contracts.upgradeControl.address)
+    this.revocationRegistry = await new RevocationRegistry(this.account).getInstance(
+      contracts.revocationRegistry.address,
+    )
     return this
   }
 
