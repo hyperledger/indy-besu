@@ -7,7 +7,7 @@
 import environment from '../environment'
 import { Actor } from './utils/actor'
 import { ROLES } from '../contracts-ts'
-import { createCredentialDefinitionObject, createSchemaObject } from '../utils'
+import { createCredentialDefinitionObject, createRevocationRegistryDefinitionObject, createRevocationRegistryEntryObject, createSchemaObject } from '../utils'
 
 async function demo() {
   let receipt: any
@@ -72,6 +72,42 @@ async function demo() {
   console.log(
     `Credential Definition resolved for ${credentialDefinitionId}. Credential Definition: ${testCredentialDefinition.credDef}`,
   )
+
+  console.log("9. Faber create a Test Revocation Registry Definition using the 'did:ethr' DID as the issuer")
+  const { id: revocationRegistryId, revRegDef: revocationRegistryDefinition } = createRevocationRegistryDefinitionObject({
+    issuerId: faber.didEthr,
+    credDefId: credentialDefinitionId
+  })
+
+  receipt = await faber.revocationRegistry.createRevocationRegistryDefinition(
+    faber.address,
+    revocationRegistryId,
+    credentialDefinitionId,
+    faber.didEthr,
+    revocationRegistryDefinition
+  )
+
+  console.log(`Revocation Registry Definition created for id ${revocationRegistryId}. Receipt: ${JSON.stringify(receipt)}`)
+
+  console.log('10. Faber resolves Test Revocation Registry Definition to ensure its written')
+  const resolvedRevocationRegistryDefinition = await faber.revocationRegistry.resolveRevocationRegistryDefinition(
+    revocationRegistryId,
+  )
+  console.log(
+    `Revocation Registry Definition resolved for ${revocationRegistryId}. Credential Definition: ${resolvedRevocationRegistryDefinition.revRegDef}`,
+  )
+
+  console.log("11. Faber create a Test Revocation Registry Entry using the 'did:ethr' DID as the issuer")
+  const revocationRegistryEntryStruct = createRevocationRegistryEntryObject({})
+
+  receipt = await faber.revocationRegistry.createRevocationRegistryEntry(
+    faber.address,
+    revocationRegistryId,
+    faber.didEthr,
+    revocationRegistryEntryStruct
+  )
+
+  console.log(`Revocation Registry Entry created for Revocation Registry Definition id ${revocationRegistryId}. Receipt: ${JSON.stringify(receipt)}`)
 }
 
 if (require.main === module) {

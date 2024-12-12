@@ -14,7 +14,7 @@ import { LedgerClient, EthrDidRegistry, DidResolver, SchemaRegistry, Endorsement
 const projectRootPath = resolve('../../../..')
 const trustee = {
     address: '0xf0e2db6c8dc6c681bb5d6ad121a107f300e9b2b5',
-    secret: Uint8Array.from([ 139, 187, 177, 179, 69, 175, 86, 181, 96, 165, 178, 11, 212, 176, 237, 28, 216, 204, 153, 88, 161, 98, 98, 188, 117, 17, 132, 83, 203, 84, 109, 247 ])
+    secret: Uint8Array.from([139, 187, 177, 179, 69, 175, 86, 181, 96, 165, 178, 11, 212, 176, 237, 28, 216, 204, 153, 88, 161, 98, 98, 188, 117, 17, 132, 83, 203, 84, 109, 247])
 }
 const identity = {
     address: '0xce70ce892768d46caf120b600dec29ed20198982',
@@ -57,7 +57,7 @@ async function demo() {
 
     console.log('2. Publish and Modify DID')
     const did = 'did:ethr:' + identity.address
-    const serviceAttribute = {"serviceEndpoint":"http://10.0.0.2","type":"LinkedDomains"}
+    const serviceAttribute = { "serviceEndpoint": "http://10.0.0.2", "type": "LinkedDomains" }
     const validity = BigInt(1000)
     let endorsingData = await EthrDidRegistry.buildDidSetAttributeEndorsingData(client, did, serviceAttribute, validity)
     let authorSignature = sign(endorsingData.getSigningBytes(), identity.secret)
@@ -74,10 +74,10 @@ async function demo() {
     console.log('Resolved DID Document: ' + JSON.stringify(didWithMeta, null, 2))
 
     console.log('4. Publish Schema')
-    const name  = (Math.random() + 1).toString(36).substring(7)
-    let schema = new Schema(did, name, "1.0.0", [ "First Name", "Last Name" ])
+    const name = (Math.random() + 1).toString(36).substring(7)
+    let schema = new Schema(did, name, "1.0.0", ["First Name", "Last Name"])
     let schemaEndorsingData = await SchemaRegistry.buildCreateSchemaEndorsingData(client, schema)
-    authorSignature =  sign(schemaEndorsingData.getSigningBytes(), identity.secret)
+    authorSignature = sign(schemaEndorsingData.getSigningBytes(), identity.secret)
     schemaEndorsingData.setSignature(authorSignature)
     transaction = await Endorsement.buildEndorsementTransaction(client, trustee.address, schemaEndorsingData)
     transactionSignature = sign(transaction.getSigningBytes(), trustee.secret)
