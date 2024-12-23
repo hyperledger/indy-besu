@@ -7,4 +7,4 @@ storageClasses:
 controller:
   serviceAccount:
     annotations:
-      eks.amazonaws.com/role-arn: arn:aws:iam::221082216512:role/k8s-ebs-csi
+      eks.amazonaws.com/role-arn: arn:aws:iam::{org_id}:role/k8s-ebs-csi
