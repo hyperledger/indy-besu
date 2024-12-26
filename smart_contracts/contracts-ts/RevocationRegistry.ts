@@ -74,6 +74,25 @@ export class RevocationRegistry extends Contract {
     return tx.wait()
   }
 
+  public async createRevocationRegistryEntrySigned(
+    identity: string,
+    revRegDefId: string,
+    issuerId: string,
+    revRegEntry: RevocationRegistryEntryStruct,
+    signature: Signature,
+  ) {
+    const tx = await this.instance.createRevocationRegistryEntrySigned(
+      identity,
+      signature.v,
+      signature.r,
+      signature.s,
+      keccak256(toUtf8Bytes(revRegDefId)),
+      issuerId,
+      revRegEntry,
+    )
+    return tx.wait()
+  }
+
   public async resolveRevocationRegistryDefinition(id: string): Promise<RevocationRegistryDefinitionRecord> {
     const record = await this.instance.resolveRevocationRegistryDefinition(keccak256(toUtf8Bytes(id)))
     return {
@@ -111,6 +130,27 @@ export class RevocationRegistry extends Contract {
         getBytes(keccak256(toUtf8Bytes(credDefId)), 'hex'),
         toUtf8Bytes(issuerId),
         getBytes(toUtf8Bytes(revRegDef), 'hex'),
+      ]),
+    )
+  }
+
+  public signCreateRevRegEntryEndorsementData(
+    identity: string,
+    privateKey: Uint8Array,
+    revRegDefId: string,
+    issuerId: string,
+    revRegEntry: RevocationRegistryEntryStruct,
+  ) {
+    const revRegEntrySolidityStruct = ['tuple(bytes,bytes,uint32[],uint32[],uint64)']
+
+    return this.signEndorsementData(
+      privateKey,
+      concat([
+        identity,
+        toUtf8Bytes('createRevocationRegistryEntry'),
+        getBytes(keccak256(toUtf8Bytes(revRegDefId)), 'hex'),
+        toUtf8Bytes(issuerId),
+        getBytes(new AbiCoder().encode(revRegEntrySolidityStruct, [Object.values(revRegEntry)])),
       ]),
     )
   }

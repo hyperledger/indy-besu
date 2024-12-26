@@ -25,9 +25,9 @@ export function revocationRegistry(config: RevocationRegistryConfig) {
   storage[slots['0']] = padLeft(data.upgradeControlAddress, 64)
   // address of DID registry contact stored in slot 1
   storage[slots['1']] = padLeft(data.universalDidResolverAddress, 64)
-  // address of Role control contact stored in slot 3
+  // address of Role control contact stored in slot 2
   storage[slots['2']] = padLeft(data.roleControlContractAddress, 64)
-  // address of schema registry contact stored in slot 2
+  // address of credentialDefinition registry contact stored in slot 3
   storage[slots['3']] = padLeft(data.credentialDefinitionRegistryAddress, 64)
   return buildProxySection(name, address, description, storage)
 }

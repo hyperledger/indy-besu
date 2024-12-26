@@ -108,6 +108,12 @@ async function demo() {
   )
 
   console.log(`Revocation Registry Entry created for Revocation Registry Definition id ${revocationRegistryId}. Receipt: ${JSON.stringify(receipt)}`)
+
+  console.log("12. Faber fetches Revocation Registry Entries associated with a Test Revocation Registry Definition")
+  const revRegEntries = await faber.revocationRegistry.fetchAllRevocationEntries(revocationRegistryId);
+
+  console.log(`All Revocation Registry Entries found for Revocation Registry Definition id ${revocationRegistryId}: `)
+  console.log(revRegEntries)
 }
 
 if (require.main === module) {
