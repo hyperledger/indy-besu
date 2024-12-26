@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 import { RevocationRegistryEntryStruct } from '../typechain-types/contracts/anoncreds/RevocationRegistry'
 
 export function createBaseDidDocument(did: string, key?: any) {

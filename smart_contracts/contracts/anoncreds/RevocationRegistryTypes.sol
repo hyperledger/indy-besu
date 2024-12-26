@@ -26,9 +26,18 @@ struct RevocationRegistryDefinitionMetadata {
     uint256 created;
     string issuerId;
     bytes currentAccumulator;
-    //TODO: Add timestamp for on chain control as well?
 }
 
+/**
+ * @title RevocationRegistryEntry
+ * @dev This struct holds the data of a new revocation registry entry (delta).
+ *
+ * @param currentAccumulator - New accumulator to be saved on-chain.
+ * @param prevAccumulator - Previous accumulator for comparison.
+ * @param issued - list of newly issued credential indexes.
+ * @param revoked - list of newly revoked credential indexes.
+ * @param timestamp - timestamp of revocation registry entry (delta).
+ */
 struct RevocationRegistryEntry {
     bytes currentAccumulator;
     bytes prevAccumulator;

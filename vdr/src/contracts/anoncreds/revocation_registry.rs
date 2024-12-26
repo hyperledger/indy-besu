@@ -36,6 +36,7 @@ const METHOD_CREATE_REVOCATION_REGISTRY_ENTRY: &str = "createRevocationRegistryE
 const METHOD_RESOLVE_REVOCATION_REGISTRY_DEFINITION: &str = "resolveRevocationRegistryDefinition";
 const METHOD_CREATE_REVOCATION_REGISTRY_DEFINITION_SIGNED: &str =
     "createRevocationRegistryDefinitionSigned";
+const METHOD_CREATE_REVOCATION_REGISTRY_ENTRY_SIGNED: &str = "createRevocationRegistryEntrySigned";
 
 const EVENT_REV_REG_ENTRY_CREATED: &str = "RevocationRegistryEntryCreated";
 
@@ -109,7 +110,7 @@ pub async fn build_create_revocation_registry_entry_transaction(
 }
 
 /// Prepared data for endorsing creation of a new Revocation Registry Definition record
-///     (RevocationRegistry.createRevocationRegistryDefinitionSigned contract method)
+///     (RevocationRegistry.createRevocationRegistryEntrySigned contract method)
 ///
 /// #Params
 ///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
@@ -139,6 +140,36 @@ pub async fn build_create_revocation_registry_definition_endorsing_data(
         )?
         .add_param(&revocation_registry_definition.issuer_id.without_network()?)?
         .add_param(revocation_registry_definition)?
+        .build(client)
+        .await
+}
+
+/// Prepared data for endorsing creation of a new Revocation Registry Entry record
+///     (RevocationRegistry.createRevocationRegistryDefinitionSigned contract method)
+///
+/// #Params
+///  - `client`: [LedgerClient] - client connected to the network where contract will be executed
+/// - `revocation_registry_entry`: [RevocationRegistryEntry] - object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:revocation-registry-entries>`
+///
+/// #Returns
+///   data: [TransactionEndorsingData] - transaction endorsement data to sign
+#[logfn(Info)]
+#[logfn_inputs(Debug)]
+pub async fn build_create_revocation_registry_entry_endorsing_data(
+    client: &LedgerClient,
+    revocation_registry_entry: &RevocationRegistryEntry,
+) -> VdrResult<TransactionEndorsingData> {
+    revocation_registry_entry.validate()?;
+    let identity = Address::try_from(&revocation_registry_entry.issuer_id)?;
+
+    TransactionEndorsingDataBuilder::new()
+        .set_contract(CONTRACT_NAME)
+        .set_identity(&identity)
+        .set_method(METHOD_CREATE_REVOCATION_REGISTRY_ENTRY)
+        .set_endorsing_method(METHOD_CREATE_REVOCATION_REGISTRY_ENTRY_SIGNED)
+        .add_param(&revocation_registry_entry.rev_reg_def_id)?
+        .add_param(&revocation_registry_entry.issuer_id.without_network()?)?
+        .add_param(&revocation_registry_entry.rev_reg_entry_data)?
         .build(client)
         .await
 }
@@ -258,11 +289,6 @@ pub async fn resolve_revocation_registry_status_list(
 
     let mut revocation_list: Vec<u32> = vec![0; rev_reg_def.value.max_cred_num.try_into().unwrap()];
 
-    // Set all `issuer` indexes to 0 (not revoked)
-    for issue in delta.issued {
-        revocation_list[issue as usize] = RevocationState::Active as u32
-    }
-
     // Set all `revoked` indexes to 1 (revoked)
     for revocation in delta.revoked {
         revocation_list[revocation as usize] = RevocationState::Revoked as u32
@@ -291,7 +317,19 @@ pub async fn build_latest_revocation_registry_entry_from_status_list(
     accumulator: String,
 ) -> VdrResult<RevocationRegistryEntry> {
     let rev_reg_def = resolve_revocation_registry_definition(&client, &id).await?;
-    if revocation_registry_status_list.len() as u32 > rev_reg_def.value.max_cred_num {
+
+    let status_list_length: u32 =
+        revocation_registry_status_list
+            .len()
+            .try_into()
+            .map_err(|e| {
+                VdrError::InvalidRevocationRegistryEntry(format!(
+                    "Status list length too big: {}",
+                    e
+                ))
+            })?;
+
+    if status_list_length > rev_reg_def.value.max_cred_num {
         return Err(VdrError::InvalidRevocationRegistryStatusList(format!(
             "Revocation Status List has more elements ({}) than Revocation Registry MaxCredNum ({})",
             revocation_registry_status_list.len(),
@@ -337,7 +375,6 @@ pub async fn fetch_revocation_delta(
         return Ok(None);
     }
 
-    //TODO: sets? vectors?
     let mut issued: HashSet<u32> = HashSet::new();
     let mut revoked: HashSet<u32> = HashSet::new();
 
@@ -394,11 +431,23 @@ fn build_latest_revocation_registry_entry_data(
     let mut issued: Vec<u32> = Vec::new();
     let mut revoked: Vec<u32> = Vec::new();
 
+    let status_list_length: u32 =
+        revocation_registry_status_list
+            .len()
+            .try_into()
+            .map_err(|e| {
+                VdrError::InvalidRevocationRegistryEntry(format!(
+                    "Status list length too big: {}",
+                    e
+                ))
+            })?;
+
     match previous_delta {
         Some(previous_delta) => {
-            previous_delta.validate(revocation_registry_status_list.len() as u32 - 1)?;
+            previous_delta.validate(status_list_length - 1)?;
             // Check whether the revocationStatusList entry is not included in the previous delta issued indices
-            for (index, entry) in (0u32..).zip(revocation_registry_status_list.iter()) {
+            for (index, entry) in revocation_registry_status_list.iter().enumerate() {
+                let index = index as u32;
                 if RevocationState::Active == *entry && !previous_delta.issued.contains(&index) {
                     issued.push(index);
                 }
@@ -411,7 +460,8 @@ fn build_latest_revocation_registry_entry_data(
         }
         None => {
             // No delta is provided, initial state, so the entire revocation status list is converted to two list of indices
-            for (index, entry) in (0u32..).zip(revocation_registry_status_list.iter()) {
+            for (index, entry) in revocation_registry_status_list.iter().enumerate() {
+                let index = index as u32;
                 match entry {
                     RevocationState::Active => issued.push(index),
                     RevocationState::Revoked => revoked.push(index),

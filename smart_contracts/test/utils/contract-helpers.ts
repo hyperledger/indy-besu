@@ -17,7 +17,13 @@ import {
   UpgradeControl,
   ValidatorControl,
 } from '../../contracts-ts'
-import { Contract, createBaseDidDocument, createCredentialDefinitionObject, createSchemaObject } from '../../utils'
+import {
+  Contract,
+  createBaseDidDocument,
+  createCredentialDefinitionObject,
+  createRevocationRegistryDefinitionObject,
+  createSchemaObject,
+} from '../../utils'
 import { getTestAccounts, ZERO_ADDRESS } from './test-entities'
 
 export const testActorAddress = '0x2036C6CD85692F0Fb2C26E6c6B2ECed9e4478Dfd'
@@ -180,6 +186,71 @@ export async function createCredentialDefinition(
   const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
   await credentialDefinitionRegistry.createCredentialDefinition(identity, id, issuerId, schemaId, credDef)
   return { id, credDef }
+}
+
+export async function createCredentialDefinitionSigned(
+  credentialDefinitionRegistry: CredentialDefinitionRegistry,
+  identity: string,
+  issuerId: string,
+  schemaId: string,
+) {
+  const { id, credDef } = createCredentialDefinitionObject({ issuerId, schemaId })
+  const signature = credentialDefinitionRegistry.signCreateCredDefEndorsementData(
+    identity,
+    testActorPrivateKey,
+    id,
+    issuerId,
+    schemaId,
+    credDef,
+  )
+
+  await credentialDefinitionRegistry.createCredentialDefinitionSigned(
+    testActorAddress,
+    id,
+    issuerId,
+    schemaId,
+    credDef,
+    signature,
+  )
+
+  return { id, credDef }
+}
+
+export async function createRevocationRegistryDefinition(
+  revocationRegistry: RevocationRegistry,
+  identity: string,
+  issuerId: string,
+  credDefId: string,
+) {
+  const { id, revRegDef } = createRevocationRegistryDefinitionObject({ issuerId, credDefId })
+  await revocationRegistry.createRevocationRegistryDefinition(identity, id, credDefId, issuerId, revRegDef)
+  return { id, revRegDef }
+}
+
+export async function createRevocationRegistryDefinitionSigned(
+  revocationRegistry: RevocationRegistry,
+  identity: string,
+  issuerId: string,
+  credDefId: string,
+) {
+  const { id, revRegDef } = createRevocationRegistryDefinitionObject({ issuerId, credDefId })
+  const signature = revocationRegistry.signCreateRevRegDefEndorsementData(
+    identity,
+    testActorPrivateKey,
+    id,
+    credDefId,
+    issuerId,
+    revRegDef,
+  )
+  await revocationRegistry.createRevocationRegistryDefinitionSigned(
+    identity,
+    id,
+    credDefId,
+    issuerId,
+    revRegDef,
+    signature,
+  )
+  return { id, revRegDef }
 }
 
 function testableContractMixin<T extends new (...args: any[]) => Contract>(Base: T) {

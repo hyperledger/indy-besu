@@ -12,12 +12,42 @@ interface RevocationRegistryInterface {
      */
     event RevocationRegistryDefinitionCreated(bytes32 revocationRegistryDefinitionId, address identity);
 
+    /**
+     * @dev Event that is sent when a Revocation Registry Entry (Delta) is created
+     *
+     * @param revocationRegistryDefinitionId    Keccak hash of created revocation registry definition id
+     * @param timestamp                         Timestamp of the created Revocation Registry Entry
+     * @param revRegEntry                       Struct containing new accumulator and list of newly issued/revoked credentials
+     */
     event RevocationRegistryEntryCreated(
         bytes32 indexed revocationRegistryDefinitionId,
         uint64 indexed timestamp,
         RevocationRegistryEntry revRegEntry
     );
 
+    /**
+     * @dev Creates a new Revocation Registry Definition.
+     *
+     * Once the Revocation Registry Definition is created, this function emits a `RevocationRegistryDefinitionCreated` event
+     * with the new Revocation Registry Definition's ID and issuer address.
+     *
+     * Restrictions:
+     * - Only senders with either TRUSTEE or ENDORSER or STEWARD role are permitted to create new object;
+     *
+     * This function can revert with following errors:
+     * - `RevocationRegistryDefinitionAlreadyExist`: Raised if Revocation Registry Definition with provided ID already exist.
+     * - `CredentialDefinitionNotFound`: Raised if the associated Credential Definition doesn't exist.
+     * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.
+     * - `InvalidIssuerId`: Raised if the provided issuer DID is invalid.
+     * - `IssuerHasBeenDeactivated`: Raised if the associated issuer is not active.
+     * - `NotIdentityOwner`: Raised when specified issuer DID is not owned by sender.
+     *
+     * @param identity  Account address of Revocation Registry Definition issuer.
+     * @param id        Keccak hash of Revocation Registry Id to be created.
+     * @param credDefId Keccak hash of Credential Definition Id.
+     * @param issuerId  DID of Revocation Registry Definition issuer.
+     * @param revRegDef AnonCreds Revocation Registry Definition JSON as bytes.
+     */
     function createRevocationRegistryDefinition(
         address identity,
         bytes32 id,
@@ -26,6 +56,32 @@ interface RevocationRegistryInterface {
         bytes calldata revRegDef
     ) external;
 
+    /**
+     * @dev Endorse a new Revocation Registry Definition (off-chain author signature).
+     *
+     * Once the Revocation Registry Definition is created, this function emits a `RevocationRegistryDefinitionCreated` event
+     * with the new Revocation Registry Definition's ID and issuer address.
+     *
+     * Restrictions:
+     * - Only senders with either TRUSTEE or ENDORSER or STEWARD role are permitted to create new object;
+     *
+     * This function can revert with following errors:
+     * - `RevocationRegistryDefinitionAlreadyExist`: Raised if Revocation Registry Definition with provided ID already exist.
+     * - `CredentialDefinitionNotFound`: Raised if the associated Credential Definition doesn't exist.
+     * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.
+     * - `InvalidIssuerId`: Raised if the provided issuer DID is invalid.
+     * - `IssuerHasBeenDeactivated`: Raised if the associated issuer is not active.
+     * - `NotIdentityOwner`: Raised when specified issuer DID is not owned by sender.
+     *
+     * @param identity  Account address of credential definition issuer.
+     * @param sigR      Part of EcDSA signature.
+     * @param sigV      Part of EcDSA signature.
+     * @param sigS      Part of EcDSA signature.
+     * @param id        Keccak hash of Credential Definition id to be created.
+     * @param issuerId  DID of Revocation Registry Definition issuer.
+     * @param credDefId Keccak hash of Credential Definition id.
+     * @param revRegDef AnonCreds Revocation Registry Definition JSON as bytes.
+     */
     function createRevocationRegistryDefinitionSigned(
         address identity,
         uint8 sigV,
@@ -37,18 +93,6 @@ interface RevocationRegistryInterface {
         bytes calldata revRegDef
     ) external;
 
-    function resolveRevocationRegistryDefinition(
-        bytes32 id
-    ) external returns (RevocationRegistryDefinitionRecord memory revocationRegistryDefinitionRecord);
-
-    function createRevocationRegistryEntry(
-        address identity,
-        bytes32 revRegDefId,
-        string calldata issuerId,
-        RevocationRegistryEntry calldata revRegEntry
-    ) external;
-
-    //TODO:
     // /**
     //  * @dev Resolve the Revocation Registry Definition associated with the given ID.
     //  *
@@ -56,9 +100,77 @@ interface RevocationRegistryInterface {
     //  *
     //  * @param id Keccak hash of the Revocation Registry Definition to be resolved.
     //  *
-    //  * @return revocationRegistryDefinitionRecord Returns the credential definition with metadata.
+    //  * @return revocationRegistryDefinitionRecord Returns the Revocation Registry Definition with metadata.
     //  */
-    // function resolveRevocationRegistryDefinition(
-    //     bytes32 id
-    // ) external returns (RevocationRegistryDefinitionRecord memory revocationRegistryDefinitionRecord);
+    function resolveRevocationRegistryDefinition(
+        bytes32 id
+    ) external returns (RevocationRegistryDefinitionRecord memory revocationRegistryDefinitionRecord);
+
+    /**
+     * @dev Creates a new Revocation Registry Entry (Delta).
+     *
+     * Once the Revocation Registry Entry is created, this function emits a `RevocationRegistryEntryCreated` event
+     * with the Revocation Registry Definition's ID, timestamp and a struct containing the new accumulator and issued/revoked
+     * credentials
+     *
+     * Restrictions:
+     * - Only senders with either TRUSTEE or ENDORSER or STEWARD role are permitted to create new object;
+     * - Only the issuer of the associated Revocation Registry Definition is permitted to create new object;
+     *
+     * This function can revert with following errors:
+     * - `RevocationRegistryNotFound`: Raised if the associated Revocation Registry Definition doesn't exist.
+     * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.
+     * - `InvalidIssuerId`: Raised if the provided issuer DID is invalid.
+     * - `IssuerHasBeenDeactivated`: Raised if the associated issuer is not active.
+     * - `NotIdentityOwner`: Raised when specified issuer DID is not owned by sender.
+     * - `NotRevocationRegistryDefinitionIssuer`: Raised when trying to create object while not being issuer of associated Revocation Registry Definition.
+     *
+     * @param identity     Account address of Revocation Registry Definition issuer.
+     * @param revRegDefId  Keccak hash of the associated Revocation Registry Id.
+     * @param issuerId     DID of Revocation Registry Definition issuer.
+     * @param revRegEntry  Struct with new and previous accumulators, list of issued/revoked credentials and timestamp.
+     */
+    function createRevocationRegistryEntry(
+        address identity,
+        bytes32 revRegDefId,
+        string calldata issuerId,
+        RevocationRegistryEntry calldata revRegEntry
+    ) external;
+
+    /**
+     * @dev Endorse a new Revocation Registry Entry (off-chain author signature).
+     *
+     * Once the Revocation Registry Entry is created, this function emits a `RevocationRegistryEntryCreated` event
+     * with the Revocation Registry Definition's ID, timestamp and a struct containing the new accumulator and issued/revoked
+     * credentials
+     *
+     * Restrictions:
+     * - Only senders with either TRUSTEE or ENDORSER or STEWARD role are permitted to create new object;
+     * - Only the issuer of the associated Revocation Registry Definition is permitted to create new object;
+     *
+     * This function can revert with following errors:
+     * - `RevocationRegistryNotFound`: Raised if the associated Revocation Registry Definition doesn't exist.
+     * - `IssuerNotFound`: Raised if the associated issuer doesn't exist.
+     * - `InvalidIssuerId`: Raised if the provided issuer DID is invalid.
+     * - `IssuerHasBeenDeactivated`: Raised if the associated issuer is not active.
+     * - `NotIdentityOwner`: Raised when specified issuer DID is not owned by sender.
+     * - `NotRevocationRegistryDefinitionIssuer`: Raised when trying to create object while not being issuer of associated Revocation Registry Definition.
+     *
+     * @param identity  Account address of credential definition issuer.
+     * @param sigR         Part of EcDSA signature.
+     * @param sigV         Part of EcDSA signature.
+     * @param sigS         Part of EcDSA signature.
+     * @param revRegDefId  Keccak hash of the associated Revocation Registry Id.
+     * @param issuerId     DID of Revocation Registry Definition issuer.
+     * @param revRegEntry  Struct with new and previous accumulators, list of issued/revoked credentials and timestamp.
+     */
+    function createRevocationRegistryEntrySigned(
+        address identity,
+        uint8 sigV,
+        bytes32 sigR,
+        bytes32 sigS,
+        bytes32 revRegDefId,
+        string calldata issuerId,
+        RevocationRegistryEntry calldata revRegEntry
+    ) external;
 }

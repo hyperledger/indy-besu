@@ -11,6 +11,7 @@ import { NotRevocationRegistryDefinitionIssuer, RevocationRegistryDefinitionAlre
 import { CredentialDefinitionRegistryInterface } from "./CredentialDefinitionRegistryInterface.sol";
 import { RoleControlInterface } from "../auth/RoleControl.sol";
 import { AnoncredsRegistry } from "./AnoncredsRegistry.sol";
+import { StringUtils } from "../utils/StringUtils.sol";
 
 import { Errors } from "../utils/Errors.sol";
 
@@ -26,7 +27,7 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
     mapping(bytes32 id => RevocationRegistryDefinitionRecord revocationRegistryDefinitionRecord) private _revRegDefs;
 
     /**
-     * Checks that the schema exist
+     * Checks that the Credential Definition exist
      */
     modifier _credentialDefinitionExists(bytes32 id) {
         _credentialDefinitionRegistry.resolveCredentialDefinition(id);
@@ -49,34 +50,21 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         _;
     }
 
-    modifier _accumulatorsMatch(bytes32 _revRegDefId, RevocationRegistryEntry calldata initialRevRegEntry) {
-        if (
-            _revRegDefs[_revRegDefId].metadata.currentAccumulator.length != 0 &&
-            keccak256(abi.encodePacked(_revRegDefs[_revRegDefId].metadata.currentAccumulator)) !=
-            keccak256(abi.encodePacked(initialRevRegEntry.prevAccumulator))
-        ) revert AccumulatorMismatch(initialRevRegEntry.prevAccumulator);
-        _;
-    }
-
-    //TODO: using as modifier caused 'Stack Too Deep' Compile Error
-    // modifier _isRevRegDefIssuer(bytes32 revRegDefId, string calldata issuerId) {
-    //     if (
-    //         keccak256(abi.encodePacked(_revRegDefs[revRegDefId].metadata.issuerId)) !=
-    //         keccak256(abi.encodePacked(issuerId))
-    //     ) revert NotRevocationRegistryDefinitionIssuer(issuerId);
-    //     _;
-    // }
-
-    //TODO:
-    // Seems odd but keep in mind...
-    //https://github.com/hyperledger/indy-node/blob/main/design/anoncreds.md#revoc_reg_entry
-    // Creation of Revocation Registry (Def and Enteries):
-    // RevocReg Issuer may not be the same as Schema Author and CredDef issuer.
     /**
-     * Checks wether Credential Definition Exists
+     * Checks that the previous accumulator specified by the new Revocation Registry Entry matches
+     * the current accumulator on chain (only if not the first entry)
      */
-    modifier _credDefExists(bytes32 credDefId) {
-        _credentialDefinitionRegistry.resolveCredentialDefinition(credDefId);
+    modifier _accumulatorsMatch(bytes32 _revRegDefId, RevocationRegistryEntry calldata _revRegEntry) {
+        if (_revRegDefs[_revRegDefId].metadata.currentAccumulator.length != 0) {
+            if (_revRegDefs[_revRegDefId].metadata.currentAccumulator.length != _revRegEntry.prevAccumulator.length) {
+                revert AccumulatorMismatch(_revRegEntry.prevAccumulator);
+            }
+            for (uint256 i = 0; i < _revRegEntry.prevAccumulator.length; i++) {
+                if (_revRegDefs[_revRegDefId].metadata.currentAccumulator[i] != _revRegEntry.prevAccumulator[i]) {
+                    revert AccumulatorMismatch(_revRegEntry.prevAccumulator);
+                }
+            }
+        }
         _;
     }
 
@@ -137,6 +125,7 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         );
     }
 
+    /// @inheritdoc RevocationRegistryInterface
     function resolveRevocationRegistryDefinition(
         bytes32 id
     )
@@ -149,6 +138,7 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         return _revRegDefs[id];
     }
 
+    /// @inheritdoc RevocationRegistryInterface
     function createRevocationRegistryEntry(
         address identity,
         bytes32 revRegDefId,
@@ -156,6 +146,31 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         RevocationRegistryEntry calldata revRegEntry
     ) external override {
         _createRevocationRegistryEntry(identity, msg.sender, revRegDefId, issuerId, revRegEntry);
+    }
+
+    /// @inheritdoc RevocationRegistryInterface
+    function createRevocationRegistryEntrySigned(
+        address identity,
+        uint8 sigV,
+        bytes32 sigR,
+        bytes32 sigS,
+        bytes32 revRegDefId,
+        string calldata issuerId,
+        RevocationRegistryEntry calldata revRegEntry
+    ) public virtual {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0x19),
+                bytes1(0),
+                address(this),
+                identity,
+                "createRevocationRegistryEntry",
+                revRegDefId,
+                issuerId,
+                abi.encode(revRegEntry)
+            )
+        );
+        _createRevocationRegistryEntry(identity, ecrecover(hash, sigV, sigR, sigS), revRegDefId, issuerId, revRegEntry);
     }
 
     function _createRevocationRegistryDefinition(
@@ -170,7 +185,7 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         _senderIsTrusteeOrEndorserOrSteward
         _uniqueRevRegDefId(id)
         _validIssuer(issuerId, identity, actor)
-        _credDefExists(credDefId)
+        _credentialDefinitionExists(credDefId)
     {
         _revRegDefs[id].revRegDef = revRegDef;
         _revRegDefs[id].metadata.created = block.timestamp;
@@ -192,11 +207,9 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         _validIssuer(issuerId, identity, actor)
         _accumulatorsMatch(revRegDefId, revRegEntry)
     {
-        //TODO: using as modifier caused 'Stack too deep' compile error
-        if (
-            keccak256(abi.encodePacked(_revRegDefs[revRegDefId].metadata.issuerId)) !=
-            keccak256(abi.encodePacked(issuerId))
-        ) revert NotRevocationRegistryDefinitionIssuer(issuerId);
+        if (!StringUtils.equals(_revRegDefs[revRegDefId].metadata.issuerId, issuerId)) {
+            revert NotRevocationRegistryDefinitionIssuer(issuerId);
+        }
 
         _revRegDefs[revRegDefId].metadata.currentAccumulator = revRegEntry.currentAccumulator;
         emit RevocationRegistryEntryCreated(revRegDefId, revRegEntry.timestamp, revRegEntry);

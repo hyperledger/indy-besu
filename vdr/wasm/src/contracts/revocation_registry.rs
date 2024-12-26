@@ -76,6 +76,21 @@ impl RevocationRegistry {
         .map_err(JsValue::from)
     }
 
+    #[wasm_bindgen(js_name = buildCreateRevocationRegistryEntryEndorsingData)]
+    pub async fn build_create_revocation_registry_entry_endorsing_data(
+        client: &LedgerClientWrapper,
+        rev_reg_entry: RevocationRegistryEntryWrapper,
+    ) -> Result<TransactionEndorsingDataWrapper> {
+        revocation_registry::build_create_revocation_registry_entry_endorsing_data(
+            &client.0,
+            &rev_reg_entry.0,
+        )
+        .await
+        .as_js()
+        .map(TransactionEndorsingDataWrapper::from)
+        .map_err(JsValue::from)
+    }
+
     #[wasm_bindgen(js_name = buildResolveRevocationRegistryDefinitionTransaction)]
     pub async fn build_resolve_revocation_registry_definition_transaction(
         client: &LedgerClientWrapper,
