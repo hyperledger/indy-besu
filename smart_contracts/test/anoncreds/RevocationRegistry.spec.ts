@@ -250,15 +250,13 @@ describe('RevocationRegistry', function () {
 
       const revocationRegistryEntryParams: CreateRevocationEntryParams = {
         currentAccumulator: '0x20',
-        prevAccumulator: '0x',
         issued: [2, 3],
         revoked: [0, 1],
-        timestamp: 1731067598,
       }
 
       const revocationRegistryEntry = createRevocationRegistryEntryObject(revocationRegistryEntryParams)
 
-      await revocationRegistry.createRevocationRegistryEntry(issuerAddress, id, issuerId, revocationRegistryEntry)
+      await revocationRegistry.createRevocationRegistryEntry(issuerAddress, id, issuerId, '0x', revocationRegistryEntry)
 
       const result = await revocationRegistry.resolveRevocationRegistryDefinition(id)
 
@@ -279,31 +277,33 @@ describe('RevocationRegistry', function () {
 
       let revocationRegistryEntryParams: CreateRevocationEntryParams = {
         currentAccumulator: '0x20',
-        prevAccumulator: '0x',
         issued: [2, 3],
         revoked: [0, 1],
-        timestamp: 1731067598,
       }
 
       let revocationRegistryEntry = createRevocationRegistryEntryObject(revocationRegistryEntryParams)
 
-      await revocationRegistry.createRevocationRegistryEntry(issuerAddress, id, issuerId, revocationRegistryEntry)
+      await revocationRegistry.createRevocationRegistryEntry(issuerAddress, id, issuerId, '0x', revocationRegistryEntry)
 
       revocationRegistryEntryParams = {
         currentAccumulator: '0x30',
-        prevAccumulator: '0x30',
         issued: [2, 3],
         revoked: [0, 1],
-        timestamp: 1731067598,
       }
 
       revocationRegistryEntry = createRevocationRegistryEntryObject(revocationRegistryEntryParams)
 
       await expect(
-        revocationRegistry.createRevocationRegistryEntry(issuerAddress, id, ethrIssuerId, revocationRegistryEntry),
+        revocationRegistry.createRevocationRegistryEntry(
+          issuerAddress,
+          id,
+          ethrIssuerId,
+          '0x30',
+          revocationRegistryEntry,
+        ),
       )
         .to.be.revertedWithCustomError(revocationRegistry.baseInstance, ClErrors.AccumulatorMismatch)
-        .withArgs(revocationRegistryEntryParams.prevAccumulator)
+        .withArgs('0x30')
     })
 
     it('Should fail if attempting to create Revocation Registry Entry for nonexistent Revocation Registry Definition', async function () {
@@ -313,7 +313,13 @@ describe('RevocationRegistry', function () {
       const revocationRegistryEntry = createRevocationRegistryEntryObject({})
 
       await expect(
-        revocationRegistry.createRevocationRegistryEntry(issuerAddress, id, ethrIssuerId, revocationRegistryEntry),
+        revocationRegistry.createRevocationRegistryEntry(
+          issuerAddress,
+          id,
+          ethrIssuerId,
+          '0x20',
+          revocationRegistryEntry,
+        ),
       )
         .to.be.revertedWithCustomError(revocationRegistry.baseInstance, ClErrors.RevocationRegistryDefinitionNotFound)
         .withArgs(keccak256(toUtf8Bytes(id)))
@@ -330,10 +336,8 @@ describe('RevocationRegistry', function () {
 
       const revocationRegistryEntryParams: CreateRevocationEntryParams = {
         currentAccumulator: '0x20',
-        prevAccumulator: '0x',
         issued: [2, 3],
         revoked: [0, 1],
-        timestamp: 1731067598,
       }
 
       revocationRegistry.connect(testAccounts.trustee2.account)
@@ -347,6 +351,7 @@ describe('RevocationRegistry', function () {
           notRevRegDefIssuerAddress,
           id,
           notRevRegDefIssuerId,
+          '0x',
           revocationRegistryEntry,
         ),
       )
@@ -366,10 +371,8 @@ describe('RevocationRegistry', function () {
 
       const revocationRegistryEntryParams: CreateRevocationEntryParams = {
         currentAccumulator: '0x20',
-        prevAccumulator: '0x',
         issued: [2, 3],
         revoked: [0, 1],
-        timestamp: 1731067598,
       }
 
       const revocationRegistryEntry = createRevocationRegistryEntryObject(revocationRegistryEntryParams)
@@ -379,6 +382,7 @@ describe('RevocationRegistry', function () {
         testActorPrivateKey,
         id,
         issuerIdSigned,
+        '0x',
         revocationRegistryEntry,
       )
 
@@ -386,6 +390,7 @@ describe('RevocationRegistry', function () {
         testActorAddress,
         id,
         issuerIdSigned,
+        '0x',
         revocationRegistryEntry,
         revRegEntrySignature,
       )
@@ -404,10 +409,8 @@ describe('RevocationRegistry', function () {
 
       const revocationRegistryEntryParams: CreateRevocationEntryParams = {
         currentAccumulator: '0x20',
-        prevAccumulator: '0x',
         issued: [2, 3],
         revoked: [0, 1],
-        timestamp: 1731067598,
       }
 
       const revocationRegistryEntry = createRevocationRegistryEntryObject(revocationRegistryEntryParams)
@@ -417,6 +420,7 @@ describe('RevocationRegistry', function () {
         testActorPrivateKey,
         id,
         issuerIdSigned,
+        '0x',
         revocationRegistryEntry,
       )
 
@@ -425,6 +429,7 @@ describe('RevocationRegistry', function () {
           testAccounts.trustee2.account.address,
           id,
           issuerIdSigned,
+          '0x',
           revocationRegistryEntry,
           revRegEntrySignature,
         ),
@@ -441,10 +446,8 @@ describe('RevocationRegistry', function () {
 
       const revocationRegistryEntryParams: CreateRevocationEntryParams = {
         currentAccumulator: '0x20',
-        prevAccumulator: '0x',
         issued: [2, 3],
         revoked: [0, 1],
-        timestamp: 1731067598,
       }
 
       const revocationRegistryEntry = createRevocationRegistryEntryObject(revocationRegistryEntryParams)
@@ -454,6 +457,7 @@ describe('RevocationRegistry', function () {
         testActorPrivateKey,
         'invalid signature id',
         issuerIdSigned,
+        '0x',
         revocationRegistryEntry,
       )
 
@@ -462,6 +466,7 @@ describe('RevocationRegistry', function () {
           testAccounts.trustee2.account.address,
           id,
           issuerIdSigned,
+          '0x',
           revocationRegistryEntry,
           revRegEntrySignature,
         ),

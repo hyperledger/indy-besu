@@ -104,6 +104,7 @@ async function demo() {
     faber.address,
     revocationRegistryId,
     faber.didEthr,
+    "0x",
     revocationRegistryEntryStruct
   )
 
