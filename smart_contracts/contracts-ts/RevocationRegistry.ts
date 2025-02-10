@@ -63,12 +63,14 @@ export class RevocationRegistry extends Contract {
     identity: string,
     revRegId: string,
     issuerId: string,
+    prevAccumulator: string,
     revRegEntry: RevocationRegistryEntryStruct,
   ) {
     const tx = await this.instance.createRevocationRegistryEntry(
       identity,
       keccak256(toUtf8Bytes(revRegId)),
       issuerId,
+      prevAccumulator,
       revRegEntry,
     )
     return tx.wait()
@@ -78,6 +80,7 @@ export class RevocationRegistry extends Contract {
     identity: string,
     revRegDefId: string,
     issuerId: string,
+    prevAccumulator: string,
     revRegEntry: RevocationRegistryEntryStruct,
     signature: Signature,
   ) {
@@ -88,6 +91,7 @@ export class RevocationRegistry extends Contract {
       signature.s,
       keccak256(toUtf8Bytes(revRegDefId)),
       issuerId,
+      prevAccumulator,
       revRegEntry,
     )
     return tx.wait()
@@ -139,9 +143,10 @@ export class RevocationRegistry extends Contract {
     privateKey: Uint8Array,
     revRegDefId: string,
     issuerId: string,
+    prevAccumulator: string,
     revRegEntry: RevocationRegistryEntryStruct,
   ) {
-    const revRegEntrySolidityStruct = ['tuple(bytes,bytes,uint32[],uint32[],uint64)']
+    const revRegEntrySolidityStruct = ['tuple(bytes,uint32[],uint32[])']
 
     return this.signEndorsementData(
       privateKey,
@@ -150,6 +155,7 @@ export class RevocationRegistry extends Contract {
         toUtf8Bytes('createRevocationRegistryEntry'),
         getBytes(keccak256(toUtf8Bytes(revRegDefId)), 'hex'),
         toUtf8Bytes(issuerId),
+        getBytes(prevAccumulator),
         getBytes(new AbiCoder().encode(revRegEntrySolidityStruct, [Object.values(revRegEntry)])),
       ]),
     )
