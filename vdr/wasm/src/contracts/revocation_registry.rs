@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use indy_besu_vdr::{
-    revocation_registry, AccumKey, Address, CredentialDefinitionId, PublicKeys, RegistryType,
-    RevocationRegistryDefinition, RevocationRegistryDefinitionId,
+    revocation_registry, AccumKey, Accumulator, Address, CredentialDefinitionId, PublicKeys,
+    RegistryType, RevocationRegistryDefinition, RevocationRegistryDefinitionId,
     RevocationRegistryDefinitionValue, RevocationRegistryDelta, RevocationRegistryEntry,
     RevocationRegistryEntryData, RevocationState, RevocationStatusList, VdrResult, DID,
 };
@@ -263,17 +263,15 @@ impl RevocationRegistryEntryWrapper {
         prev_accumulator: String,
         issued: Vec<u32>,
         revoked: Vec<u32>,
-        timestamp: u64,
     ) -> RevocationRegistryEntryWrapper {
         RevocationRegistryEntryWrapper(Rc::new(RevocationRegistryEntry {
             rev_reg_def_id: RevocationRegistryDefinitionId::from(rev_reg_def_id.as_str()),
             issuer_id: DID::from(issuer_id.as_str()),
             rev_reg_entry_data: RevocationRegistryEntryData {
-                current_accumulator,
-                prev_accumulator,
+                current_accumulator: Accumulator::from(current_accumulator.as_str()),
+                prev_accumulator: Accumulator::from(prev_accumulator.as_str()),
                 issued,
                 revoked,
-                timestamp,
             },
         }))
     }
