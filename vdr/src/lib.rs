@@ -36,7 +36,9 @@ pub use contracts::{
             revocation_registry_delta::{
                 RevocationRegistryDelta, RevocationState, RevocationStatusList,
             },
-            revocation_registry_entry::{RevocationRegistryEntry, RevocationRegistryEntryData},
+            revocation_registry_entry::{
+                Accumulator, RevocationRegistryEntry, RevocationRegistryEntryData,
+            },
             schema::{Schema, SchemaRecord},
             schema_id::SchemaId,
         },

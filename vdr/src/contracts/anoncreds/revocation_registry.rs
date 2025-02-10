@@ -26,7 +26,7 @@ use super::types::{
     revocation_registry_definition::RevocationRegistryDefinitionRecord,
     revocation_registry_definition_id::ParsedRevocationRegistryDefinitionId,
     revocation_registry_delta::{RevocationRegistryDelta, RevocationState, RevocationStatusList},
-    revocation_registry_entry::RevocationRegistryEntry,
+    revocation_registry_entry::{Accumulator, RevocationRegistryEntry},
     revocation_registry_events::{RevRegEntryCreated, RevocationRegistryEvents},
 };
 
@@ -102,6 +102,11 @@ pub async fn build_create_revocation_registry_entry_transaction(
         .add_param(&identity)?
         .add_param(&revocation_registry_entry.rev_reg_def_id)?
         .add_param(&revocation_registry_entry.issuer_id.without_network()?)?
+        .add_param(
+            &revocation_registry_entry
+                .rev_reg_entry_data
+                .prev_accumulator,
+        )?
         .add_param(&revocation_registry_entry.rev_reg_entry_data)?
         .set_type(TransactionType::Write)
         .set_from(from)
@@ -169,6 +174,11 @@ pub async fn build_create_revocation_registry_entry_endorsing_data(
         .set_endorsing_method(METHOD_CREATE_REVOCATION_REGISTRY_ENTRY_SIGNED)
         .add_param(&revocation_registry_entry.rev_reg_def_id)?
         .add_param(&revocation_registry_entry.issuer_id.without_network()?)?
+        .add_param(
+            &revocation_registry_entry
+                .rev_reg_entry_data
+                .prev_accumulator,
+        )?
         .add_param(&revocation_registry_entry.rev_reg_entry_data)?
         .build(client)
         .await
@@ -345,7 +355,6 @@ pub async fn build_latest_revocation_registry_entry_from_status_list(
         revocation_registry_status_list,
         &previous_delta,
         accumulator,
-        timestamp,
     )?;
 
     Ok(RevocationRegistryEntry {
@@ -418,7 +427,6 @@ pub async fn fetch_revocation_delta(
 /// List
 /// - `previous_delta`: [Option<RevocationRegistryDelta>] - previous delta saved on the blockchain
 /// - `accumulator`: [String] - new accumulator
-/// - `timestamp`: [String] - timestamp
 ///
 /// # Returns
 ///   rev_reg_delta: [RevocationRegistryEntryData] - RevocationRegistryDelta object
@@ -426,7 +434,6 @@ fn build_latest_revocation_registry_entry_data(
     revocation_registry_status_list: &Vec<RevocationState>,
     previous_delta: &Option<RevocationRegistryDelta>,
     accumulator: String,
-    timestamp: u64,
 ) -> VdrResult<RevocationRegistryEntryData> {
     let mut issued: Vec<u32> = Vec::new();
     let mut revoked: Vec<u32> = Vec::new();
@@ -473,11 +480,13 @@ fn build_latest_revocation_registry_entry_data(
     Ok(RevocationRegistryEntryData {
         issued,
         revoked,
-        current_accumulator: accumulator,
-        prev_accumulator: previous_delta
-            .as_ref()
-            .map_or(String::from("0x"), |prev_delta| prev_delta.accum.clone()),
-        timestamp,
+        current_accumulator: Accumulator::from(accumulator.as_str()),
+        prev_accumulator: Accumulator::from(
+            previous_delta
+                .as_ref()
+                .map_or(String::from("0x"), |prev_delta| prev_delta.accum.clone())
+                .as_str(),
+        ),
     })
 }
 
@@ -751,37 +760,36 @@ pub mod test {
                 nonce: Some(DEFAULT_NONCE.clone()),
                 chain_id: CONFIG.chain_id,
                 data: vec![
-                    240, 62, 44, 129, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
+                    169, 9, 112, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240, 226, 219, 108, 141,
                     198, 198, 129, 187, 93, 106, 209, 33, 161, 7, 243, 0, 233, 178, 181, 165, 228,
                     7, 74, 86, 110, 19, 20, 48, 146, 220, 87, 85, 67, 141, 24, 151, 19, 147, 167,
                     9, 100, 136, 80, 1, 146, 59, 15, 146, 90, 38, 142, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 224, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 51, 100, 105, 100, 58, 101, 116, 104, 114, 58, 48, 120,
-                    102, 48, 101, 50, 100, 98, 54, 99, 56, 100, 99, 54, 99, 54, 56, 49, 98, 98, 53,
-                    100, 54, 97, 100, 49, 50, 49, 97, 49, 48, 55, 102, 51, 48, 48, 101, 57, 98, 50,
-                    98, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0, 0, 0,
+                    0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 1, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 51, 100, 105, 100, 58, 101, 116, 104,
+                    114, 58, 48, 120, 102, 48, 101, 50, 100, 98, 54, 99, 56, 100, 99, 54, 99, 54,
+                    56, 49, 98, 98, 53, 100, 54, 97, 100, 49, 50, 49, 97, 49, 48, 55, 102, 51, 48,
+                    48, 101, 57, 98, 50, 98, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    224, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 224, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103, 69, 205, 244, 0, 0, 0, 0, 0,
+                    0, 9, 112, 114, 101, 118, 65, 99, 99, 117, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    12, 99, 117, 114, 114, 101, 110, 116, 65, 99, 99, 117, 109, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 112, 114, 101, 118,
-                    65, 99, 99, 117, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 1, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 99, 117, 114, 114, 101, 110, 116, 65, 99, 99,
+                    117, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 signature: None,
                 hash: None,
