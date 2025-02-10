@@ -21,7 +21,7 @@ interface RevocationRegistryInterface {
      */
     event RevocationRegistryEntryCreated(
         bytes32 indexed revocationRegistryDefinitionId,
-        uint64 indexed timestamp,
+        uint256 indexed timestamp,
         RevocationRegistryEntry revRegEntry
     );
 
@@ -125,15 +125,17 @@ interface RevocationRegistryInterface {
      * - `NotIdentityOwner`: Raised when specified issuer DID is not owned by sender.
      * - `NotRevocationRegistryDefinitionIssuer`: Raised when trying to create object while not being issuer of associated Revocation Registry Definition.
      *
-     * @param identity     Account address of Revocation Registry Definition issuer.
-     * @param revRegDefId  Keccak hash of the associated Revocation Registry Id.
-     * @param issuerId     DID of Revocation Registry Definition issuer.
-     * @param revRegEntry  Struct with new and previous accumulators, list of issued/revoked credentials and timestamp.
+     * @param identity            Account address of Revocation Registry Definition issuer.
+     * @param revRegDefId         Keccak hash of the associated Revocation Registry Id.
+     * @param issuerId            DID of Revocation Registry Definition issuer.
+     * @param prevAccumulator     Previous accumulator for Revocation Registry for comparison.
+     * @param revRegEntry         Struct containing new accumulator, a list of issued and revoked credentials.
      */
     function createRevocationRegistryEntry(
         address identity,
         bytes32 revRegDefId,
         string calldata issuerId,
+        bytes calldata prevAccumulator,
         RevocationRegistryEntry calldata revRegEntry
     ) external;
 
@@ -157,12 +159,13 @@ interface RevocationRegistryInterface {
      * - `NotRevocationRegistryDefinitionIssuer`: Raised when trying to create object while not being issuer of associated Revocation Registry Definition.
      *
      * @param identity  Account address of credential definition issuer.
-     * @param sigR         Part of EcDSA signature.
-     * @param sigV         Part of EcDSA signature.
-     * @param sigS         Part of EcDSA signature.
-     * @param revRegDefId  Keccak hash of the associated Revocation Registry Id.
-     * @param issuerId     DID of Revocation Registry Definition issuer.
-     * @param revRegEntry  Struct with new and previous accumulators, list of issued/revoked credentials and timestamp.
+     * @param sigR                Part of EcDSA signature.
+     * @param sigV                Part of EcDSA signature.
+     * @param sigS                Part of EcDSA signature.
+     * @param revRegDefId         Keccak hash of the associated Revocation Registry Id.
+     * @param issuerId            DID of Revocation Registry Definition issuer.
+     * @param prevAccumulator     Previous accumulator for Revocation Registry for comparison.
+     * @param revRegEntry         Struct containing new accumulator, a list of issued and revoked credentials.
      */
     function createRevocationRegistryEntrySigned(
         address identity,
@@ -171,6 +174,7 @@ interface RevocationRegistryInterface {
         bytes32 sigS,
         bytes32 revRegDefId,
         string calldata issuerId,
+        bytes calldata prevAccumulator,
         RevocationRegistryEntry calldata revRegEntry
     ) external;
 }
