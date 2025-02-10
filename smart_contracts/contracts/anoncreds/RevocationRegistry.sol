@@ -54,16 +54,26 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
      * Checks that the previous accumulator specified by the new Revocation Registry Entry matches
      * the current accumulator on chain (only if not the first entry)
      */
-    modifier _accumulatorsMatch(bytes32 _revRegDefId, RevocationRegistryEntry calldata _revRegEntry) {
+    modifier _accumulatorsMatch(bytes32 _revRegDefId, bytes memory _prevAccumulator) {
         if (_revRegDefs[_revRegDefId].metadata.currentAccumulator.length != 0) {
-            if (_revRegDefs[_revRegDefId].metadata.currentAccumulator.length != _revRegEntry.prevAccumulator.length) {
-                revert AccumulatorMismatch(_revRegEntry.prevAccumulator);
+            if (_revRegDefs[_revRegDefId].metadata.currentAccumulator.length != _prevAccumulator.length) {
+                revert AccumulatorMismatch(_prevAccumulator);
             }
-            for (uint256 i = 0; i < _revRegEntry.prevAccumulator.length; i++) {
-                if (_revRegDefs[_revRegDefId].metadata.currentAccumulator[i] != _revRegEntry.prevAccumulator[i]) {
-                    revert AccumulatorMismatch(_revRegEntry.prevAccumulator);
+            for (uint256 i = 0; i < _prevAccumulator.length; i++) {
+                if (_revRegDefs[_revRegDefId].metadata.currentAccumulator[i] != _prevAccumulator[i]) {
+                    revert AccumulatorMismatch(_prevAccumulator);
                 }
             }
+        }
+        _;
+    }
+
+    /**
+     * Checks that the provided issuerId is the original publisher of the Revocation Registry Definition
+     */
+    modifier _checkIssuer(string memory issuerId, bytes32 revRegDefId) {
+        if (!StringUtils.equals(_revRegDefs[revRegDefId].metadata.issuerId, issuerId)) {
+            revert NotRevocationRegistryDefinitionIssuer(issuerId);
         }
         _;
     }
@@ -143,9 +153,10 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         address identity,
         bytes32 revRegDefId,
         string calldata issuerId,
+        bytes calldata prevAccumulator,
         RevocationRegistryEntry calldata revRegEntry
     ) external override {
-        _createRevocationRegistryEntry(identity, msg.sender, revRegDefId, issuerId, revRegEntry);
+        _createRevocationRegistryEntry(identity, msg.sender, revRegDefId, issuerId, prevAccumulator, revRegEntry);
     }
 
     /// @inheritdoc RevocationRegistryInterface
@@ -156,6 +167,7 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         bytes32 sigS,
         bytes32 revRegDefId,
         string calldata issuerId,
+        bytes calldata prevAccumulator,
         RevocationRegistryEntry calldata revRegEntry
     ) public virtual {
         bytes32 hash = keccak256(
@@ -167,10 +179,18 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
                 "createRevocationRegistryEntry",
                 revRegDefId,
                 issuerId,
+                prevAccumulator,
                 abi.encode(revRegEntry)
             )
         );
-        _createRevocationRegistryEntry(identity, ecrecover(hash, sigV, sigR, sigS), revRegDefId, issuerId, revRegEntry);
+        _createRevocationRegistryEntry(
+            identity,
+            ecrecover(hash, sigV, sigR, sigS),
+            revRegDefId,
+            issuerId,
+            prevAccumulator,
+            revRegEntry
+        );
     }
 
     function _createRevocationRegistryDefinition(
@@ -199,19 +219,22 @@ contract RevocationRegistry is RevocationRegistryInterface, ControlledUpgradeabl
         address actor,
         bytes32 revRegDefId,
         string calldata issuerId,
+        bytes memory prevAccumulator,
         RevocationRegistryEntry calldata revRegEntry
     )
         internal
         _senderIsTrusteeOrEndorserOrSteward
         _revRecDefExist(revRegDefId)
         _validIssuer(issuerId, identity, actor)
-        _accumulatorsMatch(revRegDefId, revRegEntry)
+        _accumulatorsMatch(revRegDefId, prevAccumulator)
+        _checkIssuer(issuerId, revRegDefId)
     {
-        if (!StringUtils.equals(_revRegDefs[revRegDefId].metadata.issuerId, issuerId)) {
-            revert NotRevocationRegistryDefinitionIssuer(issuerId);
-        }
+        _updateAccumulator(revRegEntry.currentAccumulator, revRegDefId);
 
-        _revRegDefs[revRegDefId].metadata.currentAccumulator = revRegEntry.currentAccumulator;
-        emit RevocationRegistryEntryCreated(revRegDefId, revRegEntry.timestamp, revRegEntry);
+        emit RevocationRegistryEntryCreated(revRegDefId, block.timestamp, revRegEntry);
+    }
+
+    function _updateAccumulator(bytes memory currentAccumulator, bytes32 revRegDefId) internal {
+        _revRegDefs[revRegDefId].metadata.currentAccumulator = currentAccumulator;
     }
 }
