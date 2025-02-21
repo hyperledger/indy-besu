@@ -65,6 +65,9 @@ pub enum VdrError {
 
     #[error("Invalid credential definition: {}", msg)]
     InvalidCredentialDefinition { msg: String },
+
+    #[error("Invalid DID document: {}", msg)]
+    InvalidDidDocument { msg: String },
 }
 
 pub type VdrResult<T> = Result<T, VdrError>;
@@ -99,6 +102,9 @@ impl From<VdrError_> for VdrError {
             VdrError_::InvalidSchema(msg) => VdrError::InvalidSchema { msg },
             VdrError_::InvalidCredentialDefinition(msg) => {
                 VdrError::InvalidCredentialDefinition { msg }
+            }
+            VdrError_::InvalidDidDocument(msg) => {
+                VdrError::InvalidDidDocument { msg }
             }
         }
     }
