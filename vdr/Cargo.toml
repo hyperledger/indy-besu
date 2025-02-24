@@ -49,7 +49,7 @@ jsonrpc-core = "18.0.0"
 regex-lite = "0.1.5"
 
 [dev-dependencies]
-rstest = "0.18.2"
+rstest = "0.24.0"
 mockall = "0.12.0"
 env_logger = "0.10.0"
 rand = "0.8.5"
