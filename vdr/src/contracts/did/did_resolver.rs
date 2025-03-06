@@ -254,12 +254,14 @@ mod ethr {
                 break;
             }
 
+            println!("{:?}", logs)
+
             // parse events
-            for log in logs {
-                let event = parse_did_event_response(client, &log)?;
-                previous_block = Some(event.previous_change());
-                history.push((log.block, event));
-            }
+            // for log in logs {
+            //     let event = parse_did_event_response(client, &log)?;
+            //     previous_block = Some(event.previous_change());
+            //     history.push((log.block, event));
+            // }
         }
         Ok(history)
     }
