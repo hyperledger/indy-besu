@@ -50,6 +50,7 @@ impl TryFrom<&Accumulator> for ContractParam {
     }
 }
 
+
 /// Definition of AnonCreds Revocation Registry Definition object matching to the specification - `<https://hyperledger.github.io/anoncreds-spec/#term:revocation-registry-entry>`
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

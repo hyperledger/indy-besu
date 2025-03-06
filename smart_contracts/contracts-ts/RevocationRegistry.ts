@@ -148,6 +148,7 @@ export class RevocationRegistry extends Contract {
   ) {
     const revRegEntrySolidityStruct = ['tuple(bytes,uint32[],uint32[])']
 
+
     return this.signEndorsementData(
       privateKey,
       concat([

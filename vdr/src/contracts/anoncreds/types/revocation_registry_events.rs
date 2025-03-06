@@ -34,7 +34,6 @@ impl TryFrom<ContractEvent> for RevRegEntryCreated {
             .map_err(|e| VdrError::InvalidRevocationRegistryEntry(e.to_string()))?;
         let issued = rev_reg_entry_tuple.get_uint32_array(1)?;
         let revoked = rev_reg_entry_tuple.get_uint32_array(2)?;
-
         Ok(RevRegEntryCreated {
             revocation_registry_definition_id,
             timestamp,
