@@ -6,8 +6,8 @@ pragma solidity ^0.8.20;
  * @dev This struct holds the details of a revocation registry definition
  * and its associated metadata.
  *
- * @param revRegDef - Credential Definition JSON as bytes.
- * @param metadata - Additional metadata associated with the credential definition.
+ * @param revRegDef - Revocation Registry Definition JSON as bytes.
+ * @param metadata  - Additional metadata associated with the revocation registry definition.
  */
 struct RevocationRegistryDefinitionRecord {
     bytes revRegDef;
@@ -33,15 +33,11 @@ struct RevocationRegistryDefinitionMetadata {
  * @dev This struct holds the data of a new revocation registry entry (delta).
  *
  * @param currentAccumulator - New accumulator to be saved on-chain.
- * @param prevAccumulator - Previous accumulator for comparison.
  * @param issued - list of newly issued credential indexes.
  * @param revoked - list of newly revoked credential indexes.
- * @param timestamp - timestamp of revocation registry entry (delta).
  */
 struct RevocationRegistryEntry {
     bytes currentAccumulator;
-    bytes prevAccumulator;
     uint32[] issued;
     uint32[] revoked;
-    uint64 timestamp;
 }

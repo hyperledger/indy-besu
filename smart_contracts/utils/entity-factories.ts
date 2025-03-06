@@ -135,25 +135,19 @@ export function createRevocationRegistryDefinitionObject({
 }
 
 export interface CreateRevocationEntryParams {
-  prevAccumulator?: string
   currentAccumulator?: string
   issued?: number[]
   revoked?: number[]
-  timestamp?: number
 }
 
 export function createRevocationRegistryEntryObject({
-  prevAccumulator = '0x',
   currentAccumulator = '0x10',
   issued = [0, 1],
   revoked = [],
-  timestamp = 1730997002,
 }: CreateRevocationEntryParams): RevocationRegistryEntryStruct {
   return {
     currentAccumulator,
-    prevAccumulator,
     issued,
     revoked,
-    timestamp,
   }
 }
