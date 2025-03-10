@@ -41,6 +41,10 @@
         "universalDidResolver": {
             "specPath": "smart_contracts/artifacts/contracts/migration/UniversalDidResolver.sol/UniversalDidResolver.json",
             "address": "0x000000000000000000000000000000000019999"
+        },
+        "revocationRegistry": {
+            "specPath": "smart_contracts/artifacts/contracts/revoke/RevocationRegistry.sol/RevocationRegistry.json",
+            "address": "0x0000000000000000000000000000000000021111"
         }
     }
 }
