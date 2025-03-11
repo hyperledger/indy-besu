@@ -35,3 +35,6 @@ uniffi = { version = "0.26.1", features = [ "build"] }
 
 [dev-dependencies]
 uniffi = { version = "0.26.1", features = ["tokio", "cli"] }
+
+[patch.crates-io]
+web3 = { git = 'https://github.com/DSRCorporation/rust-web3.git'}
