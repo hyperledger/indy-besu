@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { RevocationRegistryEntryStruct } from '../typechain-types/contracts/anoncreds/RevocationRegistry'
+
 export function createBaseDidDocument(did: string, key?: any) {
   const kid = `${did}#KEY-1`
   return JSON.stringify({
@@ -85,5 +87,67 @@ export function createCredentialDefinitionObject({
       tag,
       value,
     }),
+  }
+}
+
+interface CreateRevocationRegistryDefinitionParams {
+  issuerId: string
+  credDefId: string
+  revocDefType?: string
+  tag?: string
+  value?: Record<string, any>
+}
+
+export function createRevocationRegistryDefinitionObject({
+  issuerId,
+  credDefId,
+  revocDefType = 'CL_ACCUM',
+  tag = 'RevocationRegistry',
+  value = {
+    publicKeys: {
+      accumKey: {
+        z: '1 0BB...386',
+      },
+    },
+    maxCredNum: 666,
+    tailsLocation: 'https://my.revocations.tails/tailsfile.txt',
+    tailsHash: '91zvq2cFmBZmHCcLqFyzv7bfehHH5rMhdAG5wTjqy2PE',
+  },
+}: CreateRevocationRegistryDefinitionParams) {
+  const id = credDefId
+    .split('/')
+    .map((part, index) => (index === 0 ? issuerId : part))
+    .join('/')
+    .replace('/CLAIM_DEF/', '/REV_REG_DEF/')
+    .concat(`/${tag}`)
+
+  return {
+    id,
+    revRegDef: JSON.stringify({
+      id,
+      revocDefType,
+      credDefId,
+      issuerId,
+      tag,
+      value,
+    }),
+  }
+}
+
+export interface CreateRevocationEntryParams {
+  currentAccumulator?: string
+  issued?: number[]
+  revoked?: number[]
+}
+
+export function createRevocationRegistryEntryObject({
+  currentAccumulator = '0x10',
+  issued = [0, 1],
+  revoked = [],
+}: CreateRevocationEntryParams): RevocationRegistryEntryStruct {
+  return {
+    currentAccumulator,
+    issued,
+    revoked,
   }
 }
